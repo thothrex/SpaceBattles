@@ -23,4 +23,12 @@ public class PlayerController: MonoBehaviour {
         }
 
     }
+
+    /// <summary>
+    /// For now, just returns player to origin of playable space
+    /// </summary>
+    public void warp ()
+    {
+        transform.position = new Vector3(0, 0, 0);
+    }
 }
