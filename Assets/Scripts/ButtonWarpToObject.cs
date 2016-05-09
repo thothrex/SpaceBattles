@@ -18,7 +18,7 @@ namespace SpaceBattles
 
         public void warp_to_object()
         {
-            warp_client.warpTo(warp_target);
+            Debug.Log("warp button pressed (DOES NOTHING)");
         }
     }
 }

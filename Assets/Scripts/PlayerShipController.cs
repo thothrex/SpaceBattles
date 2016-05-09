@@ -12,16 +12,11 @@ namespace SpaceBattles
         public LargeScaleCamera solar_system_camera_prefab;
         public UIManager UI_manager;
 
-        // TODO: Delete this - should be managed by ClientManager
-        public OrbitingBodyBackgroundGameObject please_no_more;
-
         public InertialPlayerCamera player_camera;
         public LargeScaleCamera nearest_planet_camera;
         public LargeScaleCamera solar_system_camera;
         public Light sunlight;
         public float maxSpeed = 1000;
-
-        public static readonly double ORBIT_DISTANCE = 7000000.0 / OrbitingBodyBackgroundGameObject.NEAREST_PLANET_SCALE_TO_METRES; // 7,000km
 
         private const float engine_power = 1000;
         private const float rotation_power = 100;
@@ -45,7 +40,6 @@ namespace SpaceBattles
             {
                 Debug.Log("Creator has authority");
                 initGameCameras(gameObject.transform);
-                warpTo(please_no_more);
             }
         }
 
@@ -126,36 +120,6 @@ namespace SpaceBattles
             {
                 body.velocity = body.velocity.normalized * maxSpeed;
             }
-        }
-
-        public void warpTo(OrbitingBodyBackgroundGameObject warp_target)
-        {
-            if (warping) { print("Already warping! Not warping again"); return; }
-
-            warping = true;
-            // Basically does the warp conversions for each of the frames of reference
-            Vector3 planet_direction_vector = warp_target.transform.position.normalized; // direction from origin
-            float distance = System.Convert.ToSingle(warp_target.transform.position.magnitude - ORBIT_DISTANCE);
-            Vector3 orbit_coordinates
-                = planet_direction_vector
-                * distance
-                * System.Convert.ToSingle(OrbitingBodyMathematics.DISTANCE_SCALE_TO_METRES);
-
-            // Solar System Warps
-            current_nearest_orbiting_body.changeToSolarSystemReferenceFrame();
-            solar_system_camera.warpTo(orbit_coordinates);
-
-            // Orbital Warps
-            warp_target.changeToOrbitalReferenceFrame();
-            warp_target.updateSunDirection(sunlight);
-            //nearest_planet_camera.warpTo(orbit_coordinates);
-
-            // Playable Area Warp
-            transform.position = new Vector3(0,0,0);
-
-            current_nearest_orbiting_body = warp_target;
-
-            warping = false;
         }
 
         // Input direction is in local space coordinates
