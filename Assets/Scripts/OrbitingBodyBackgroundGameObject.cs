@@ -63,7 +63,7 @@ namespace SpaceBattles
         {
             changeToNearestRadius();
             is_nearest_planet = true;
-            gameObject.layer = LayerMask.NameToLayer(GameManager.NEAREST_PLANET_LAYER_NAME);
+            gameObject.layer = LayerMask.NameToLayer(ClientManager.NEAREST_PLANET_LAYER_NAME);
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace SpaceBattles
         {
             changeToSolarSystemRadius();
             is_nearest_planet = false;
-            gameObject.layer = LayerMask.NameToLayer(GameManager.SOLAR_SYSTEM_LAYER_NAME);
+            gameObject.layer = LayerMask.NameToLayer(ClientManager.SOLAR_SYSTEM_LAYER_NAME);
         }
 
         public void updateSunDirection (Light sunlight)

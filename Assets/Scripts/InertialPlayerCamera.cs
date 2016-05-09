@@ -3,6 +3,7 @@
 
 using UnityEngine;
 using System.Collections;
+using UnityEngine.Networking;
 
 public class InertialPlayerCamera: MonoBehaviour
 {
@@ -21,9 +22,7 @@ public class InertialPlayerCamera: MonoBehaviour
 	{
         if (!followTransform)
         {
-            followTransform = GameObject.FindGameObjectWithTag("Player").transform;
-            if (!followTransform) // if no tagged object exists
-                this.enabled = false;
+            this.enabled = false;
         }
 	}
 	

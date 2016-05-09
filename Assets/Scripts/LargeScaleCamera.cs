@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using System.Collections;
+using UnityEngine.Networking;
 
 namespace SpaceBattles
 {
@@ -31,9 +32,7 @@ namespace SpaceBattles
         {
             if (!followTransform)
             {
-                followTransform = GameObject.FindGameObjectWithTag("Player").transform;
-                if (!followTransform) // if no tagged object exists
-                    this.enabled = false;
+                this.enabled = false;
             }
 
             if (using_preset_scale != PRESET_SCALE.NONE)

@@ -7,7 +7,7 @@ namespace SpaceBattles
 {
     public class ButtonWarpToObject : MonoBehaviour
     {
-        public Transform warp_client;
+        public PlayerShipController warp_client;
         public OrbitingBodyBackgroundGameObject warp_target;
 
         void Start()
@@ -18,7 +18,7 @@ namespace SpaceBattles
 
         public void warp_to_object()
         {
-            GameManager.instance.warpTo(warp_target);
+            warp_client.warpTo(warp_target);
         }
     }
 }
