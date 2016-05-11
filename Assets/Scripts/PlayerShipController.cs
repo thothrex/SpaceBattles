@@ -7,15 +7,8 @@ namespace SpaceBattles
 {
     public class PlayerShipController : NetworkBehaviour
     {
-        public InertialPlayerCamera player_camera_prefab;
-        public LargeScaleCamera nearest_planet_camera_prefab;
-        public LargeScaleCamera solar_system_camera_prefab;
         public UIManager UI_manager;
 
-        public InertialPlayerCamera player_camera;
-        public LargeScaleCamera nearest_planet_camera;
-        public LargeScaleCamera solar_system_camera;
-        public Light sunlight;
         public float maxSpeed = 1000;
 
         private const float engine_power = 1000;
@@ -29,37 +22,6 @@ namespace SpaceBattles
         void Start()
         {
             
-        }
-
-        override
-        public void OnStartLocalPlayer()
-        {
-            // Remove - should be in ClientManager
-            Debug.Log("Creating player controller");
-            if (hasAuthority)
-            {
-                Debug.Log("Creator has authority");
-                initGameCameras(gameObject.transform);
-            }
-        }
-
-        public void initGameCameras(Transform transform)
-        {
-            player_camera = Instantiate(player_camera_prefab);
-            nearest_planet_camera = Instantiate(nearest_planet_camera_prefab);
-            nearest_planet_camera.using_preset_scale = LargeScaleCamera.PRESET_SCALE.NEAREST_PLANET;
-            solar_system_camera = Instantiate(solar_system_camera_prefab);
-            solar_system_camera.using_preset_scale = LargeScaleCamera.PRESET_SCALE.SOLAR_SYSTEM;
-
-            player_camera.followTransform = transform;
-            // instantiate with default values (arbitrary)
-            player_camera.offset = new Vector3(0,7,-30);
-            nearest_planet_camera.followTransform = transform;
-            solar_system_camera.followTransform = transform;
-
-            player_camera.enabled = true;
-            nearest_planet_camera.enabled = true;
-            solar_system_camera.enabled = true;
         }
 
         // TODO: Remove - should be in UI Manager

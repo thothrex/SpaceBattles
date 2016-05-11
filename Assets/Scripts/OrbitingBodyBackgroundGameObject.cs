@@ -20,14 +20,23 @@ namespace SpaceBattles
         /// <summary>
         /// Current use-case constructor - will expand if necessary
         /// </summary>
+        void Awake()
+        {
+            maths = OrbitingBodyMathematics.generate_planet(planet_number);
+        }
+
         void Start()
         {
-            if (maths == null)
+            InvokeRepeating("updatePosition", 0.0f, 1.0f);
+            if (is_nearest_planet)
             {
-                maths = OrbitingBodyMathematics.generate_planet(planet_number);
-                InvokeRepeating("updatePosition", 0.0f, 1.0f);
+                changeToNearestRadius();
             }
-            changeToSolarSystemRadius();
+            else
+            {
+                changeToSolarSystemRadius();
+            }
+            
         }
 
         void updatePosition ()
@@ -63,7 +72,7 @@ namespace SpaceBattles
         {
             changeToNearestRadius();
             is_nearest_planet = true;
-            gameObject.layer = LayerMask.NameToLayer(ClientManager.NEAREST_PLANET_LAYER_NAME);
+            gameObject.layer = LayerMask.NameToLayer(ProgramInstanceManager.NEAREST_PLANET_LAYER_NAME);
         }
 
         /// <summary>
@@ -73,11 +82,12 @@ namespace SpaceBattles
         {
             changeToSolarSystemRadius();
             is_nearest_planet = false;
-            gameObject.layer = LayerMask.NameToLayer(ClientManager.SOLAR_SYSTEM_LAYER_NAME);
+            gameObject.layer = LayerMask.NameToLayer(ProgramInstanceManager.SOLAR_SYSTEM_LAYER_NAME);
         }
 
         public void updateSunDirection (Light sunlight)
         {
+            Debug.Assert(maths != null);
             var current_position = maths.current_location(DateTime.Now);
             // we want to look from current planet's position (in heliocentric coordinates)
             // towards the sun, i.e. the negation of the vector from the sun to the planet

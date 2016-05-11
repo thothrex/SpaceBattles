@@ -25,6 +25,12 @@ public class InertialPlayerCamera: MonoBehaviour
             this.enabled = false;
         }
 	}
+
+    // TODO: remove me
+    void OnConnectedToServer ()
+    {
+        Debug.Log("Player camera connected to server");
+    }
 	
 	void FixedUpdate()
 	{

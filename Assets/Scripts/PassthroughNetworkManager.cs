@@ -17,5 +17,18 @@ namespace SpaceBattles
     /// </summary>
     public class PassthroughNetworkManager : NetworkManager
     {
+        public delegate void ClientConnectedEventHandler(NetworkConnection conn);
+        public event ClientConnectedEventHandler ClientConnected;
+
+        override
+        public void OnClientConnect(NetworkConnection conn)
+        {
+            // part of the default implementation
+            ClientScene.Ready(conn);
+            ClientScene.AddPlayer(0);
+
+            //Fire event
+            ClientConnected(conn);
+        }
     }
 }
