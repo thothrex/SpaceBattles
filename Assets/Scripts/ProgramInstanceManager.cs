@@ -114,9 +114,12 @@ namespace SpaceBattles
             this.player_object = conn.playerControllers.First().gameObject;
             InstantiateCameras();
             warpTo(current_nearest_orbiting_body);
+
             UI_manager.setPlayerCamera(player_camera.GetComponent<Camera>());
             UI_manager.setPlayerShip(player_object);
             UI_manager.enteringMultiplayerGame();
+            UI_manager.setCurrentPlayerMaxHealth(PlayerShipController.MAX_HEALTH);
+            UI_manager.setCurrentPlayerHealth(PlayerShipController.MAX_HEALTH);
         }
 
         public void setNearestPlanet (OrbitingBodyMathematics.ORBITING_BODY nearest_planet)

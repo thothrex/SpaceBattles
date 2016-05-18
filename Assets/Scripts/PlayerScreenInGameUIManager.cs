@@ -5,7 +5,14 @@ namespace SpaceBattles
 {
     public class PlayerScreenInGameUIManager : MonoBehaviour
     {
-        public UIBarManager local_player_health_bar;
+        public GameObject local_player_health_bar_object;
+        private UIBarManager local_player_health_bar;
+
+        void Awake ()
+        {
+            local_player_health_bar
+                = local_player_health_bar_object.GetComponent<UIBarManager>();
+        }
 
         public void localPlayerSetMaxHealth (double value)
         {

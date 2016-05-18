@@ -9,23 +9,18 @@ namespace SpaceBattles
     public class PlayerShipController : NetworkBehaviour
     {
         public UIManager UI_manager;
-
         public float maxSpeed = 1000;
+        public float engine_power = 1000;
+        public float rotation_power = 100;
+        public const double MAX_HEALTH = 10.0;
 
-        private const float engine_power = 1000;
-        private const float rotation_power = 100;
         private Vector3 acceleration_direction; // in LOCAL coordinates
         private bool accelerating = false;
         private bool braking = false;
         private bool warping = false;
         private OrbitingBodyBackgroundGameObject current_nearest_orbiting_body;
         [SyncVar]
-        private double health = 10.0;
-
-        void Start()
-        {
-            
-        }
+        private double health;
 
         // TODO: Remove - should be in UI Manager
         public void Update ()
