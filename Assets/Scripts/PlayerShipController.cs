@@ -2,6 +2,7 @@
 using System.IO;
 using UnityEngine.Networking;
 using UnityEngine; // for Lights
+using System;
 
 namespace SpaceBattles
 {
@@ -18,6 +19,8 @@ namespace SpaceBattles
         private bool braking = false;
         private bool warping = false;
         private OrbitingBodyBackgroundGameObject current_nearest_orbiting_body;
+        [SyncVar]
+        private double health = 10.0;
 
         void Start()
         {
@@ -76,7 +79,7 @@ namespace SpaceBattles
             }
             if (braking)
             {
-                GetComponent<Rigidbody>().AddForce(-body.velocity.normalized * engine_power);
+                //GetComponent<Rigidbody>().AddForce(-body.velocity.normalized * engine_power);
             }
             if (body.velocity.magnitude > maxSpeed)
             {
@@ -96,6 +99,33 @@ namespace SpaceBattles
         {
             accelerating = false;
             braking = true;
+        }
+
+        public double getHealth ()
+        {
+            return health;
+        }
+
+        private void takeDamage (double amount)
+        {
+            if (amount >= health)
+            {
+                health = 0;
+                killThisUnit();
+            }
+            else
+            {
+                health -= amount;
+                if (this.isLocalPlayer)
+                {
+                    UI_manager.setCurrentPlayerHealth(health);
+                }
+            }
+        }
+
+        private void killThisUnit ()
+        {
+            throw new NotImplementedException("Units can't die yet");
         }
     }
 }

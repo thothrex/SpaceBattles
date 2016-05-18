@@ -5,7 +5,7 @@ using UnityEngine;
 using System.Collections;
 using UnityEngine.Networking;
 
-public class InertialPlayerCamera: MonoBehaviour
+public class InertialPlayerCameraController: MonoBehaviour
 {
 	public Transform followTransform;
 	

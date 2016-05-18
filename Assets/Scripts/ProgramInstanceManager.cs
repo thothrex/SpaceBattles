@@ -15,7 +15,7 @@ namespace SpaceBattles
         private enum ClientState { MAIN_MENU, MULTIPLAYER_MATCH };
 
         // Prefabs
-        public InertialPlayerCamera player_camera_prefab;
+        public InertialPlayerCameraController player_camera_prefab;
         public LargeScaleCamera nearest_planet_camera_prefab;
         public LargeScaleCamera solar_system_camera_prefab;
 
@@ -44,15 +44,13 @@ namespace SpaceBattles
         public GameObject player_object;
         public OrbitingBodyBackgroundGameObject current_nearest_orbiting_body;
         private List<GameObject> orbital_bodies;
-        public InertialPlayerCamera player_camera;
+        public InertialPlayerCameraController player_camera;
         public LargeScaleCamera nearest_planet_camera;
         public LargeScaleCamera solar_system_camera;
         public PlayerShipController player_controller;
         public Light nearest_planet_sunlight;
         private ClientState client_state = ClientState.MAIN_MENU;
         private bool warping = false;
-        private bool planets_initialised = false;
-        private bool player_instantiated = false;
 
         //Awake is always called before any Start functions
         void Awake()
@@ -78,7 +76,7 @@ namespace SpaceBattles
                 UnityEngine.Object.DontDestroyOnLoad(gameObject);
                 Debug.Log("Program instance manager prevented from being destroyed on load");
             }
-
+            
             //Call the InitGame function to initialize the first level 
             InitGame();
         }
@@ -116,6 +114,9 @@ namespace SpaceBattles
             this.player_object = conn.playerControllers.First().gameObject;
             InstantiateCameras();
             warpTo(current_nearest_orbiting_body);
+            UI_manager.setPlayerCamera(player_camera.GetComponent<Camera>());
+            UI_manager.setPlayerShip(player_object);
+            UI_manager.enteringMultiplayerGame();
         }
 
         public void setNearestPlanet (OrbitingBodyMathematics.ORBITING_BODY nearest_planet)
@@ -211,7 +212,6 @@ namespace SpaceBattles
             orbital_bodies.Add(neptune);
 
             Debug.Assert(orbital_bodies.Count == number_of_orbiting_bodies);
-            planets_initialised = true;
         }
 
         private void InstantiateCameras()
