@@ -51,7 +51,8 @@ namespace SpaceBattles
 
         void FixedUpdate()
         {
-            if (enabled)
+            // could also use null-conditional of the form followTransform?.rotation
+            if (enabled && followTransform != null)
             {
                 goalPos = followTransform.TransformDirection(camera_offset) + (followTransform.position / cameraScale) + reference_frame_internal_warp;
                 goalRot = followTransform.rotation * Quaternion.Euler(desiredEulerRotation); // product combines quaternions

@@ -38,6 +38,7 @@ namespace SpaceBattles
         // (NB: because each planet has so many unique elements
         //      it's cleaner to have these be editor-defined)
         public bool dont_destroy_on_load;
+        public GameObject basic_phaser_bolt_prefab;
 
         // Code-defined components
         private static ProgramInstanceManager instance = null;
@@ -102,7 +103,7 @@ namespace SpaceBattles
         /// Slightly hacky edge-case - I'm leaving deletion of these objects to the scene change
         /// (from online to offline scene)
         /// </summary>
-        public void OnConnectedToServer(NetworkConnection conn)
+        public void OnConnectedToServer (NetworkConnection conn)
         {
             Debug.Log("Client has connected to the server");
             InstantiateSunlight();

@@ -67,17 +67,15 @@ namespace SpaceBattles
                     toggleInGameMenu();
                 }
 
-                if (Input.GetKeyDown("space"))
+                if (Input.GetAxis("Acceleration") > 0)
                 {
-                    Debug.Log("spacebar pressed");
                     player_controller.accelerate(new Vector3(0, 0, 1));
                 }
-                else if (Input.GetKeyUp("space"))
+                else if (Input.GetAxis("Acceleration") == 0)
                 {
-                    Debug.Log("spacebar released");
                     player_controller.brake();
                 }
-                
+
                 foreach (Touch touch in Input.touches)
                 {
                     if (touch.phase == TouchPhase.Began)
@@ -90,6 +88,11 @@ namespace SpaceBattles
                         player_controller.brake();
                         break;
                     }
+                }
+
+                if (Input.GetAxis("Fire") > 0)
+                {
+                    player_controller.CmdFirePhaser();
                 }
 
             }
@@ -186,7 +189,8 @@ namespace SpaceBattles
 
         public void initShipCentredUI ()
         {
-            player_object.AddComponent<Canvas>();
+            throw new NotImplementedException("initShipCentred UI called - this function is not implemented yet");
+            //player_object.AddComponent<Canvas>();
             // TODO: Unfinished
         }
 

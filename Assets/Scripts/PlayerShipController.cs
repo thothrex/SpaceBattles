@@ -8,12 +8,19 @@ namespace SpaceBattles
 {
     public class PlayerShipController : NetworkBehaviour
     {
+        // The following are set in the editor,
+        // so should be left unassigned here
         public UIManager UI_manager;
-        public float maxSpeed = 1000;
-        public float engine_power = 1000;
-        public float rotation_power = 100;
+        public float max_speed;
+        public float engine_power;
+        public float rotation_power;
         public const double MAX_HEALTH = 10.0;
 
+        public GameObject phaser_bolt_prefab;
+
+        private const float PHASER_BOLT_FORCE = 300.0f;
+
+        private Vector3 local_projectile_spawn_location;
         private Vector3 acceleration_direction; // in LOCAL coordinates
         private bool accelerating = false;
         private bool braking = false;
@@ -22,33 +29,18 @@ namespace SpaceBattles
         [SyncVar]
         private double health;
 
-        // TODO: Remove - should be in UI Manager
+        public void Awake ()
+        {
+            Vector3 ship_extents = GetComponent<Renderer>().bounds.extents;
+            // spawn projectiles at the front of the ship plus 10% of the ship length
+            // (10% of ship length = 20% of ship extent as extent is from centre)
+            float projectile_spawn_distance = ship_extents.y + ship_extents.y * 0.2f;
+            local_projectile_spawn_location = new Vector3(0, projectile_spawn_distance, 0);
+        }
+
         public void Update ()
         {
-            if (Input.GetKeyDown("space"))
-            {
-                Debug.Log("spacebar pressed");
-                accelerate(new Vector3(0, 0, 1));
-            }
-            else if (Input.GetKeyUp("space"))
-            {
-                Debug.Log("spacebar released");
-                brake();
-            }
-
-            foreach (Touch touch in Input.touches)
-            {
-                if (touch.phase == TouchPhase.Began)
-                {
-                    accelerate(new Vector3(0, 0, 1));
-                    break;
-                }
-                else if (touch.phase == TouchPhase.Ended)
-                {
-                    brake();
-                    break;
-                }
-            }
+            
         }
 
         // updates for phsyics
@@ -58,8 +50,8 @@ namespace SpaceBattles
                 return;
 
             // accel for accelerometer, input for keyboard
-            float rotate_roll = -Input.acceleration.x * 0.5f + (-Input.GetAxis("Horizontal"));
-            float rotate_pitch = -Input.acceleration.z * 0.5f + Input.GetAxis("Vertical");
+            float rotate_roll = -Input.acceleration.x * 0.5f + (-Input.GetAxis("Roll"));
+            float rotate_pitch = -Input.acceleration.z * 0.5f + Input.GetAxis("Pitch");
 
             Vector3 torque = new Vector3(rotate_pitch, 0.0f, rotate_roll);
 
@@ -76,9 +68,9 @@ namespace SpaceBattles
             {
                 //GetComponent<Rigidbody>().AddForce(-body.velocity.normalized * engine_power);
             }
-            if (body.velocity.magnitude > maxSpeed)
+            if (body.velocity.magnitude > max_speed)
             {
-                body.velocity = body.velocity.normalized * maxSpeed;
+                body.velocity = body.velocity.normalized * max_speed;
             }
         }
 
@@ -121,6 +113,41 @@ namespace SpaceBattles
         private void killThisUnit ()
         {
             throw new NotImplementedException("Units can't die yet");
+        }
+
+        public Vector3 get_projectile_spawn_location()
+        {
+            return transform.TransformPoint(local_projectile_spawn_location);
+        }
+
+        /// <summary>
+        /// This is a command sent directly from the player controller
+        /// to the server.
+        /// 
+        /// Spawns phaser bolt at shot_origin's location & rotation
+        /// giving it an initial force defined in PassthroughNetworkManager.
+        /// 
+        /// Also sets the bolt to automatically disappear after an arbitrary length of time
+        /// </summary>
+        /// <param name="shot_origin">
+        /// A Transform object used to set the bolt's initial position & rotation
+        /// </param>
+        /// <param name="bolt_owner">Currently unused</param>
+        [Command]
+        public void CmdFirePhaser()
+        {
+            // Create the bolt locally
+            GameObject bolt = (GameObject)Instantiate(
+                 phaser_bolt_prefab,
+                 transform.position - transform.forward,
+                 transform.rotation);
+            bolt.GetComponent<Rigidbody>()
+                .AddForce(PHASER_BOLT_FORCE * bolt.transform.forward, ForceMode.Impulse);
+
+            // Spawn the bullet on the clients
+            NetworkServer.Spawn(bolt);
+            // Set self-destruct timer
+            Destroy(bolt, 2.0f);
         }
     }
 }
