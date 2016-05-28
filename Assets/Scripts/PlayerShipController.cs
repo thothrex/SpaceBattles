@@ -12,6 +12,7 @@ namespace SpaceBattles
         // so should be left unassigned here
         public UIManager UI_manager;
         public float max_speed;
+
         public float engine_power;
         public float rotation_power;
         public const double MAX_HEALTH = 10.0;
@@ -31,11 +32,15 @@ namespace SpaceBattles
 
         public void Awake ()
         {
+            // Set projectile spawn location
             Vector3 ship_extents = GetComponent<Renderer>().bounds.extents;
             // spawn projectiles at the front of the ship plus 10% of the ship length
             // (10% of ship length = 20% of ship extent as extent is from centre)
             float projectile_spawn_distance = ship_extents.y + ship_extents.y * 0.2f;
             local_projectile_spawn_location = new Vector3(0, projectile_spawn_distance, 0);
+
+            // init health
+            health = MAX_HEALTH;
         }
 
         public void Update ()
@@ -103,16 +108,18 @@ namespace SpaceBattles
             else
             {
                 health -= amount;
-                if (this.isLocalPlayer)
-                {
-                    UI_manager.setCurrentPlayerHealth(health);
-                }
+            }
+
+            if (this.isLocalPlayer)
+            {
+                UI_manager.setCurrentPlayerHealth(health);
             }
         }
 
         private void killThisUnit ()
         {
-            throw new NotImplementedException("Units can't die yet");
+            // TODO: kill player properly
+            Debug.Log("Player is dead!");
         }
 
         public Vector3 get_projectile_spawn_location()
@@ -139,15 +146,23 @@ namespace SpaceBattles
             // Create the bolt locally
             GameObject bolt = (GameObject)Instantiate(
                  phaser_bolt_prefab,
-                 transform.position - transform.forward,
+                 transform.TransformPoint(local_projectile_spawn_location),
                  transform.rotation);
             bolt.GetComponent<Rigidbody>()
-                .AddForce(PHASER_BOLT_FORCE * bolt.transform.forward, ForceMode.Impulse);
+                .velocity = (PHASER_BOLT_FORCE * bolt.transform.forward);
 
             // Spawn the bullet on the clients
             NetworkServer.Spawn(bolt);
             // Set self-destruct timer
             Destroy(bolt, 2.0f);
+        }
+        /// <summary>
+        /// I would expand this to include a new parameter
+        /// of enum HitType with value of PHASER_BOLT etc.
+        /// </summary>
+        public void onProjectileHit()
+        {
+            takeDamage(1.0);
         }
     }
 }

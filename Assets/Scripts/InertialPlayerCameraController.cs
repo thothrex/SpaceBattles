@@ -34,7 +34,7 @@ public class InertialPlayerCameraController: MonoBehaviour
 	
 	void FixedUpdate()
 	{
-        if (enabled)
+        if (enabled && followTransform != null)
         {
             goalPos = followTransform.position + followTransform.TransformDirection(offset);
             goalRot = followTransform.rotation * Quaternion.Euler(desiredEulerRotation); // product combines quaternions

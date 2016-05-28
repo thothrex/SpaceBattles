@@ -67,34 +67,38 @@ namespace SpaceBattles
                     toggleInGameMenu();
                 }
 
-                if (Input.GetAxis("Acceleration") > 0)
+                // this can happen during transition
+                // from game to menu (for a frame or two)
+                if (player_controller != null)
                 {
-                    player_controller.accelerate(new Vector3(0, 0, 1));
-                }
-                else if (Input.GetAxis("Acceleration") == 0)
-                {
-                    player_controller.brake();
-                }
-
-                foreach (Touch touch in Input.touches)
-                {
-                    if (touch.phase == TouchPhase.Began)
+                    if (Input.GetAxis("Acceleration") > 0)
                     {
                         player_controller.accelerate(new Vector3(0, 0, 1));
-                        break;
                     }
-                    else if (touch.phase == TouchPhase.Ended)
+                    else if (Input.GetAxis("Acceleration") == 0)
                     {
                         player_controller.brake();
-                        break;
+                    }
+
+                    foreach (Touch touch in Input.touches)
+                    {
+                        if (touch.phase == TouchPhase.Began)
+                        {
+                            player_controller.accelerate(new Vector3(0, 0, 1));
+                            break;
+                        }
+                        else if (touch.phase == TouchPhase.Ended)
+                        {
+                            player_controller.brake();
+                            break;
+                        }
+                    }
+
+                    if (Input.GetAxis("Fire") > 0)
+                    {
+                        player_controller.CmdFirePhaser();
                     }
                 }
-
-                if (Input.GetAxis("Fire") > 0)
-                {
-                    player_controller.CmdFirePhaser();
-                }
-
             }
         }
 

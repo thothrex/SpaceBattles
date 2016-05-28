@@ -112,7 +112,9 @@ namespace SpaceBattles
             current_nearest_orbiting_body = getPlanet(OrbitingBodyMathematics.ORBITING_BODY.EARTH);
 
             Debug.Assert(conn.playerControllers.Count == 1);
+            // this is a Network player controller, not a SpaceBattles player controller!
             this.player_object = conn.playerControllers.First().gameObject;
+            this.player_controller = player_object.GetComponent<PlayerShipController>();
             InstantiateCameras();
             warpTo(current_nearest_orbiting_body);
 
@@ -121,6 +123,32 @@ namespace SpaceBattles
             UI_manager.enteringMultiplayerGame();
             UI_manager.setCurrentPlayerMaxHealth(PlayerShipController.MAX_HEALTH);
             UI_manager.setCurrentPlayerHealth(PlayerShipController.MAX_HEALTH);
+
+            // TODO: This is a bit dirty making them both talk to each other
+            //       one should probably be considered authoratative over the other
+            //       or communicate through more neutral events (preferable option)
+            player_controller.UI_manager = UI_manager;
+        }
+
+        void OnDisconnectedFromServer(NetworkDisconnection info)
+        {
+            UI_manager.enteringMainMenu();
+            if (Network.isServer)
+            {
+                Debug.Log("Local server connection disconnected");
+            }
+            else
+            {
+                if (info == NetworkDisconnection.LostConnection)
+                {
+                    Debug.Log("Lost connection to the server");
+                }
+                else
+                {
+                    Debug.Log("Successfully diconnected from the server");
+                }
+            }
+               
         }
 
         public void setNearestPlanet (OrbitingBodyMathematics.ORBITING_BODY nearest_planet)
