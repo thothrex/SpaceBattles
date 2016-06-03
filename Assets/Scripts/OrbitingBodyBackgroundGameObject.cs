@@ -14,6 +14,8 @@ namespace SpaceBattles
         private OrbitingBodyMathematics maths;
         public OrbitingBodyMathematics.ORBITING_BODY planet_number;
 
+        private Vector3 current_planets_normal_pitch_and_roll;
+
         private bool is_nearest_planet = false;
         public double radius; // in km i.e. nearest_planet_scale
 
@@ -27,7 +29,7 @@ namespace SpaceBattles
 
         void Start()
         {
-            InvokeRepeating("updatePosition", 0.0f, 1.0f);
+            InvokeRepeating("updatePosition", 0.05f, 1.0f);
             if (is_nearest_planet)
             {
                 changeToNearestRadius();
@@ -37,6 +39,11 @@ namespace SpaceBattles
                 changeToSolarSystemRadius();
             }
             
+            if (maths.has_rotation_data())
+            {
+                transform.localEulerAngles = maths.default_rotation_tilt_euler_angle;
+                InvokeRepeating("updateRotation", 0.05f, 1.0f);
+            }
         }
 
         void updatePosition ()
@@ -47,9 +54,21 @@ namespace SpaceBattles
             }
             else
             {
-                transform.position = maths.current_location(DateTime.Now);
+                transform.position = maths.current_location_game_coordinates();
             }
-            
+        }
+
+        void updateRotation ()
+        {
+            // negative because anti-clockwise
+            float target_rotation
+                = - Convert.ToSingle(
+                    maths.current_daily_rotation_progress()
+                    / OrbitingBodyMathematics.DEG_TO_RAD)
+                ;
+            float needed_rotation = target_rotation 
+                                  - transform.localEulerAngles.y;
+            transform.Rotate(transform.up, needed_rotation, Space.World);
         }
 
         private void changeToNearestRadius ()
@@ -88,11 +107,14 @@ namespace SpaceBattles
         public void updateSunDirection (Light sunlight)
         {
             Debug.Assert(maths != null);
-            var current_position = maths.current_location(DateTime.Now);
-            // we want to look from current planet's position (in heliocentric coordinates)
-            // towards the sun, i.e. the negation of the vector from the sun to the planet
-            var rotation = Quaternion.LookRotation(-current_position);
+            Vector3 current_position = maths.current_location_game_coordinates();
+            var rotation = Quaternion.LookRotation(current_position);
             sunlight.transform.rotation = rotation;
+        }
+
+        public Vector3 getCurrentGameSolarSystemCoordinates ()
+        {
+            return maths.current_location_game_coordinates();
         }
     }
 }

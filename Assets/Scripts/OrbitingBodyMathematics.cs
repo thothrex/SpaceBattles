@@ -43,6 +43,28 @@ namespace SpaceBattles
         private double orbital_period; // in seconds (SI Unit time)
         private double mean_angular_motion; // in degrees/radians per unit time (e.g. degrees/second)
 
+        // Rotation elements
+        private uint rotation_period; // seconds
+        private DateTime time_last_at_original_rotation;
+        public readonly Vector3 default_rotation_tilt_euler_angle;
+
+        private bool rotation_elements_set = false;
+
+
+        /// <summary>
+        /// Default constructor.
+        /// Rotation values are left with default type values
+        /// and the body is assumed to orbit the sun.
+        /// </summary>
+        /// <param name="semi_major_axis"></param>
+        /// <param name="eccentricity"></param>
+        /// <param name="time_last_at_periapsis"></param>
+        /// <param name="inclination"></param>
+        /// <param name="longitude_of_ascending_node"></param>
+        /// <param name="longitude_of_periapsis"></param>
+        /// <param name="mass"></param>
+        /// <param name="rotation_period"></param>
+        /// <param name="time_last_at_original_rotation"></param>
         public OrbitingBodyMathematics(double semi_major_axis,
                              double eccentricity,
                              DateTime time_last_at_periapsis,
@@ -68,6 +90,66 @@ namespace SpaceBattles
             setup();
         }
 
+        /// <summary>
+        /// Alternate constructor with rotation parameters
+        /// </summary>
+        /// <param name="semi_major_axis"></param>
+        /// <param name="eccentricity"></param>
+        /// <param name="time_last_at_periapsis"></param>
+        /// <param name="inclination"></param>
+        /// <param name="longitude_of_ascending_node"></param>
+        /// <param name="longitude_of_periapsis"></param>
+        /// <param name="mass"></param>
+        /// <param name="rotation_period"></param>
+        /// <param name="time_last_at_original_rotation"></param>
+        public OrbitingBodyMathematics(double semi_major_axis,
+                             double eccentricity,
+                             DateTime time_last_at_periapsis,
+                             double inclination,
+                             double longitude_of_ascending_node,
+                             double longitude_of_periapsis, // argument_of_periapsis
+                             double mass,
+                             uint rotation_period,
+                             DateTime time_last_at_original_rotation,
+                             Vector3 default_rotation_tilt_euler_angle)
+        {
+            this.semi_major_axis = semi_major_axis;
+            this.eccentricity = eccentricity;
+            this.time_last_at_periapsis = time_last_at_periapsis;
+            this.inclination = inclination;
+            this.longitude_of_ascending_node = longitude_of_ascending_node;
+            this.longitude_of_periapsis = longitude_of_periapsis;
+            this.mass = mass;
+            this.rotation_period = rotation_period;
+            this.time_last_at_original_rotation = time_last_at_original_rotation;
+            this.rotation_elements_set = true;
+            this.default_rotation_tilt_euler_angle = default_rotation_tilt_euler_angle;
+
+            this.mass_in_solar_masses = mass / SOLAR_MASS;
+            this.orbital_period = 2 * Math.PI * Math.Sqrt(
+                  Math.Pow(semi_major_axis * DISTANCE_SCALE_TO_METRES, 3.0)
+                / (CONSTANT_OF_GRAVITATION * (SOLAR_MASS * MASS_SCALE_TO_KG + mass * MASS_SCALE_TO_KG))
+            );
+
+            setup();
+        }
+
+        /// <summary>
+        /// Alternate constructor which is used for moons etc.
+        /// as it specifies an orbital target directly.
+        /// Currently does not allow for a rotation value.
+        /// </summary>
+        /// <param name="semi_major_axis"></param>
+        /// <param name="eccentricity"></param>
+        /// <param name="time_last_at_periapsis"></param>
+        /// <param name="inclination"></param>
+        /// <param name="longitude_of_ascending_node"></param>
+        /// <param name="longitude_of_periapsis"></param>
+        /// <param name="mass"></param>
+        /// <param name="orbiting_target"></param>
+        /// <param name="orbiting_target_mass"></param>
+        /// <param name="rotation_period"></param>
+        /// <param name="time_last_at_original_rotation"></param>
         public OrbitingBodyMathematics(double semi_major_axis,
                             double eccentricity,
                             DateTime time_last_at_periapsis,
@@ -227,6 +309,60 @@ namespace SpaceBattles
             return new Vector3(longitude, latitude, r);
         }
 
+
+        /// <summary>
+        /// Transform solar position to game position
+        /// Solar position has a top-down perspective,
+        /// so needs to have z & y axes flipped for the game
+        /// which assumes a front-on xyz setup
+        /// 
+        /// Alternate use overload - takes a current time to use rather than assuming now
+        /// </summary>
+        public Vector3 current_location_game_coordinates (DateTime current_time)
+        {
+            Vector3 maths_coords = current_location(current_time);
+            return new Vector3(maths_coords.x, -maths_coords.z, maths_coords.y);
+        }
+
+        public Vector3 current_location_game_coordinates ()
+        {
+            return current_location_game_coordinates(DateTime.Now);
+        }
+
+
+        private const string NO_ORBITAL_ELEMENTS_EXCEPTION_MESSAGE
+            = "Invalid current_rotation call: this OrbitingBodyMathematics"
+            + " does not have its rotation parameters set.";
+
+        /// <summary>
+        /// Returns the rotation in radians from some arbitrary start point.
+        /// For the Earth, it uses GMT as a rough approximation.
+        /// </summary>
+        public double current_daily_rotation_progress (DateTime current_time)
+        {
+            if (!rotation_elements_set)
+            {
+                throw new InvalidOperationException(NO_ORBITAL_ELEMENTS_EXCEPTION_MESSAGE);
+            }
+            var num_seconds_elapsed = current_time - time_last_at_original_rotation;
+            var rotation_seconds    = num_seconds_elapsed.TotalSeconds % rotation_period;
+            return (rotation_seconds / rotation_period) * FULL_ROTATION_ANGLE;
+        }
+
+        /// <summary>
+        /// Returns the rotation in radians from some arbitrary start point.
+        /// For the Earth, it uses GMT as a rough approximation.
+        /// </summary>
+        public double current_daily_rotation_progress ()
+        {
+            return current_daily_rotation_progress(DateTime.Now);
+        }
+
+        public bool has_rotation_data ()
+        {
+            return rotation_elements_set;
+        }
+
         public static OrbitingBodyMathematics generate_planet (ORBITING_BODY planet)
         {
             switch (planet)
@@ -253,7 +389,7 @@ namespace SpaceBattles
                     return generate_neptune();
                 default:
                     // cannot happen - this is an enum!
-                    throw new Exception("Dropped out of generate_planet enum - shouldn't ever happen.");
+                    throw new ArgumentException("Dropped out of generate_planet enum - shouldn't ever happen.");
             }
 
         }
@@ -278,8 +414,14 @@ namespace SpaceBattles
         {
             // from http://aa.usno.navy.mil/data/docs/EarthSeasons.php
             var last_earth_perihelion = new DateTime(2016, 1, 2, 22, 49, 0);
+            // Assumed/approximated
+            var last_earth_origin_rotation = new DateTime(2016, 5, 30, 12, 00, 00);
             // from http://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
-            return new OrbitingBodyMathematics(149.60, 0.01671022, last_earth_perihelion, 0.00005, -11.26064, 102.94719, 5.9726);
+            return new OrbitingBodyMathematics(
+                149.60, 0.01671022, last_earth_perihelion,
+                0.00005, -11.26064, 102.94719, 5.9726,
+                86400, last_earth_origin_rotation, new Vector3(-23.4f, 180.0f, 0)
+            );
         }
 
         public static OrbitingBodyMathematics generate_moon(OrbitingBodyMathematics earth)

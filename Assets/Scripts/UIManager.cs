@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using UnityEngine;
 
 namespace SpaceBattles
@@ -31,12 +32,22 @@ namespace SpaceBattles
         private UIState ui_state = UIState.IN_GAME;
         private Canvas player_centred_canvas = null;
         private Canvas player_screen_canvas  = null;
+        private MainMenuUIManager main_menu_UI_manager = null;
+
+        // Propagates events from child UI elements upwards to this object,
+        // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
+        public event ButtonMainMenuPlayGame.PlayGameButtonPressEventHandler PlayGameButtonPress
+        {
+            add { main_menu_UI_manager.PlayGameButtonPress += value; }
+            remove { main_menu_UI_manager.PlayGameButtonPress -= value; }
+        }
 
         void Awake ()
         {
             //game_UI               = GameObject.Instantiate(game_UI_prefab);
             in_game_menu_UI       = GameObject.Instantiate(in_game_menu_UI_prefab);
-            //main_menu_UI          = GameObject.Instantiate(main_menu_UI_prefab);
+            main_menu_UI                 = GameObject.Instantiate(main_menu_UI_prefab);
+            main_menu_UI_manager         = main_menu_UI.GetComponent<MainMenuUIManager>();
             player_centred_canvas_object = GameObject.Instantiate(player_centred_UI_prefab);
             player_centred_canvas        = player_centred_canvas_object.GetComponent<Canvas>();
             player_screen_UI_object      = GameObject.Instantiate(player_screen_game_UI_prefab);
@@ -49,7 +60,8 @@ namespace SpaceBattles
                 UnityEngine.Object.DontDestroyOnLoad(player_centred_canvas_object);
                 UnityEngine.Object.DontDestroyOnLoad(player_screen_UI_object);
                 UnityEngine.Object.DontDestroyOnLoad(in_game_menu_UI);
-                Debug.Log("UI manager prevented from being destroyed on load");
+                UnityEngine.Object.DontDestroyOnLoad(main_menu_UI);
+                Debug.Log("objects prevented from being destroyed on load");
             }
         }
 
@@ -159,12 +171,12 @@ namespace SpaceBattles
 
         public void showMainMenu ()
         {
-
+            main_menu_UI.SetActive(true);
         }
 
         public void hideMainMenu ()
         {
-
+            main_menu_UI.SetActive(false);
         }
 
         public void setPlayerCamera (Camera player_camera)

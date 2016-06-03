@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;       //Allows us to use Lists. 
 using UnityEngine.Networking;
 using System.Linq;
+using System.Collections;
 
 namespace SpaceBattles
 {
@@ -14,6 +15,8 @@ namespace SpaceBattles
         public static readonly double ORBIT_DISTANCE_IN_METRES = 7000000.0; // 7,000km
         private enum ClientState { MAIN_MENU, MULTIPLAYER_MATCH };
 
+        // Editor-definable components
+
         // Prefabs
         public InertialPlayerCameraController player_camera_prefab;
         public LargeScaleCamera nearest_planet_camera_prefab;
@@ -21,6 +24,8 @@ namespace SpaceBattles
 
         public Light nearest_planet_sunlight_prefab;
 
+        // (NB: because each planet has so many unique elements
+        //      it's cleaner to have these be editor-defined)
         public GameObject sun_prefab;
         public GameObject mercury_prefab;
         public GameObject venus_prefab;
@@ -31,12 +36,11 @@ namespace SpaceBattles
         public GameObject saturn_prefab;
         public GameObject uranus_prefab;
         public GameObject neptune_prefab;
-
-        // Editor-definable components
+        
         public UIManager UI_manager;
         public PassthroughNetworkManager network_manager;
-        // (NB: because each planet has so many unique elements
-        //      it's cleaner to have these be editor-defined)
+        public PassthroughNetworkDiscovery network_discoverer;
+        
         public bool dont_destroy_on_load;
         public GameObject basic_phaser_bolt_prefab;
 
@@ -52,6 +56,8 @@ namespace SpaceBattles
         public Light nearest_planet_sunlight;
         private ClientState client_state = ClientState.MAIN_MENU;
         private bool warping = false;
+        private bool looking_for_game = false;
+        private bool found_game = false;
 
         //Awake is always called before any Start functions
         void Awake()
@@ -77,15 +83,18 @@ namespace SpaceBattles
                 UnityEngine.Object.DontDestroyOnLoad(gameObject);
                 Debug.Log("Program instance manager prevented from being destroyed on load");
             }
-            
-            //Call the InitGame function to initialize the first level 
-            InitGame();
+
+            // Register event handlers
+            UI_manager.PlayGameButtonPress += startPlayingGame;
         }
 
         void Start ()
         {
             network_manager.ClientConnected
                 += new PassthroughNetworkManager.ClientConnectedEventHandler(OnConnectedToServer);
+            network_discoverer.ServerDetected
+                += new PassthroughNetworkDiscovery.ServerDetectedEventHandler(OnServerDetected);
+            network_discoverer.Initialize();
         }
 
         //Initializes the game for each level.
@@ -98,6 +107,8 @@ namespace SpaceBattles
         void Update()
         {
         }
+
+
 
         /// <summary>
         /// Slightly hacky edge-case - I'm leaving deletion of these objects to the scene change
@@ -169,25 +180,37 @@ namespace SpaceBattles
             warpTo(getPlanet(orbiting_body));
         }
 
+        /// <summary>
+        /// Warps to warp_target, at ORBIT_DISTANCE in the direction of the sun
+        /// (i.e. warps to the sunny side of the target)
+        /// </summary>
+        /// <param name="warp_target"></param>
         public void warpTo(OrbitingBodyBackgroundGameObject warp_target)
         {
+            // shitty lock - DO NOT RELY ON THIS
             if (warping) { Debug.Log("Already warping! Not warping again"); return; }
 
             warping = true;
-            Vector3 planet_direction_vector = warp_target.transform.position.normalized; // direction from origin
+            // direction from origin
+            Vector3 current_target_vector
+                = warp_target
+                .getCurrentGameSolarSystemCoordinates();
+            Vector3 normalised_target_vector = current_target_vector.normalized;
+            
             double orbit_distance_in_solar_system_scale
                 = ORBIT_DISTANCE_IN_METRES / OrbitingBodyMathematics.DISTANCE_SCALE_TO_METRES;
             // var name is in capitals - Solar system scale DISTANCE
             float sdistance = System.Convert.ToSingle(
-                warp_target.transform.position.magnitude - orbit_distance_in_solar_system_scale
+                current_target_vector.magnitude - orbit_distance_in_solar_system_scale
             );
-            Vector3 solar_scale_orbit_coordinates = planet_direction_vector * sdistance;
+            Vector3 solar_scale_orbit_coordinates = normalised_target_vector * sdistance;
 
             double orbit_distance_in_nearest_planet_scale
                 = ORBIT_DISTANCE_IN_METRES / OrbitingBodyBackgroundGameObject.NEAREST_PLANET_SCALE_TO_METRES;
             // var name is in capitals - Nearest planet scale DISTANCE
             float ndistance = System.Convert.ToSingle(orbit_distance_in_nearest_planet_scale);
-            Vector3 nearest_planet_scale_orbit_coordinates = planet_direction_vector * ndistance;
+            // need to go backwards i.e. towards the sun to be on the sunny side
+            Vector3 nearest_planet_scale_orbit_coordinates = -normalised_target_vector * ndistance;
 
             // Solar System Warps
             current_nearest_orbiting_body.changeToSolarSystemReferenceFrame();
@@ -266,5 +289,41 @@ namespace SpaceBattles
             solar_system_camera.enabled = true;
             Debug.Log("Cameras created?");
         }
+
+        public void startPlayingGame()
+        {
+            Debug.Log("Play game button pressed");
+            // shitty lock DO NOT TRUST
+            if (!looking_for_game)
+            {
+                StartCoroutine(playGameCoroutine());
+                network_discoverer.StartAsClient();
+            }
+        }
+
+        IEnumerator playGameCoroutine()
+        {
+            // shitty lock DO NOT TRUST
+            looking_for_game = true;
+            found_game = false;
+            yield return new WaitForSeconds(5.0f);
+            if (found_game) { yield break; }
+            else
+            {
+                Debug.Log("Game not found - starting server");
+                network_discoverer.StopBroadcast();
+            }
+            looking_for_game = false;
+        }
+
+        public void OnServerDetected (string fromAddress, string data)
+        {
+            Debug.Log("Server detected at address " + fromAddress);
+            found_game = true;
+            // TODO: implement below
+            // wait 1 second for more games
+            network_discoverer.StopBroadcast();
+        }
+
     }
 }

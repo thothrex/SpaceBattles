@@ -1,1 +1,8 @@
-Icon made by Freepik [http://www.flaticon.com/authors/freepik] from www.flaticon.com 
+Icon made by Freepik [http://www.flaticon.com/authors/freepik] from www.flaticon.com
+Font by Iconian Fonts [http://iconian.com]
+Smoke texture by cyborgsuzystock [http://cyborgsuzystock.deviantart.com/art/smoke-01-24423042]
+
+Unity Packages
+--------------
+UI Tween by Adi Zhavo
+Google Material Design by Adi Zhavo
