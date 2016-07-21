@@ -31,6 +31,33 @@ namespace SpaceBattles
             }
         }
 
+        /// <summary>
+        /// Requires the caller to know what each state means
+        /// THus should be confined to direct managers and not called by long distance clients
+        /// i.e. UIManager calls this, not ProgramInstanceManager
+        /// </summary>
+        public void setButtonState (int new_state)
+        {
+            if (new_state > button_states.Count)
+            {
+                throw new ArgumentOutOfRangeException(
+                    "new_state", new_state,
+                    "Attempting to set new button state to " + new_state +
+                    ", which is greater than the maximum possible state: " + button_states.Count
+                );
+            }
+            else if (new_state < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    "new_state", new_state,
+                    "Attempting to set new button state to " + new_state +
+                    ", which is less than 0 (thus considered invalid)"
+                );
+            }
+            animateButtonStateChange(button_state, new_state);
+            button_state = new_state;
+        }
+
         public void advanceButtonState()
         {
             int new_button_state = button_state + 1;

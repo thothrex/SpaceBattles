@@ -8,6 +8,9 @@ namespace SpaceBattles
     {
         private enum UIState { IN_GAME, MAIN_MENU };
         private enum UIElements { GAME_UI, IN_GAME_MENU, MAIN_MENU}
+        // searching for server deliberately unused as we can just go there immediately
+        // once the play button is pressed
+        public  enum PlayerConnectState { SEARCHING_FOR_SERVER, JOINING_SERVER, CREATING_SERVER };
 
         public bool dont_destroy_on_load;
 
@@ -44,8 +47,8 @@ namespace SpaceBattles
 
         void Awake ()
         {
-            //game_UI               = GameObject.Instantiate(game_UI_prefab);
-            in_game_menu_UI       = GameObject.Instantiate(in_game_menu_UI_prefab);
+            //game_UI                    = GameObject.Instantiate(game_UI_prefab);
+            in_game_menu_UI              = GameObject.Instantiate(in_game_menu_UI_prefab);
             main_menu_UI                 = GameObject.Instantiate(main_menu_UI_prefab);
             main_menu_UI_manager         = main_menu_UI.GetComponent<MainMenuUIManager>();
             player_centred_canvas_object = GameObject.Instantiate(player_centred_UI_prefab);
@@ -218,6 +221,11 @@ namespace SpaceBattles
         public void setCurrentPlayerMaxHealth (double new_value)
         {
             player_screen_UI_manager.localPlayerSetMaxHealth(new_value);
+        }
+
+        public void setPlayerConnectState (PlayerConnectState new_state)
+        {
+            main_menu_UI_manager.setPlayerConnectState(new_state);
         }
     }
 }

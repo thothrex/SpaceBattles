@@ -59,6 +59,9 @@ namespace SpaceBattles
         private bool looking_for_game = false;
         private bool found_game = false;
 
+        // need this to avoid garbage collection!
+        private NetworkClient net_client = null;
+
         //Awake is always called before any Start functions
         void Awake()
         {
@@ -81,17 +84,17 @@ namespace SpaceBattles
             {
                 //Sets this to not be destroyed when reloading scene
                 UnityEngine.Object.DontDestroyOnLoad(gameObject);
+                UnityEngine.Object.DontDestroyOnLoad(this);
                 Debug.Log("Program instance manager prevented from being destroyed on load");
             }
 
             // Register event handlers
             UI_manager.PlayGameButtonPress += startPlayingGame;
+            
         }
 
         void Start ()
         {
-            network_manager.ClientConnected
-                += new PassthroughNetworkManager.ClientConnectedEventHandler(OnConnectedToServer);
             network_discoverer.ServerDetected
                 += new PassthroughNetworkDiscovery.ServerDetectedEventHandler(OnServerDetected);
             network_discoverer.Initialize();
@@ -108,7 +111,10 @@ namespace SpaceBattles
         {
         }
 
-
+        public void localPlayerStarted (GameObject player_object)
+        {
+            this.ship_object = player_object;
+        }
 
         /// <summary>
         /// Slightly hacky edge-case - I'm leaving deletion of these objects to the scene change
@@ -121,13 +127,8 @@ namespace SpaceBattles
             InstantiatePlanets();
             // TODO: replace this with a query to server about what planet we are near
             current_nearest_orbiting_body = getPlanet(OrbitingBodyMathematics.ORBITING_BODY.EARTH);
-
-            Debug.Assert(conn.playerControllers.Count == 1);
             // this is a Network player controller, not a SpaceBattles player controller!
-            this.player_object = conn.playerControllers.First().gameObject;
-            this.player_controller = player_object.GetComponent<PlayerShipController>();
-            InstantiateCameras();
-            warpTo(current_nearest_orbiting_body);
+            this.player_controller = player_controller;            
 
             UI_manager.setPlayerCamera(player_camera.GetComponent<Camera>());
             UI_manager.setPlayerShip(player_object);
@@ -306,12 +307,17 @@ namespace SpaceBattles
             // shitty lock DO NOT TRUST
             looking_for_game = true;
             found_game = false;
-            yield return new WaitForSeconds(5.0f);
+            yield return new WaitForSeconds(1.0f);
             if (found_game) { yield break; }
             else
             {
-                Debug.Log("Game not found - starting server");
                 network_discoverer.StopBroadcast();
+                Debug.Log("Game not found - starting server");
+                UI_manager.setPlayerConnectState(
+                    UIManager.PlayerConnectState.CREATING_SERVER
+                );
+                net_client = network_manager.StartHost();
+                network_discoverer.StartAsServer();
             }
             looking_for_game = false;
         }
@@ -319,10 +325,17 @@ namespace SpaceBattles
         public void OnServerDetected (string fromAddress, string data)
         {
             Debug.Log("Server detected at address " + fromAddress);
+            // I don't even know if this will do anything
+            if (net_client != null) return;
             found_game = true;
-            // TODO: implement below
+            // TODO: implement properly
             // wait 1 second for more games
+            UI_manager.setPlayerConnectState(
+                UIManager.PlayerConnectState.JOINING_SERVER
+            );
             network_discoverer.StopBroadcast();
+            network_manager.networkAddress = fromAddress;
+            net_client = network_manager.StartClient();
         }
 
     }

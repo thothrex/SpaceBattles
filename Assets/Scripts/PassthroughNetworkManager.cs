@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -17,18 +18,28 @@ namespace SpaceBattles
     /// </summary>
     public class PassthroughNetworkManager : NetworkManager
     {
-        public delegate void ClientConnectedEventHandler(NetworkConnection conn);
+        /*
+        public delegate void
+        ClientConnectedEventHandler(NetworkConnection conn, GameObject player_obj);
+        [SyncEvent]
         public event ClientConnectedEventHandler ClientConnected;
 
         override
-        public void OnClientConnect(NetworkConnection conn)
+        public void OnServerAddPlayer(NetworkConnection conn, short playerControllerId)
         {
-            // part of the default implementation
-            ClientScene.Ready(conn);
-            ClientScene.AddPlayer(0);
+            // default implementation
+            // need to pull out the player object
+            // because for some bullshit reason
+            // it's not accessible any other way
+            // derspite being critical to basic game function
+            GameObject player = (GameObject)Instantiate(playerPrefab, Vector3.zero, Quaternion.identity);
+            NetworkServer.AddPlayerForConnection(conn, player, playerControllerId);
 
-            //Fire event
-            ClientConnected(conn);
+            // Fire event
+            ClientConnected(conn, player);
         }
+        */
+
+
     }
 }

@@ -8,6 +8,9 @@ namespace SpaceBattles
 {
     public class PlayerShipController : NetworkBehaviour
     {
+        public delegate void LocalPlayerStartHandler();
+        public event LocalPlayerStartHandler StartLocalPlayer;
+
         // The following are set in the editor,
         // so should be left unassigned here
         public UIManager UI_manager;
