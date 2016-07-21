@@ -46,6 +46,21 @@ namespace SpaceBattles
             health = MAX_HEALTH;
         }
 
+        public void Start ()
+        {
+        }
+
+        override
+        public void OnStartAuthority()
+        {
+            // We need a set place to send messages to
+            // in case authority is transferred,
+            // i.e. when there is no local creator entity
+            ProgramInstanceManager instance_manager
+                    = GameObject.Find("ProgramInstanceManager").GetComponent<ProgramInstanceManager>();
+            instance_manager.playerShipCreatedHandler(this);
+        }
+
         public void Update ()
         {
             
@@ -54,7 +69,7 @@ namespace SpaceBattles
         // updates for phsyics
         void FixedUpdate()
         {
-            if (!isLocalPlayer)
+            if (!hasAuthority)
                 return;
 
             // accel for accelerometer, input for keyboard

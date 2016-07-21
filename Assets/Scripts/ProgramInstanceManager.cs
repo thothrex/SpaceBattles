@@ -46,13 +46,14 @@ namespace SpaceBattles
 
         // Code-defined components
         private static ProgramInstanceManager instance = null;
-        public GameObject player_object;
+        private GameObject ship_object = null;
         public OrbitingBodyBackgroundGameObject current_nearest_orbiting_body;
         private List<GameObject> orbital_bodies;
         public InertialPlayerCameraController player_camera;
         public LargeScaleCamera nearest_planet_camera;
         public LargeScaleCamera solar_system_camera;
-        public PlayerShipController player_controller;
+        public PlayerShipController ship_controller;
+        private PlayerIncorporealObjectController player_controller;
         public Light nearest_planet_sunlight;
         private ClientState client_state = ClientState.MAIN_MENU;
         private bool warping = false;
@@ -117,29 +118,47 @@ namespace SpaceBattles
         }
 
         /// <summary>
-        /// Slightly hacky edge-case - I'm leaving deletion of these objects to the scene change
+        /// When the incorporeal player controller is created by the server
+        /// (the main controller for networked interaction)
+        /// 
+        /// N.B. Slightly hacky edge-case - I'm leaving deletion of these objects to the scene change
         /// (from online to offline scene)
         /// </summary>
-        public void OnConnectedToServer (NetworkConnection conn)
+        public void PlayerControllerCreatedHandler (PlayerIncorporealObjectController player_controller)
         {
-            Debug.Log("Client has connected to the server");
-            InstantiateSunlight();
+            Debug.Log("Player object created");
+
+            // Generate local scene (including play space entities)
+            // i.e. there are dependencies from here
             InstantiatePlanets();
+            InstantiateSunlight();
+
             // TODO: replace this with a query to server about what planet we are near
             current_nearest_orbiting_body = getPlanet(OrbitingBodyMathematics.ORBITING_BODY.EARTH);
             // this is a Network player controller, not a SpaceBattles player controller!
             this.player_controller = player_controller;            
 
+            // Camera setup
+            InstantiateCameras(player_controller.transform);
+            warpTo(current_nearest_orbiting_body);
             UI_manager.setPlayerCamera(player_camera.GetComponent<Camera>());
-            UI_manager.setPlayerShip(player_object);
             UI_manager.enteringMultiplayerGame();
+        }
+
+        public void playerShipCreatedHandler (PlayerShipController ship_controller)
+        {
+            this.ship_controller = ship_controller;
+
+            UI_manager.setPlayerShip(ship_controller.gameObject);
             UI_manager.setCurrentPlayerMaxHealth(PlayerShipController.MAX_HEALTH);
             UI_manager.setCurrentPlayerHealth(PlayerShipController.MAX_HEALTH);
+
+            setCamerasFollowTransform(ship_controller.transform);
 
             // TODO: This is a bit dirty making them both talk to each other
             //       one should probably be considered authoratative over the other
             //       or communicate through more neutral events (preferable option)
-            player_controller.UI_manager = UI_manager;
+            ship_controller.UI_manager = UI_manager;
         }
 
         void OnDisconnectedFromServer(NetworkDisconnection info)
@@ -270,7 +289,7 @@ namespace SpaceBattles
             Debug.Assert(orbital_bodies.Count == number_of_orbiting_bodies);
         }
 
-        private void InstantiateCameras()
+        private void InstantiateCameras(Transform initial_follow_transform)
         {
             Debug.Log("Instantiating cameras");
             player_camera = Instantiate(player_camera_prefab);
@@ -279,16 +298,22 @@ namespace SpaceBattles
             solar_system_camera = Instantiate(solar_system_camera_prefab);
             solar_system_camera.using_preset_scale = LargeScaleCamera.PRESET_SCALE.SOLAR_SYSTEM;
 
-            player_camera.followTransform = player_object.transform;
+            
             // instantiate with default values (arbitrary)
             player_camera.offset = new Vector3(0, 7, -30);
-            nearest_planet_camera.followTransform = player_object.transform;
-            solar_system_camera.followTransform = player_object.transform;
+            setCamerasFollowTransform(initial_follow_transform);
 
-            player_camera.enabled = true;
-            nearest_planet_camera.enabled = true;
-            solar_system_camera.enabled = true;
+            //TODO: move this activation somewhere else(?)
+            setPlayerCamerasActive(true);
+            
             Debug.Log("Cameras created?");
+        }
+
+        private void setPlayerCamerasActive(bool active)
+        {
+            player_camera.enabled = active;
+            nearest_planet_camera.enabled = active;
+            solar_system_camera.enabled = active;
         }
 
         public void startPlayingGame()
@@ -338,5 +363,15 @@ namespace SpaceBattles
             net_client = network_manager.StartClient();
         }
 
+        private void setCamerasFollowTransform (Transform follow_transform)
+        {
+            if (follow_transform == null)
+            {
+                throw new ArgumentNullException();
+            }
+            player_camera.followTransform         = follow_transform;
+            nearest_planet_camera.followTransform = follow_transform;
+            solar_system_camera.followTransform   = follow_transform;
+        }
     }
 }

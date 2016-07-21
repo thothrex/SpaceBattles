@@ -15,13 +15,15 @@ namespace SpaceBattles
         public bool dont_destroy_on_load;
 
         public GameObject player_object;
-        public PlayerShipController player_controller;
+        public PlayerShipController ship_controller;
 
         public GameObject game_UI_prefab;
         public GameObject in_game_menu_UI_prefab;
         public GameObject main_menu_UI_prefab;
         public GameObject player_centred_UI_prefab;
         public GameObject player_screen_game_UI_prefab;
+        public Camera fixed_UI_camera_prefab;
+        public Camera ship_select_camera_prefab;
 
         public GameObject game_UI;
         public GameObject in_game_menu_UI;
@@ -30,7 +32,9 @@ namespace SpaceBattles
         public GameObject player_screen_UI_object;
         public PlayerScreenInGameUIManager player_screen_UI_manager;
 
-        private Camera player_UI_camera = null;
+        private Camera player_UI_camera = null; // for the which UI follows player avatar
+        private Camera fixed_UI_camera = null; // UI doesn't move compared to camera
+        private Camera ship_select_camera = null; // Camera inhabits a separate "scene"
         private bool in_game_menu_visible = false;
         private UIState ui_state = UIState.IN_GAME;
         private Canvas player_centred_canvas = null;
@@ -56,6 +60,8 @@ namespace SpaceBattles
             player_screen_UI_object      = GameObject.Instantiate(player_screen_game_UI_prefab);
             player_screen_UI_manager     = player_screen_UI_object.GetComponent<PlayerScreenInGameUIManager>();
 
+            initialiseGameUICameras();
+
             if (dont_destroy_on_load)
             {
                 //Sets this to not be destroyed when reloading scene
@@ -64,6 +70,8 @@ namespace SpaceBattles
                 UnityEngine.Object.DontDestroyOnLoad(player_screen_UI_object);
                 UnityEngine.Object.DontDestroyOnLoad(in_game_menu_UI);
                 UnityEngine.Object.DontDestroyOnLoad(main_menu_UI);
+                UnityEngine.Object.DontDestroyOnLoad(fixed_UI_camera);
+                UnityEngine.Object.DontDestroyOnLoad(ship_select_camera);
                 Debug.Log("objects prevented from being destroyed on load");
             }
         }
@@ -84,34 +92,34 @@ namespace SpaceBattles
 
                 // this can happen during transition
                 // from game to menu (for a frame or two)
-                if (player_controller != null)
+                if (ship_controller != null)
                 {
                     if (Input.GetAxis("Acceleration") > 0)
                     {
-                        player_controller.accelerate(new Vector3(0, 0, 1));
+                        ship_controller.accelerate(new Vector3(0, 0, 1));
                     }
                     else if (Input.GetAxis("Acceleration") == 0)
                     {
-                        player_controller.brake();
+                        ship_controller.brake();
                     }
 
                     foreach (Touch touch in Input.touches)
                     {
                         if (touch.phase == TouchPhase.Began)
                         {
-                            player_controller.accelerate(new Vector3(0, 0, 1));
+                            ship_controller.accelerate(new Vector3(0, 0, 1));
                             break;
                         }
                         else if (touch.phase == TouchPhase.Ended)
                         {
-                            player_controller.brake();
+                            ship_controller.brake();
                             break;
                         }
                     }
 
                     if (Input.GetAxis("Fire") > 0)
                     {
-                        player_controller.CmdFirePhaser();
+                        ship_controller.CmdFirePhaser();
                     }
                 }
             }
@@ -127,10 +135,19 @@ namespace SpaceBattles
 
         public void enteringMultiplayerGame ()
         {
+            // TODO: change to start in ship selection
             ui_state = UIState.IN_GAME;
             showGameUI();
             hideInGameMenu();
             hideMainMenu();
+        }
+
+        public void playerShipCreated ()
+        {
+            //TODO: implement
+            // hide ship selection UI
+            // show HUD UI
+            Debug.Log("UI Manager received playerShipCreated message");
         }
 
         public void toggleInGameMenu ()
@@ -164,12 +181,14 @@ namespace SpaceBattles
             //game_UI.SetActive(true);
             //player_centred_canvas_object.gameObject.SetActive(true);
             player_screen_UI_object.SetActive(true);
+            setInGameUICamerasActive(true);
         }
         public void hideGameUI()
         {
             //game_UI.SetActive(false);
             //player_centred_canvas_object.gameObject.SetActive(false);
             player_screen_UI_object.SetActive(false);
+            setInGameUICamerasActive(false);
         }
 
         public void showMainMenu ()
@@ -182,6 +201,59 @@ namespace SpaceBattles
             main_menu_UI.SetActive(false);
         }
 
+        public void showShipSelectionUI ()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void hideShipSelectionUI()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// This is expected to be called at game start,
+        /// as the cameras could be used from the main menu
+        /// </summary>
+        public void initialiseGameUICameras ()
+        {
+            fixed_UI_camera
+                = Instantiate(fixed_UI_camera_prefab);
+            ship_select_camera
+                = Instantiate(ship_select_camera_prefab);
+
+            setInGameUICamerasActive(false);
+        }
+
+        /// <summary>
+        /// Utility method to enable/disable in-game UI cameras
+        /// </summary>
+        /// <param name="active">cameras active/true or inactive/false</param>
+        public void setInGameUICamerasActive (bool active)
+        {
+            fixed_UI_camera.gameObject.SetActive(active);
+            ship_select_camera.gameObject.SetActive(active);
+        }
+
+        /// <summary>
+        /// Tells the UI manager which camera follows the player's avatar
+        /// This camera will also be used by the general graphics of the game
+        /// to display things other than the UI (e.g. FX, game state, etc.)
+        /// so I currently feel it belongs in the more general
+        /// Program Instance Manager (PIM) class
+        /// 
+        /// Note that the camera is assumed to be set up and controlled
+        /// by the PIM, so the UI Manager should only ever read values
+        /// from the camera, and shouldn't write anything to it
+        /// e.g. the UIManager shouldn't change the location, orientation, etc.
+        /// of the camera.
+        /// This should probably be enforced by passing through a read only view
+        /// of the camera, but I'm not sure what that will break atm,
+        /// as I'm still changing this code a lot.
+        /// </summary>
+        /// <param name="player_camera">
+        /// The Camera which follows the player's in-game avatar
+        /// </param>
         public void setPlayerCamera (Camera player_camera)
         {
             this.player_UI_camera = player_camera;
@@ -201,7 +273,7 @@ namespace SpaceBattles
                 throw new InvalidOperationException(CAMERA_NOT_SET_EXCEPTION_MESSAGE);
             }
             this.player_object = player;
-            this.player_controller = player.GetComponent<PlayerShipController>();
+            this.ship_controller = player.GetComponent<PlayerShipController>();
             player_centred_canvas.worldCamera = player_UI_camera;
             player_centred_canvas_object.transform.SetParent(player_object.transform);
         }
