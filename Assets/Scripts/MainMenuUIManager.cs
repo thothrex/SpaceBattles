@@ -24,7 +24,11 @@ namespace SpaceBattles
 
         public void setPlayerConnectState (UIManager.PlayerConnectState new_state)
         {
-            if (new_state == UIManager.PlayerConnectState.JOINING_SERVER)
+            if (new_state == UIManager.PlayerConnectState.IDLE)
+            {
+                start_game_button_manager.setButtonState(0);
+            }
+            else if (new_state == UIManager.PlayerConnectState.JOINING_SERVER)
             {
                 start_game_button_manager.setButtonState(2);
             }

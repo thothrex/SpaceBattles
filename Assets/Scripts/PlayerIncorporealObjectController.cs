@@ -13,7 +13,6 @@ namespace SpaceBattles
 
         // The following are set in the editor,
         // so should be left unassigned here
-        public UIManager UI_manager;
         public GameObject PrefabSpaceShipFighter;
 
         private bool warping = false;

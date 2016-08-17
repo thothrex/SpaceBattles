@@ -36,8 +36,10 @@ namespace SpaceBattles
         public GameObject saturn_prefab;
         public GameObject uranus_prefab;
         public GameObject neptune_prefab;
-        
-        public UIManager UI_manager;
+
+        public GameObject UI_manager_prefab;
+        public GameObject UI_manager_obj;
+        private UIManager UI_manager;
         public PassthroughNetworkManager network_manager;
         public PassthroughNetworkDiscovery network_discoverer;
         
@@ -71,31 +73,29 @@ namespace SpaceBattles
             //Check if instance already exists
             if (instance == null)
             {
-                //if not, set instance to this
+                //if not, set instance to this & do first load operations
                 instance = this;
+                //Sets this to not be destroyed when reloading scene
+                UnityEngine.Object.DontDestroyOnLoad(gameObject);
+                UnityEngine.Object.DontDestroyOnLoad(this);
+                Debug.Log("Program instance manager prevented from being destroyed on load");
+
+                UI_manager_obj = GameObject.Instantiate(UI_manager_prefab);
+                UI_manager = UI_manager_obj.GetComponent<UIManager>();
             }
-            //If instance already exists and it's not this:
-            else if (instance != this)
+            else if (instance != this) // If instance already exists and it's not this:
             {
                 //Then destroy this. This enforces our singleton pattern, meaning there can only ever be one instance of a GameManager.
                 Destroy(gameObject);
             }
 
-            if (dont_destroy_on_load)
-            {
-                //Sets this to not be destroyed when reloading scene
-                UnityEngine.Object.DontDestroyOnLoad(gameObject);
-                UnityEngine.Object.DontDestroyOnLoad(this);
-                Debug.Log("Program instance manager prevented from being destroyed on load");
-            }
-
-            // Register event handlers
-            UI_manager.PlayGameButtonPress += startPlayingGame;
-            
         }
 
         void Start ()
         {
+            // Register event handlers
+            UI_manager.PlayGameButtonPress += startPlayingGame;
+            UI_manager.ExitNetGameInputEvent += exitNetworkGame;
             network_discoverer.ServerDetected
                 += new PassthroughNetworkDiscovery.ServerDetectedEventHandler(OnServerDetected);
             network_discoverer.Initialize();
@@ -289,7 +289,7 @@ namespace SpaceBattles
             Debug.Assert(orbital_bodies.Count == number_of_orbiting_bodies);
         }
 
-        private void InstantiateCameras(Transform initial_follow_transform)
+        private void InstantiateCameras (Transform initial_follow_transform)
         {
             Debug.Log("Instantiating cameras");
             player_camera = Instantiate(player_camera_prefab);
@@ -309,14 +309,14 @@ namespace SpaceBattles
             Debug.Log("Cameras created?");
         }
 
-        private void setPlayerCamerasActive(bool active)
+        private void setPlayerCamerasActive (bool active)
         {
             player_camera.enabled = active;
             nearest_planet_camera.enabled = active;
             solar_system_camera.enabled = active;
         }
 
-        public void startPlayingGame()
+        private void startPlayingGame ()
         {
             Debug.Log("Play game button pressed");
             // shitty lock DO NOT TRUST
@@ -327,7 +327,7 @@ namespace SpaceBattles
             }
         }
 
-        IEnumerator playGameCoroutine()
+        IEnumerator playGameCoroutine ()
         {
             // shitty lock DO NOT TRUST
             looking_for_game = true;
@@ -361,6 +361,15 @@ namespace SpaceBattles
             network_discoverer.StopBroadcast();
             network_manager.networkAddress = fromAddress;
             net_client = network_manager.StartClient();
+        }
+
+        private void exitNetworkGame ()
+        {
+            // I'm not sure if this is always safe to use,
+            // as the documentation is very slim
+            Debug.Log("Stopping game");
+            network_manager.StopHost();
+            UI_manager.enteringMainMenu();
         }
 
         private void setCamerasFollowTransform (Transform follow_transform)

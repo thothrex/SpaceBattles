@@ -25,7 +25,13 @@ namespace SpaceBattles
             if (button_state == 0)
             {
                 // trigger public event
-                PlayGameButtonPress();
+                // if there are no listeners we should not trigger the event
+                // due to general c# rules, as it causes an exception
+                PlayGameButtonPressEventHandler null_check = PlayGameButtonPress;
+                if (null_check != null)
+                {
+                    PlayGameButtonPress();
+                }
                 // internal actions
                 advanceButtonState();
             }

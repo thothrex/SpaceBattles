@@ -10,7 +10,7 @@ namespace SpaceBattles
         private enum UIElements { GAME_UI, IN_GAME_MENU, MAIN_MENU}
         // searching for server deliberately unused as we can just go there immediately
         // once the play button is pressed
-        public  enum PlayerConnectState { SEARCHING_FOR_SERVER, JOINING_SERVER, CREATING_SERVER };
+        public  enum PlayerConnectState { IDLE, SEARCHING_FOR_SERVER, JOINING_SERVER, CREATING_SERVER };
 
         public bool dont_destroy_on_load;
 
@@ -22,57 +22,71 @@ namespace SpaceBattles
         public GameObject main_menu_UI_prefab;
         public GameObject player_centred_UI_prefab;
         public GameObject player_screen_game_UI_prefab;
+        public GameObject ship_select_UI_prefab;
         public Camera fixed_UI_camera_prefab;
         public Camera ship_select_camera_prefab;
+
+        public Vector3 player_centred_UI_offset;
 
         public GameObject game_UI;
         public GameObject in_game_menu_UI;
         public GameObject main_menu_UI;
         public GameObject player_centred_canvas_object;
         public GameObject player_screen_UI_object;
+        public GameObject ship_select_UI_object;
         public PlayerScreenInGameUIManager player_screen_UI_manager;
 
+        private bool UI_objects_instantiated = false;
         private Camera player_UI_camera = null; // for the which UI follows player avatar
         private Camera fixed_UI_camera = null; // UI doesn't move compared to camera
         private Camera ship_select_camera = null; // Camera inhabits a separate "scene"
         private bool in_game_menu_visible = false;
+        private bool ship_select_menu_visible = false;
         private UIState ui_state = UIState.IN_GAME;
         private Canvas player_centred_canvas = null;
         private Canvas player_screen_canvas  = null;
         private MainMenuUIManager main_menu_UI_manager = null;
+        private InGameMenuManager in_game_menu_manager = null;
 
-        // Propagates events from child UI elements upwards to this object,
-        // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
-        public event ButtonMainMenuPlayGame.PlayGameButtonPressEventHandler PlayGameButtonPress
-        {
-            add { main_menu_UI_manager.PlayGameButtonPress += value; }
-            remove { main_menu_UI_manager.PlayGameButtonPress -= value; }
-        }
+        // Events are lower down
 
         void Awake ()
         {
-            //game_UI                    = GameObject.Instantiate(game_UI_prefab);
-            in_game_menu_UI              = GameObject.Instantiate(in_game_menu_UI_prefab);
-            main_menu_UI                 = GameObject.Instantiate(main_menu_UI_prefab);
-            main_menu_UI_manager         = main_menu_UI.GetComponent<MainMenuUIManager>();
-            player_centred_canvas_object = GameObject.Instantiate(player_centred_UI_prefab);
-            player_centred_canvas        = player_centred_canvas_object.GetComponent<Canvas>();
-            player_screen_UI_object      = GameObject.Instantiate(player_screen_game_UI_prefab);
-            player_screen_UI_manager     = player_screen_UI_object.GetComponent<PlayerScreenInGameUIManager>();
-
-            initialiseGameUICameras();
-
-            if (dont_destroy_on_load)
+            if (!UI_objects_instantiated)
             {
-                //Sets this to not be destroyed when reloading scene
-                UnityEngine.Object.DontDestroyOnLoad(gameObject);
-                UnityEngine.Object.DontDestroyOnLoad(player_centred_canvas_object);
-                UnityEngine.Object.DontDestroyOnLoad(player_screen_UI_object);
-                UnityEngine.Object.DontDestroyOnLoad(in_game_menu_UI);
-                UnityEngine.Object.DontDestroyOnLoad(main_menu_UI);
-                UnityEngine.Object.DontDestroyOnLoad(fixed_UI_camera);
-                UnityEngine.Object.DontDestroyOnLoad(ship_select_camera);
-                Debug.Log("objects prevented from being destroyed on load");
+                Debug.Log("UI Manager instantiating UI objects");
+                //game_UI                   = GameObject.Instantiate(game_UI_prefab);
+                in_game_menu_UI             = GameObject.Instantiate(in_game_menu_UI_prefab);
+                in_game_menu_manager        = in_game_menu_UI.GetComponent<InGameMenuManager>();
+                main_menu_UI                = GameObject.Instantiate(main_menu_UI_prefab);
+                main_menu_UI_manager        = main_menu_UI.GetComponent<MainMenuUIManager>();
+                //player_centred_canvas_object = GameObject.Instantiate(player_centred_UI_prefab);
+                //player_centred_canvas        = player_centred_canvas_object.GetComponent<Canvas>();
+                player_screen_UI_object     = GameObject.Instantiate(player_screen_game_UI_prefab);
+                player_screen_UI_manager    = player_screen_UI_object.GetComponent<PlayerScreenInGameUIManager>();
+                ship_select_UI_object       = GameObject.Instantiate(ship_select_UI_prefab);
+
+                // Initialise UI events structure
+                in_game_menu_manager.ExitNetGameButtonPress += exitNetGameButtonPress;
+
+                // Initialise cameras
+                initialiseGameUICameras();
+                hideShipSelectionUI();
+
+                if (dont_destroy_on_load)
+                {
+                    //Sets this to not be destroyed when reloading scene
+                    UnityEngine.Object.DontDestroyOnLoad(gameObject);
+                    UnityEngine.Object.DontDestroyOnLoad(player_centred_canvas_object);
+                    UnityEngine.Object.DontDestroyOnLoad(player_screen_UI_object);
+                    UnityEngine.Object.DontDestroyOnLoad(in_game_menu_UI);
+                    UnityEngine.Object.DontDestroyOnLoad(main_menu_UI);
+                    UnityEngine.Object.DontDestroyOnLoad(ship_select_UI_object);
+                    UnityEngine.Object.DontDestroyOnLoad(fixed_UI_camera);
+                    UnityEngine.Object.DontDestroyOnLoad(ship_select_camera);
+                    Debug.Log("objects prevented from being destroyed on load");
+                }
+                UI_objects_instantiated = true;
             }
         }
 
@@ -85,10 +99,23 @@ namespace SpaceBattles
         {
             if (ui_state == UIState.IN_GAME)
             {
-                if (Input.GetKeyDown("escape"))
+#if UNITY_ANDROID
+                if (Input.GetKeyDown(KeyCode.Escape))
+                {
+                    ExitNetGameInputEvent();
+                }
+
+                if (Input.GetKeyDown(KeyCode.Menu))
                 {
                     toggleInGameMenu();
                 }
+#endif
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+                if (Input.GetButtonDown("menu2"))
+                {
+                    toggleInGameMenu();
+                }
+#endif
 
                 // this can happen during transition
                 // from game to menu (for a frame or two)
@@ -117,9 +144,15 @@ namespace SpaceBattles
                         }
                     }
 
-                    if (Input.GetAxis("Fire") > 0)
+                    if (Input.GetButtonDown("Fire"))
                     {
                         ship_controller.CmdFirePhaser();
+                    }
+
+                    if (Input.GetButtonDown("menu1"))
+                    {
+                        Debug.Log("ship select button pressed");
+                        toggleShipSelectUI();
                     }
                 }
             }
@@ -128,6 +161,7 @@ namespace SpaceBattles
         public void enteringMainMenu ()
         {
             ui_state = UIState.MAIN_MENU;
+            main_menu_UI_manager.setPlayerConnectState(PlayerConnectState.IDLE);
             hideGameUI();
             hideInGameMenu();
             showMainMenu();
@@ -162,18 +196,18 @@ namespace SpaceBattles
                 showInGameMenu();
                 hideGameUI();
             }
-            // regardless
-            in_game_menu_visible = !in_game_menu_visible;
         }
 
         public void showInGameMenu ()
         {
             in_game_menu_UI.SetActive(true);
+            in_game_menu_visible = true;
         }
 
         public void hideInGameMenu ()
         {
             in_game_menu_UI.SetActive(false);
+            in_game_menu_visible = false;
         }
 
         public void showGameUI ()
@@ -201,14 +235,33 @@ namespace SpaceBattles
             main_menu_UI.SetActive(false);
         }
 
+        public void toggleShipSelectUI()
+        {
+            if (ship_select_menu_visible)
+            {
+                hideInGameMenu();
+                hideGameUI();
+                showShipSelectionUI();
+            }
+            else
+            {
+                showGameUI();
+                hideShipSelectionUI();
+            }
+        }
+
         public void showShipSelectionUI ()
         {
-            throw new NotImplementedException();
+            ship_select_UI_object.SetActive(true);
+            ship_select_menu_visible = true;
+            ship_select_camera.gameObject.SetActive(true);
         }
 
         public void hideShipSelectionUI()
         {
-            throw new NotImplementedException();
+            ship_select_UI_object.SetActive(false);
+            ship_select_menu_visible = false;
+            ship_select_camera.gameObject.SetActive(false);
         }
 
         /// <summary>
@@ -274,8 +327,9 @@ namespace SpaceBattles
             }
             this.player_object = player;
             this.ship_controller = player.GetComponent<PlayerShipController>();
-            player_centred_canvas.worldCamera = player_UI_camera;
-            player_centred_canvas_object.transform.SetParent(player_object.transform);
+            //player_centred_canvas.worldCamera = player_UI_camera;
+            //player_centred_canvas_object.transform.SetParent(player_object.transform);
+            //player_centred_canvas_object.transform.localPosition = player_centred_UI_offset;
         }
 
         public void initShipCentredUI ()
@@ -298,6 +352,23 @@ namespace SpaceBattles
         public void setPlayerConnectState (PlayerConnectState new_state)
         {
             main_menu_UI_manager.setPlayerConnectState(new_state);
+        }
+
+        // Propagates events from child UI elements upwards to this object,
+        // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
+        public event ButtonMainMenuPlayGame.PlayGameButtonPressEventHandler PlayGameButtonPress
+        {
+            add { main_menu_UI_manager.PlayGameButtonPress += value; }
+            remove { main_menu_UI_manager.PlayGameButtonPress -= value; }
+        }
+
+        public delegate void exitNetworkGameInputEventHandler();
+        public event exitNetworkGameInputEventHandler ExitNetGameInputEvent;
+
+        // event handler for in_game_menu_UI button press
+        private void exitNetGameButtonPress ()
+        {
+            ExitNetGameInputEvent();
         }
     }
 }
