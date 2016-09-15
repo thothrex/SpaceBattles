@@ -1,30 +1,38 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace SpaceBattles
 {
-    public class Projectile : MonoBehaviour
+    public class Projectile : NetworkBehaviour
     {
+        /// <summary>
+        /// Projectile hits will be server-only in order to simplify the logical flow
+        /// </summary>
+        /// <param name="collision"></param>
         void OnCollisionEnter(Collision collision)
         {
-            var hit = collision.gameObject;
-            // projectiles pass through each other
-            var hit_projectile = hit.GetComponent<Projectile>();
-            if (hit_projectile != null)
+            if (hasAuthority)
             {
-                Debug.Log("Projectile x projectile collision registered");
-            }
-            else
-            {
-                Debug.Log("Projectile hit registered");
-                var hitPlayer = hit.GetComponent<PlayerShipController>();
-                if (hitPlayer != null)
+                var hit = collision.gameObject;
+                // projectiles pass through each other
+                var hit_projectile = hit.GetComponent<Projectile>();
+                if (hit_projectile != null)
                 {
-                    Debug.Log("Player hit registered");
-                    hitPlayer.onProjectileHit();
+                    Debug.Log("Projectile x projectile collision registered");
                 }
-                Destroy(this.gameObject);
-            }            
+                else
+                {
+                    Debug.Log("Projectile hit registered");
+                    var hitPlayer = hit.GetComponent<PlayerShipController>();
+                    if (hitPlayer != null)
+                    {
+                        Debug.Log("Player hit registered");
+                        hitPlayer.onProjectileHit();
+                    }
+                    Destroy(this.gameObject);
+                }
+            }      
         }
     }
 }

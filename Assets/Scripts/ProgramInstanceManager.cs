@@ -10,6 +10,8 @@ namespace SpaceBattles
     public class ProgramInstanceManager : MonoBehaviour
     {
         // Constants
+        public static readonly String NO_IPC_ERRMSG
+            = "Player object does not have an Incorporeal Player Controller attached.";
         public static readonly String SOLAR_SYSTEM_LAYER_NAME = "PlanetsMoonsAndStars";
         public static readonly String NEAREST_PLANET_LAYER_NAME = "NearestPlanetScale";
         public static readonly double ORBIT_DISTANCE_IN_METRES = 7000000.0; // 7,000km
@@ -36,10 +38,10 @@ namespace SpaceBattles
         public GameObject saturn_prefab;
         public GameObject uranus_prefab;
         public GameObject neptune_prefab;
-
         public GameObject UI_manager_prefab;
         public GameObject UI_manager_obj;
-        private UIManager UI_manager;
+        
+        // Created by the editor
         public PassthroughNetworkManager network_manager;
         public PassthroughNetworkDiscovery network_discoverer;
         
@@ -47,22 +49,39 @@ namespace SpaceBattles
         public GameObject basic_phaser_bolt_prefab;
 
         // Code-defined components
-        private static ProgramInstanceManager instance = null;
-        private GameObject ship_object = null;
+        
         public OrbitingBodyBackgroundGameObject current_nearest_orbiting_body;
-        private List<GameObject> orbital_bodies;
-        public InertialPlayerCameraController player_camera;
-        public LargeScaleCamera nearest_planet_camera;
-        public LargeScaleCamera solar_system_camera;
-        public PlayerShipController ship_controller;
-        private PlayerIncorporealObjectController player_controller;
+        public InertialPlayerCameraController player_camera = null;
+        public LargeScaleCamera nearest_planet_camera = null;
+        public LargeScaleCamera solar_system_camera = null;
         public Light nearest_planet_sunlight;
+
+        private static ProgramInstanceManager instance = null;
+        private UIManager UI_manager;
+        private IncorporealPlayerController player_controller;
+        private List<GameObject> orbital_bodies;
         private ClientState client_state = ClientState.MAIN_MENU;
         private bool warping = false;
         private bool looking_for_game = false;
         private bool found_game = false;
-
-        // need this to avoid garbage collection!
+        // TODO: Actually let the player choose their ship class
+        private SpaceShipClass player_ship_class_choice_hidden_value;
+        private SpaceShipClass player_ship_class_choice
+        {
+            get
+            {
+                return player_ship_class_choice_hidden_value;
+            }
+            set
+            {
+                player_ship_class_choice_hidden_value = value;
+                if (player_controller != null)
+                {
+                    player_controller.setCurrentShipChoice(value);
+                }
+            }
+        }
+        // might need this to avoid garbage collection (maybe I'm just dumb)
         private NetworkClient net_client = null;
 
         //Awake is always called before any Start functions
@@ -82,6 +101,8 @@ namespace SpaceBattles
 
                 UI_manager_obj = GameObject.Instantiate(UI_manager_prefab);
                 UI_manager = UI_manager_obj.GetComponent<UIManager>();
+                // TODO: Let player choose ship class
+                player_ship_class_choice = SpaceShipClass.FIGHTER;
             }
             else if (instance != this) // If instance already exists and it's not this:
             {
@@ -96,9 +117,12 @@ namespace SpaceBattles
             // Register event handlers
             UI_manager.PlayGameButtonPress += startPlayingGame;
             UI_manager.ExitNetGameInputEvent += exitNetworkGame;
+
             network_discoverer.ServerDetected
                 += new PassthroughNetworkDiscovery.ServerDetectedEventHandler(OnServerDetected);
             network_discoverer.Initialize();
+
+            network_manager.LocalPlayerStarted += LocalPlayerControllerCreatedHandler;
         }
 
         //Initializes the game for each level.
@@ -112,11 +136,6 @@ namespace SpaceBattles
         {
         }
 
-        public void localPlayerStarted (GameObject player_object)
-        {
-            this.ship_object = player_object;
-        }
-
         /// <summary>
         /// When the incorporeal player controller is created by the server
         /// (the main controller for networked interaction)
@@ -124,9 +143,9 @@ namespace SpaceBattles
         /// N.B. Slightly hacky edge-case - I'm leaving deletion of these objects to the scene change
         /// (from online to offline scene)
         /// </summary>
-        public void PlayerControllerCreatedHandler (PlayerIncorporealObjectController player_controller)
+        public void LocalPlayerControllerCreatedHandler (IncorporealPlayerController IPC)
         {
-            Debug.Log("Player object created");
+            Debug.Log("Local player object created");
 
             // Generate local scene (including play space entities)
             // i.e. there are dependencies from here
@@ -136,33 +155,44 @@ namespace SpaceBattles
             // TODO: replace this with a query to server about what planet we are near
             current_nearest_orbiting_body = getPlanet(OrbitingBodyMathematics.ORBITING_BODY.EARTH);
             // this is a Network player controller, not a SpaceBattles player controller!
-            this.player_controller = player_controller;            
+            this.player_controller = IPC;
+
+            player_controller.setCurrentShipChoice(player_ship_class_choice);
+
+            // Hook up spaceship spawn event
+            player_controller.LocalPlayerShipSpawned += localPlayerShipCreatedHandler;
+            // as this is the local player,
+            // there is no need to check for existing ship spawns
+            // (they would have been observed directly through the RPC in the IPC)
+            player_controller.LocalPlayerShipHealthChanged += UI_manager.setCurrentPlayerHealth;
 
             // Camera setup
-            InstantiateCameras(player_controller.transform);
+            if (nearest_planet_camera == null && player_camera == null && solar_system_camera == null)
+            {
+                InstantiateCameras(player_controller.transform);
+                setCamerasFollowTransform(player_controller.transform);
+            }
             warpTo(current_nearest_orbiting_body);
             UI_manager.setPlayerCamera(player_camera.GetComponent<Camera>());
+            // Player controller should be set after the camera
+            // because the UI manager does some setup afterwards
+            UI_manager.setPlayerController(player_controller);
             UI_manager.enteringMultiplayerGame();
+
+            player_controller.CmdSpawnStartingSpaceShip(player_ship_class_choice);
         }
 
-        public void playerShipCreatedHandler (PlayerShipController ship_controller)
+        private void localPlayerShipCreatedHandler (PlayerShipController ship_controller)
         {
-            this.ship_controller = ship_controller;
-
-            UI_manager.setPlayerShip(ship_controller.gameObject);
             UI_manager.setCurrentPlayerMaxHealth(PlayerShipController.MAX_HEALTH);
             UI_manager.setCurrentPlayerHealth(PlayerShipController.MAX_HEALTH);
 
             setCamerasFollowTransform(ship_controller.transform);
-
-            // TODO: This is a bit dirty making them both talk to each other
-            //       one should probably be considered authoratative over the other
-            //       or communicate through more neutral events (preferable option)
-            ship_controller.UI_manager = UI_manager;
         }
 
-        void OnDisconnectedFromServer(NetworkDisconnection info)
+        public void OnDisconnectedFromServer(NetworkDisconnection info)
         {
+            player_controller = null;
             UI_manager.enteringMainMenu();
             if (Network.isServer)
             {
@@ -186,13 +216,6 @@ namespace SpaceBattles
         {
             throw new NotImplementedException("setNearestPlanet disabled until it's actually used");
             //current_nearest_orbiting_body = nearest_planet;
-        }
-
-        private OrbitingBodyBackgroundGameObject getPlanet(OrbitingBodyMathematics.ORBITING_BODY orbiting_body)
-        {
-            GameObject body_obj = orbital_bodies[(int)orbiting_body];
-            var body_background_obj = body_obj.GetComponent<OrbitingBodyBackgroundGameObject>();
-            return body_background_obj;
         }
 
         public void warpTo(OrbitingBodyMathematics.ORBITING_BODY orbiting_body)
@@ -248,6 +271,13 @@ namespace SpaceBattles
             current_nearest_orbiting_body = warp_target;
 
             warping = false;
+        }
+
+        private OrbitingBodyBackgroundGameObject getPlanet(OrbitingBodyMathematics.ORBITING_BODY orbiting_body)
+        {
+            GameObject body_obj = orbital_bodies[(int)orbiting_body];
+            var body_background_obj = body_obj.GetComponent<OrbitingBodyBackgroundGameObject>();
+            return body_background_obj;
         }
 
         private void InstantiateSunlight()
@@ -361,6 +391,9 @@ namespace SpaceBattles
             network_discoverer.StopBroadcast();
             network_manager.networkAddress = fromAddress;
             net_client = network_manager.StartClient();
+            ClientScene.AddPlayer(0); // this number is scoped to the connection
+                                      // i.e. if I only ever want one player
+                                      // per connection, this is fine
         }
 
         private void exitNetworkGame ()
@@ -369,6 +402,10 @@ namespace SpaceBattles
             // as the documentation is very slim
             Debug.Log("Stopping game");
             network_manager.StopHost();
+            if (network_discoverer.running)
+            {
+                network_discoverer.StopBroadcast();
+            }
             UI_manager.enteringMainMenu();
         }
 
@@ -381,6 +418,24 @@ namespace SpaceBattles
             player_camera.followTransform         = follow_transform;
             nearest_planet_camera.followTransform = follow_transform;
             solar_system_camera.followTransform   = follow_transform;
+        }
+
+        private void localPlayerShipDestroyedHandler ()
+        {
+            if (player_controller != null)
+            {
+                setCamerasFollowTransform(player_controller.transform);
+            }
+        }
+
+        private void registerHostSpawnHandlers ()
+        {
+
+        }
+
+        private void deregisterHostSpawnHandlers ()
+        {
+
         }
     }
 }

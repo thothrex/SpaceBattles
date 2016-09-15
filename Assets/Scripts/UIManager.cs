@@ -14,8 +14,7 @@ namespace SpaceBattles
 
         public bool dont_destroy_on_load;
 
-        public GameObject player_object;
-        public PlayerShipController ship_controller;
+        public IncorporealPlayerController player_controller;
 
         public GameObject game_UI_prefab;
         public GameObject in_game_menu_UI_prefab;
@@ -119,34 +118,34 @@ namespace SpaceBattles
 
                 // this can happen during transition
                 // from game to menu (for a frame or two)
-                if (ship_controller != null)
+                if (player_controller != null)
                 {
                     if (Input.GetAxis("Acceleration") > 0)
                     {
-                        ship_controller.accelerate(new Vector3(0, 0, 1));
+                        player_controller.accelerateShip(new Vector3(0, 0, 1));
                     }
                     else if (Input.GetAxis("Acceleration") == 0)
                     {
-                        ship_controller.brake();
+                        player_controller.brakeShip();
                     }
 
                     foreach (Touch touch in Input.touches)
                     {
                         if (touch.phase == TouchPhase.Began)
                         {
-                            ship_controller.accelerate(new Vector3(0, 0, 1));
+                            player_controller.accelerateShip(new Vector3(0, 0, 1));
                             break;
                         }
                         else if (touch.phase == TouchPhase.Ended)
                         {
-                            ship_controller.brake();
+                            player_controller.brakeShip();
                             break;
                         }
                     }
 
                     if (Input.GetButtonDown("Fire"))
                     {
-                        ship_controller.CmdFirePhaser();
+                        player_controller.firePrimaryWeapon();
                     }
 
                     if (Input.GetButtonDown("menu1"))
@@ -319,14 +318,13 @@ namespace SpaceBattles
         private const string CAMERA_NOT_SET_EXCEPTION_MESSAGE
             = "attempting to setPlayerShip without having set the camera first";
 
-        public void setPlayerShip (GameObject player)
+        public void setPlayerController (IncorporealPlayerController player_controller)
         {
             if (player_UI_camera == null)
             {
                 throw new InvalidOperationException(CAMERA_NOT_SET_EXCEPTION_MESSAGE);
             }
-            this.player_object = player;
-            this.ship_controller = player.GetComponent<PlayerShipController>();
+            this.player_controller = player_controller;
             //player_centred_canvas.worldCamera = player_UI_camera;
             //player_centred_canvas_object.transform.SetParent(player_object.transform);
             //player_centred_canvas_object.transform.localPosition = player_centred_UI_offset;
@@ -341,6 +339,7 @@ namespace SpaceBattles
 
         public void setCurrentPlayerHealth (double new_value)
         {
+            Debug.Log("UI Manager updating local player health");
             player_screen_UI_manager.localPlayerSetCurrentHealth(new_value);
         }
 
@@ -353,6 +352,8 @@ namespace SpaceBattles
         {
             main_menu_UI_manager.setPlayerConnectState(new_state);
         }
+
+        // --- EVENTS ---
 
         // Propagates events from child UI elements upwards to this object,
         // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
