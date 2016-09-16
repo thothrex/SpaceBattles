@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -28,7 +29,6 @@ namespace SpaceBattles
 
         // The following are set in the editor,
         // so should be left unassigned here
-        public GameObject PrefabSpaceShipFighter;
         public GameObject explosion_prefab;
 
         private bool warping = false;
@@ -42,6 +42,7 @@ namespace SpaceBattles
         private SpaceShipClass current_ship_choice = SpaceShipClass.NONE;
         // NB SyncVars ALWAYS sync from server->client,
         //    even for client-authoritative objects (such as this)
+        private SpaceShipClassManager spaceship_class_manager = null;
         [SyncVar]
         private GameObject current_spaceship = null;
         [SyncVar]
@@ -128,6 +129,11 @@ namespace SpaceBattles
             {
                 LocalPlayerStarted(this);
             }
+        }
+
+        public void initialiseShipClassManager (SpaceShipClassManager ss_manager)
+        {
+            spaceship_class_manager = ss_manager;
         }
 
         /// <summary>
@@ -250,6 +256,9 @@ namespace SpaceBattles
             ship_controller = spawned_spaceship.GetComponent<PlayerShipController>();
             ship_controller.EventDeath += playerBodyKilled;
             ship_controller.EventHealthChanged += shipHealthChanged;
+            ship_controller.initialiseLaserSpawnLocalLocation(
+                spaceship_class_manager.getLaserBarrelOffset(current_ship_choice)
+            );
         }
 
         private IEnumerator respawnShipWithDelay(SpaceShipClass new_ship_class)
@@ -267,13 +276,8 @@ namespace SpaceBattles
         [Server]
         private void spawnSpaceShip(SpaceShipClass ss_type)
         {
-            GameObject spaceship_prefab = null;
-            switch (ss_type)
-            {
-                case SpaceShipClass.FIGHTER:
-                    spaceship_prefab = PrefabSpaceShipFighter;
-                    break;
-            }
+            GameObject spaceship_prefab
+                = spaceship_class_manager.getSpaceShipPrefab(ss_type);
 
             // Should not remain null unless Unity.Instantiate can return null
             GameObject server_spaceship = null;

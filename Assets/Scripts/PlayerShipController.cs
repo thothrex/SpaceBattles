@@ -21,6 +21,10 @@ namespace SpaceBattles
         public float rotation_power;
         public GameObject phaser_bolt_prefab;
         private const float PHASER_BOLT_FORCE = 300.0f;
+        private const string LASER_SPAWN_LOCATION_UNINITIALISED_ERRMSG
+            = "The Player Ship Controller's spawn location for laser bolts "
+            + "has not been set yet.\nIt needs to be initialised with "
+            + "initialiseLaserSpawnLocalLocation before it can be read.";
         private const string SSCLASS_NULL_ERRMSG
             = "setSpaceshipClass should not set the new class to NONE (used as an analogue to null)";
         private string  SSCLASS_ALREADY_SET_ERRMSG
@@ -51,13 +55,6 @@ namespace SpaceBattles
 
         public void Awake ()
         {
-            // Set projectile spawn location
-            Vector3 ship_extents = GetComponent<Renderer>().bounds.extents;
-            // spawn projectiles at the front of the ship plus 10% of the ship length
-            // (10% of ship length = 20% of ship extent as extent is from centre)
-            float projectile_spawn_distance = ship_extents.y + ship_extents.y * 0.2f;
-            local_projectile_spawn_location = new Vector3(0, projectile_spawn_distance, 0);
-
             // init health
             health = MAX_HEALTH;
         }
@@ -69,6 +66,12 @@ namespace SpaceBattles
         override
         public void OnStartAuthority()
         {
+        }
+
+
+        public void initialiseLaserSpawnLocalLocation (Vector3 spawn_location)
+        {
+            local_projectile_spawn_location = spawn_location;
         }
 
         public void Update ()
@@ -162,6 +165,12 @@ namespace SpaceBattles
 
         public Vector3 get_projectile_spawn_location()
         {
+            if (local_projectile_spawn_location == null)
+            {
+                throw new InvalidOperationException(
+                    LASER_SPAWN_LOCATION_UNINITIALISED_ERRMSG
+                );
+            }
             return transform.TransformPoint(local_projectile_spawn_location);
         }
 

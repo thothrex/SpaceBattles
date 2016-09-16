@@ -44,6 +44,7 @@ namespace SpaceBattles
         // Created by the editor
         public PassthroughNetworkManager network_manager;
         public PassthroughNetworkDiscovery network_discoverer;
+        public SpaceShipClassManager spaceship_class_manager;
         
         public bool dont_destroy_on_load;
         public GameObject basic_phaser_bolt_prefab;
@@ -102,7 +103,7 @@ namespace SpaceBattles
                 UI_manager_obj = GameObject.Instantiate(UI_manager_prefab);
                 UI_manager = UI_manager_obj.GetComponent<UIManager>();
                 // TODO: Let player choose ship class
-                player_ship_class_choice = SpaceShipClass.FIGHTER;
+                player_ship_class_choice = SpaceShipClass.CRUISER;
             }
             else if (instance != this) // If instance already exists and it's not this:
             {
@@ -158,6 +159,7 @@ namespace SpaceBattles
             this.player_controller = IPC;
 
             player_controller.setCurrentShipChoice(player_ship_class_choice);
+            player_controller.initialiseShipClassManager(spaceship_class_manager);
 
             // Hook up spaceship spawn event
             player_controller.LocalPlayerShipSpawned += localPlayerShipCreatedHandler;
@@ -328,9 +330,10 @@ namespace SpaceBattles
             solar_system_camera = Instantiate(solar_system_camera_prefab);
             solar_system_camera.using_preset_scale = LargeScaleCamera.PRESET_SCALE.SOLAR_SYSTEM;
 
-            
+
             // instantiate with default values (arbitrary)
-            player_camera.offset = new Vector3(0, 7, -30);
+            player_camera.offset
+                = spaceship_class_manager.getCameraOffset(player_ship_class_choice);
             setCamerasFollowTransform(initial_follow_transform);
 
             //TODO: move this activation somewhere else(?)
