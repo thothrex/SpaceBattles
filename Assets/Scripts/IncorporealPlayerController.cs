@@ -260,11 +260,11 @@ namespace SpaceBattles
 
         /// <summary>
         /// Helper function which spawns a ship.
-        /// (only called on the server, hopefully)
         /// 
         /// Needs to be invoked via a [Command] from the authoritative client.
         /// </summary>
         /// <param name="ss_type"></param>
+        [Server]
         private void spawnSpaceShip(SpaceShipClass ss_type)
         {
             GameObject spaceship_prefab = null;
@@ -283,6 +283,7 @@ namespace SpaceBattles
                 // current_spaceship was just despawned, not destroyed,
                 // so it simply needs to be respawned
                 server_spaceship = current_spaceship;
+                server_spaceship.SetActive(true);
             }
             else
             {
@@ -307,20 +308,22 @@ namespace SpaceBattles
             ship_controller.EventDeath += shipDestroyedServerAction;
         }
         /// <summary>
-        /// Hopefully only called server-side
-        /// (no way to check)
-        /// Calls an RPC so should only function server-side
         /// </summary>
         /// <param name="death_location">Ignored for this function</param>
+        [Server]
         private void shipDestroyedServerAction(Vector3 death_location)
         {
+            Debug.Log("Ship destroyed - taking server action");
             Vector3 respawn_location = chooseSpawnLocation();
-            destroyShipWithDelay();
+            StartCoroutine(destroyShipWithDelayCoroutine());
         }
 
-        private IEnumerator destroyShipWithDelay()
+        [Server]
+        private IEnumerator destroyShipWithDelayCoroutine()
         {
             yield return new WaitForSeconds(SPACESHIP_DESTROY_DELAY);
+            Debug.Log("Unspawning spaceship");
+            current_spaceship.SetActive(false);
             NetworkServer.UnSpawn(current_spaceship);
         }
 
@@ -388,7 +391,7 @@ namespace SpaceBattles
                 Debug.Log("Our player is dead!");
                 this.transform.position = death_location;
                 //LocalShipDestroyed(); // TODO: Listen to this event
-                CmdRequestRespawn(current_ship_choice);
+                //CmdRequestRespawn(current_ship_choice);
             }
         }
 
