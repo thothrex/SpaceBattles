@@ -46,6 +46,7 @@ namespace SpaceBattles
         private Canvas player_screen_canvas  = null;
         private MainMenuUIManager main_menu_UI_manager = null;
         private InGameMenuManager in_game_menu_manager = null;
+        private InputAdapterModule input_adapter = null;
 
         // Events are lower down
 
@@ -53,6 +54,15 @@ namespace SpaceBattles
         {
             if (!UI_objects_instantiated)
             {
+                // instantiate pure code objects
+#if UNITY_ANDROID
+                input_adapter = new AndroidInputManager();
+#endif
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+                input_adapter = new PCInputManager();
+#endif
+
+                // UI objects
                 Debug.Log("UI Manager instantiating UI objects");
                 //game_UI                   = GameObject.Instantiate(game_UI_prefab);
                 in_game_menu_UI             = GameObject.Instantiate(in_game_menu_UI_prefab);
@@ -98,57 +108,35 @@ namespace SpaceBattles
         {
             if (ui_state == UIState.IN_GAME)
             {
-#if UNITY_ANDROID
-                if (Input.GetKeyDown(KeyCode.Escape))
+                if (input_adapter.exitNetGameInput())
                 {
                     ExitNetGameInputEvent();
                 }
 
-                if (Input.GetKeyDown(KeyCode.Menu))
+                if (input_adapter.inGameMenuOpenInput())
                 {
                     toggleInGameMenu();
                 }
-#endif
-#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-                if (Input.GetButtonDown("menu2"))
-                {
-                    toggleInGameMenu();
-                }
-#endif
 
                 // this can happen during transition
                 // from game to menu (for a frame or two)
                 if (player_controller != null)
                 {
-                    if (Input.GetAxis("Acceleration") > 0)
+                    if (input_adapter.accelerateInput())
                     {
                         player_controller.accelerateShip(new Vector3(0, 0, 1));
                     }
-                    else if (Input.GetAxis("Acceleration") == 0)
+                    else if (input_adapter.brakeInput())
                     {
                         player_controller.brakeShip();
                     }
 
-                    foreach (Touch touch in Input.touches)
-                    {
-                        if (touch.phase == TouchPhase.Began)
-                        {
-                            player_controller.accelerateShip(new Vector3(0, 0, 1));
-                            break;
-                        }
-                        else if (touch.phase == TouchPhase.Ended)
-                        {
-                            player_controller.brakeShip();
-                            break;
-                        }
-                    }
-
-                    if (Input.GetButtonDown("Fire"))
+                    if (input_adapter.fireInput())
                     {
                         player_controller.firePrimaryWeapon();
                     }
 
-                    if (Input.GetButtonDown("menu1"))
+                    if (input_adapter.shipSelectMenuOpenInput())
                     {
                         Debug.Log("ship select button pressed");
                         toggleShipSelectUI();
