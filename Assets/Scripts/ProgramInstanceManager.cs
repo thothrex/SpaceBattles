@@ -195,7 +195,7 @@ namespace SpaceBattles
         public void OnDisconnectedFromServer(NetworkDisconnection info)
         {
             player_controller = null;
-            UI_manager.enteringMainMenu();
+            UI_manager.enteringMainMenuRoot();
             if (Network.isServer)
             {
                 Debug.Log("Local server connection disconnected");
@@ -409,7 +409,7 @@ namespace SpaceBattles
             {
                 network_discoverer.StopBroadcast();
             }
-            UI_manager.enteringMainMenu();
+            UI_manager.enteringMainMenuRoot();
         }
 
         private void setCamerasFollowTransform (Transform follow_transform)

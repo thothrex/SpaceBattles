@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace SpaceBattles
 {
-    public class PlayerScreenInGameUIManager : MonoBehaviour
+    public class GameplayUIManager : MonoBehaviour
     {
         public GameObject local_player_health_bar_object;
         private UIBarManager local_player_health_bar;
