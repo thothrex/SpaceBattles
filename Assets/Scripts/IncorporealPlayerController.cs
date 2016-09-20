@@ -40,9 +40,10 @@ namespace SpaceBattles
         private NetworkStartPosition[] spawnPoints;
         // Write-only variable (written by the pim from UI manager etc.)
         private SpaceShipClass current_ship_choice = SpaceShipClass.NONE;
+        private SpaceShipClassManager spaceship_class_manager = null;
+        private OptionalEventModule oem = null;
         // NB SyncVars ALWAYS sync from server->client,
         //    even for client-authoritative objects (such as this)
-        private SpaceShipClassManager spaceship_class_manager = null;
         [SyncVar]
         private GameObject current_spaceship = null;
         [SyncVar]
@@ -99,8 +100,9 @@ namespace SpaceBattles
         public void OnStartClient ()
         {
             initialiseShipSpawnStatus();
-            // TODO: Why is this done here?
-            setSpawnLocations();
+            setSpawnLocations(); // TODO: Why is this done here?
+            oem = new OptionalEventModule();
+            oem.allow_no_event_listeners = false;
         }
 
         /// <summary>
@@ -113,7 +115,11 @@ namespace SpaceBattles
             Debug.Log("IPC authority started");
             if (setup_complete)
             {
-                LocalPlayerStarted(this);
+                LocalPlayerStartHandler handler = LocalPlayerStarted;
+                if (oem.shouldTriggerEvent(handler))
+                {
+                    handler(this);
+                }
             }
         }
 
@@ -127,7 +133,11 @@ namespace SpaceBattles
             setup_complete = true;
             if (hasAuthority)
             {
-                LocalPlayerStarted(this);
+                LocalPlayerStartHandler handler = LocalPlayerStarted;
+                if (oem.shouldTriggerEvent(handler))
+                {
+                    handler(this);
+                }
             }
         }
 
@@ -240,13 +250,11 @@ namespace SpaceBattles
                         SHIP_CONTROLLER_NOT_SET_ERRMSG
                     );
                 }
-                if (LocalPlayerShipSpawned == null)
+                ShipSpawnedHandler handler = LocalPlayerShipSpawned;
+                if (oem.shouldTriggerEvent(handler))
                 {
-                    throw new InvalidOperationException(
-                        LOCAL_SHIP_SPAWN_NO_LISTENERS_ERRMSG
-                    );
+                    handler(ship_controller);
                 }
-                LocalPlayerShipSpawned(ship_controller);
             }
         }
 
@@ -412,12 +420,16 @@ namespace SpaceBattles
             Debug.Log("Incorporeal controller recceived event from ship controller");
             if (hasAuthority)
             {
-                LocalPlayerShipHealthChanged(new_health);
-                Debug.Log("Incorporeal controller propagated event");
+                ShipHealthChangeHandler handler = LocalPlayerShipHealthChanged;
+                if (oem.shouldTriggerEvent(handler))
+                {
+                    handler(new_health);
+                    Debug.Log("Incorporeal controller propagated event");
+                }
             }
             else
             {
-                Debug.Log("ship health changed for a non-player ship");
+                Debug.Log("Ship health changed for a non-player ship");
             }
         }
     }

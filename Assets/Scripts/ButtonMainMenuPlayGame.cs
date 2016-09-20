@@ -8,16 +8,17 @@ namespace SpaceBattles
 {
     public class ButtonMainMenuPlayGame : MonoBehaviour
     {
-        public delegate void PlayGameButtonPressEventHandler();
-        public event PlayGameButtonPressEventHandler PlayGameButtonPress;
-
         public List<GameObject> button_states;
         private int button_state = 0;
+        private OptionalEventModule oem = new OptionalEventModule();
+
+        public event PlayGameButtonPressEventHandler PlayGameButtonPress;
 
         void Start()
         {
             Button b = gameObject.GetComponent<Button>();
             b.onClick.AddListener(buttonPress);
+            oem.allow_no_event_listeners = false;
         }
 
         public void buttonPress()
@@ -27,8 +28,8 @@ namespace SpaceBattles
                 // trigger public event
                 // if there are no listeners we should not trigger the event
                 // due to general c# rules, as it causes an exception
-                PlayGameButtonPressEventHandler null_check = PlayGameButtonPress;
-                if (null_check != null)
+                PlayGameButtonPressEventHandler eventTrigger = PlayGameButtonPress;
+                if (oem.shouldTriggerEvent(eventTrigger))
                 {
                     PlayGameButtonPress();
                 }

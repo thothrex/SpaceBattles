@@ -8,18 +8,8 @@ namespace SpaceBattles
 {
     public class PlayerShipController : NetworkBehaviour
     {
+        // -- Constant Fields --
         public const double MAX_HEALTH = 10.0;
-
-        public delegate void LocalPlayerStartHandler();
-        public event LocalPlayerStartHandler StartLocalPlayer;
-
-        // The following are set in the editor,
-        // so should be left unassigned here
-        public UIManager UI_manager;
-        public float max_speed;
-        public float engine_power;
-        public float rotation_power;
-        public GameObject phaser_bolt_prefab;
         private const float PHASER_BOLT_FORCE = 300.0f;
         private const string LASER_SPAWN_LOCATION_UNINITIALISED_ERRMSG
             = "The Player Ship Controller's spawn location for laser bolts "
@@ -27,7 +17,39 @@ namespace SpaceBattles
             + "initialiseLaserSpawnLocalLocation before it can be read.";
         private const string SSCLASS_NULL_ERRMSG
             = "setSpaceshipClass should not set the new class to NONE (used as an analogue to null)";
-        private string  SSCLASS_ALREADY_SET_ERRMSG
+
+        // -- (Variable) Fields --
+        // The following are set in the editor,
+        // so should be left unassigned here
+        public UIManager UI_manager;
+        public float max_speed;
+        public float engine_power;
+        public float rotation_power;
+        public GameObject phaser_bolt_prefab;
+
+        private Vector3 local_projectile_spawn_location;
+        private Vector3 acceleration_direction; // in LOCAL coordinates
+        private bool accelerating = false;
+        private bool braking = false;
+        private bool warping = false;
+        private OrbitingBodyBackgroundGameObject current_nearest_orbiting_body;
+        private SpaceShipClass current_spaceship_class = SpaceShipClass.NONE;
+        private OptionalEventModule oem = null;
+        [SyncVar] private double health;
+
+        // -- Delegates --
+        public delegate void LocalPlayerStartHandler();
+        public delegate void HealthChangeHandler(double new_health);
+        public delegate void DeathHandler(Vector3 death_location);
+
+        // -- Events --
+        public event LocalPlayerStartHandler StartLocalPlayer;
+        [SyncEvent] public event HealthChangeHandler EventHealthChanged;
+        [SyncEvent] public event DeathHandler EventDeath;
+
+        // -- Enums --
+        // -- Properties --
+        private string SSCLASS_ALREADY_SET_ERRMSG
         {
             get
             {
@@ -36,51 +58,28 @@ namespace SpaceBattles
                  + current_spaceship_class.ToString();
             }
         }
-        private Vector3 local_projectile_spawn_location;
-        private Vector3 acceleration_direction; // in LOCAL coordinates
-        private bool accelerating = false;
-        private bool braking = false;
-        private bool warping = false;
-        private OrbitingBodyBackgroundGameObject current_nearest_orbiting_body;
-        private SpaceShipClass current_spaceship_class = SpaceShipClass.NONE;
-        [SyncVar]
-        private double health;
 
-        public delegate void HealthChangeHandler(double new_health);
-        [SyncEvent]
-        public event HealthChangeHandler EventHealthChanged;
-        public delegate void DeathHandler(Vector3 death_location);
-        [SyncEvent]
-        public event DeathHandler EventDeath;
-
+        // -- Methods --
         public void Awake ()
         {
             // init health
             health = MAX_HEALTH;
         }
 
-        public void Start ()
-        {
-        }
-
         override
-        public void OnStartAuthority()
+        public void OnStartClient ()
         {
+            oem = new OptionalEventModule();
+            oem.allow_no_event_listeners = false;
         }
-
-
+        
         public void initialiseLaserSpawnLocalLocation (Vector3 spawn_location)
         {
             local_projectile_spawn_location = spawn_location;
         }
 
-        public void Update ()
-        {
-            
-        }
-
         // updates for phsyics
-        void FixedUpdate()
+        public void FixedUpdate()
         {
             if (!hasAuthority)
                 return;
@@ -127,40 +126,6 @@ namespace SpaceBattles
         public double getHealth ()
         {
             return health;
-        }
-
-        /// <summary>
-        /// This should only be called on the server,
-        /// due to the logic in the Projectile class's method OnCollisionEnter().
-        /// 
-        /// The result is propagated to servers via the SyncEvent
-        /// EventHealthChanged(int new_health);
-        /// </summary>
-        /// <param name="amount"></param>
-        private void takeDamage (double amount)
-        {
-            if (amount >= health)
-            {
-                health = 0;
-                killThisUnit();
-            }
-            else
-            {
-                health -= amount;
-                EventHealthChanged(health);
-            }
-        }
-
-        private void killThisUnit ()
-        {
-            Debug.Log("Player is dead!");
-            if (transform.position == null)
-            {
-                throw new InvalidOperationException(
-                    "For some reason the player's position is null"
-                );
-            }
-            EventDeath(transform.position);
         }
 
         public Vector3 get_projectile_spawn_location()
@@ -238,6 +203,46 @@ namespace SpaceBattles
                 throw new InvalidOperationException(
                     SSCLASS_ALREADY_SET_ERRMSG
                 );
+            }
+        }
+
+        /// <summary>
+        /// The result is propagated via the SyncEvent
+        /// EventHealthChanged(int new_health);
+        /// </summary>
+        /// <param name="amount"></param>
+        [Server]
+        private void takeDamage(double amount)
+        {
+            if (amount >= health)
+            {
+                health = 0;
+                killThisUnit();
+            }
+            else
+            {
+                health -= amount;
+                HealthChangeHandler handler = EventHealthChanged;
+                if (oem.shouldTriggerEvent(handler))
+                {
+                    handler(health);
+                }
+            }
+        }
+
+        private void killThisUnit()
+        {
+            Debug.Log("Player is dead!");
+            if (transform.position == null)
+            {
+                throw new InvalidOperationException(
+                    "For some reason the player's position is null"
+                );
+            }
+            DeathHandler handler = EventDeath;
+            if (oem.shouldTriggerEvent(handler))
+            {
+                handler(transform.position);
             }
         }
     }

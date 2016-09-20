@@ -60,7 +60,7 @@ namespace SpaceBattles
         public event exitNetworkGameInputEventHandler ExitNetGameInputEvent;
         // Propagates events from child UI elements upwards to this object,
         // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
-        public event ButtonMainMenuPlayGame.PlayGameButtonPressEventHandler PlayGameButtonPress
+        public event PlayGameButtonPressEventHandler PlayGameButtonPress
         {
             add { main_menu_UI_manager.PlayGameButtonPress += value; }
             remove { main_menu_UI_manager.PlayGameButtonPress -= value; }

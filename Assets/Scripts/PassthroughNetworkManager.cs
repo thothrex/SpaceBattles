@@ -25,6 +25,7 @@ namespace SpaceBattles
         /// IT FUCKING OVERWRITES CUSTOM SPAWN HANDLERS
         /// </summary>
         public GameObject player_prefab;
+        private OptionalEventModule oem;
 
         // Delegates
         public delegate void LocalPlayerStartHandler(IncorporealPlayerController IPC);
@@ -39,6 +40,8 @@ namespace SpaceBattles
             ClientScene.RegisterPrefab(player_prefab,
                                        playerControllerSpawnHandler,
                                        playerControllerDespawnHandler);
+            oem = new OptionalEventModule();
+            oem.allow_no_event_listeners = false;
         }
 
         override
@@ -77,7 +80,11 @@ namespace SpaceBattles
 
         private void passthroughLocalPlayerStarted (IncorporealPlayerController IPC)
         {
-            LocalPlayerStarted(IPC);
+            LocalPlayerStartHandler handler = LocalPlayerStarted;
+            if (oem.shouldTriggerEvent(handler))
+            {
+                handler(IPC);
+            }
         }
     }
 }
