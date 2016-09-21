@@ -118,6 +118,8 @@ namespace SpaceBattles
             // Register event handlers
             UI_manager.PlayGameButtonPress += startPlayingGame;
             UI_manager.ExitNetGameInputEvent += exitNetworkGame;
+            UI_manager.PitchInputEvent += handlePitchInput;
+            UI_manager.RollInputEvent += handleRollInput;
 
             network_discoverer.ServerDetected
                 += new PassthroughNetworkDiscovery.ServerDetectedEventHandler(OnServerDetected);
@@ -439,6 +441,22 @@ namespace SpaceBattles
         private void deregisterHostSpawnHandlers ()
         {
 
+        }
+
+        private void handlePitchInput (float pitch_input)
+        {
+            if (player_controller != null)
+            {
+                player_controller.setPitch(pitch_input);
+            }
+        }
+
+        private void handleRollInput(float roll_input)
+        {
+            if (player_controller != null)
+            {
+                player_controller.setRoll(roll_input);
+            }
         }
     }
 }

@@ -9,6 +9,10 @@ namespace SpaceBattles
         // -- constant fields --
         private const string CAMERA_NOT_SET_EXCEPTION_MESSAGE
             = "attempting to setPlayerShip without having set the camera first";
+        private const float INSIGNIFICANT_ROLL_INPUT_CHANGE_THRESHOLD
+            = 0.001f;
+        private const float INSIGNIFICANT_PITCH_INPUT_CHANGE_THRESHOLD
+            = 0.001f;
 
         // -- (variable) fields --
         public bool dont_destroy_on_load;
@@ -35,6 +39,8 @@ namespace SpaceBattles
         private GameObject ship_select_UI_object;
         private GameObject settings_menu_UI_object;
 
+        private float input_roll = 0.0f;
+        private float input_pitch = 0.0f;
         private bool UI_objects_instantiated = false;
         private bool in_game_menu_visible = false;
         private bool ship_select_menu_visible = false;
@@ -54,10 +60,14 @@ namespace SpaceBattles
         private InputAdapterModule input_adapter = null;
 
         // -- delegates --
-        public delegate void exitNetworkGameInputEventHandler();
+        public delegate void exitNetworkGameInputEventHandler ();
+        public delegate void rollInputEventHandler (float roll_input);
+        public delegate void pitchInputEventHandler (float pitch_input);
 
         // -- events --
         public event exitNetworkGameInputEventHandler ExitNetGameInputEvent;
+        public event rollInputEventHandler RollInputEvent;
+        public event pitchInputEventHandler PitchInputEvent;
         // Propagates events from child UI elements upwards to this object,
         // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
         public event PlayGameButtonPressEventHandler PlayGameButtonPress
@@ -175,8 +185,50 @@ namespace SpaceBattles
                     toggleInGameMenu();
                 }
 
+                if (input_adapter.shipSelectMenuOpenInput())
+                {
+                    Debug.Log("ship select button pressed");
+                    toggleShipSelectUI();
+                }
+            }
+        }
+
+        public void FixedUpdate()
+        {
+            if (ui_state == UIState.IN_GAME)
+            {
+                // accel for accelerometer, input for keyboard
+                float new_roll
+                    = -Input.acceleration.x * 0.5f
+                    + (-CnControls.CnInputManager.GetAxis("Roll"))
+                    ;
+
+                float new_pitch
+                    = -Input.acceleration.z * 0.5f
+                    + CnControls.CnInputManager.GetAxis("Pitch")
+                    ;
+                
+                if (Math.Abs(new_roll - input_roll)
+                >   INSIGNIFICANT_ROLL_INPUT_CHANGE_THRESHOLD)
+                {
+                    input_roll = new_roll;
+                    RollInputEvent(new_roll);
+                }
+
+                if (Math.Abs(new_pitch - input_pitch)
+                > INSIGNIFICANT_PITCH_INPUT_CHANGE_THRESHOLD)
+                {
+                    input_pitch = new_pitch;
+                    PitchInputEvent(new_pitch);
+                }
+
                 // this can happen during transition
                 // from game to menu (for a frame or two)
+                // TODO: Update this code so that it triggers events
+                //       such that the PIM can decide what to do
+                //       with the input,
+                //       rather than having program logic decisions
+                //       here in the input manager.
                 if (player_controller != null)
                 {
                     if (input_adapter.accelerateInput())
@@ -191,12 +243,6 @@ namespace SpaceBattles
                     if (input_adapter.fireInput())
                     {
                         player_controller.firePrimaryWeapon();
-                    }
-
-                    if (input_adapter.shipSelectMenuOpenInput())
-                    {
-                        Debug.Log("ship select button pressed");
-                        toggleShipSelectUI();
                     }
                 }
             }

@@ -25,6 +25,7 @@ namespace SpaceBattles
         public float max_speed;
         public float engine_power;
         public float rotation_power;
+        public float pitch_fudge_factor;
         public GameObject phaser_bolt_prefab;
 
         private Vector3 local_projectile_spawn_location;
@@ -32,8 +33,11 @@ namespace SpaceBattles
         private bool accelerating = false;
         private bool braking = false;
         private bool warping = false;
+        private float rotate_roll = 0.0f;
+        private float rotate_pitch = 0.0f;
         private OrbitingBodyBackgroundGameObject current_nearest_orbiting_body;
         private SpaceShipClass current_spaceship_class = SpaceShipClass.NONE;
+        private Rigidbody physics_body;
         private OptionalEventModule oem = null;
         [SyncVar] private double health;
 
@@ -71,6 +75,7 @@ namespace SpaceBattles
         {
             oem = new OptionalEventModule();
             oem.allow_no_event_listeners = false;
+            physics_body = GetComponent<Rigidbody>();
         }
         
         public void initialiseLaserSpawnLocalLocation (Vector3 spawn_location)
@@ -84,28 +89,25 @@ namespace SpaceBattles
             if (!hasAuthority)
                 return;
 
-            // accel for accelerometer, input for keyboard
-            float rotate_roll = -Input.acceleration.x * 0.5f + (-Input.GetAxis("Roll"));
-            float rotate_pitch = -Input.acceleration.z * 0.5f + Input.GetAxis("Pitch");
-
-            Vector3 torque = new Vector3(rotate_pitch, 0.0f, rotate_roll);
-
-            Rigidbody body = GetComponent<Rigidbody>();
-            body.AddRelativeTorque(torque * rotation_power * Time.deltaTime);
+            Vector3 torque
+                = new Vector3(rotate_pitch * pitch_fudge_factor,
+                              0.0f,
+                              rotate_roll);
+            physics_body.AddRelativeTorque(torque * rotation_power * Time.deltaTime);
 
             if (accelerating)
             {
                 Vector3 global_acceleration_direction
                     = transform.TransformDirection(acceleration_direction);
-                GetComponent<Rigidbody>().AddForce(global_acceleration_direction * engine_power);
+                physics_body.AddForce(global_acceleration_direction * engine_power * Time.deltaTime);
             }
             if (braking)
             {
                 //GetComponent<Rigidbody>().AddForce(-body.velocity.normalized * engine_power);
             }
-            if (body.velocity.magnitude > max_speed)
+            if (physics_body.velocity.magnitude > max_speed)
             {
-                body.velocity = body.velocity.normalized * max_speed;
+                physics_body.velocity = physics_body.velocity.normalized * max_speed;
             }
         }
 
@@ -204,6 +206,16 @@ namespace SpaceBattles
                     SSCLASS_ALREADY_SET_ERRMSG
                 );
             }
+        }
+
+        public void setRoll (float new_roll)
+        {
+            rotate_roll = new_roll;
+        }
+
+        public void setPitch (float new_pitch)
+        {
+            rotate_pitch = new_pitch;
         }
 
         /// <summary>

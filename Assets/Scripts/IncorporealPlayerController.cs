@@ -222,6 +222,22 @@ namespace SpaceBattles
             current_ship_choice = new_choice;
         }
 
+        public void setRoll(float new_roll)
+        {
+            if (ship_controller != null)
+            {
+                ship_controller.setRoll(new_roll);
+            }
+        }
+
+        public void setPitch(float new_pitch)
+        {
+            if (ship_controller != null)
+            {
+                ship_controller.setPitch(new_pitch);
+            }
+        }
+
         /// <summary>
         /// Mainly filters the trigger so that the event only occurs on
         /// the authoritative client.
