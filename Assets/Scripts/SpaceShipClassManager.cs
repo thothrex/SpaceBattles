@@ -14,7 +14,6 @@ namespace SpaceBattles
         public List<GameObject> SpaceShipPrefabs;
         public List<Vector3> CameraTransformOffsets;
         public List<Vector3> CameraEulerRotationOffsets;
-        public List<Vector3> LaserBarrelOffsets;
 
         public GameObject getSpaceShipPrefab(SpaceShipClass ss_class)
         {
@@ -29,11 +28,6 @@ namespace SpaceBattles
         public Vector3 getCameraEulerRotation (SpaceShipClass ss_class)
         {
             return CameraEulerRotationOffsets[(int)ss_class];
-        }
-
-        public Vector3 getLaserBarrelOffset (SpaceShipClass ss_class)
-        {
-            return LaserBarrelOffsets[(int)ss_class];
         }
     }
 }

@@ -21,14 +21,24 @@ namespace SpaceBattles
         // -- (Variable) Fields --
         // The following are set in the editor,
         // so should be left unassigned here
-        public UIManager UI_manager;
+        [Header("Physics Properties")]
         public float max_speed;
         public float engine_power;
         public float rotation_power;
-        public float pitch_fudge_factor;
+        [Tooltip("The speed of the ship's pitch will be multiplied "
+                +"by this factor after all other calculations")]
+        public float pitch_fudge_factor = 1.0f;
+        [Header("Graphical Objects")]
         public GameObject phaser_bolt_prefab;
+        [Header("Gameplay Objects")]
+        [Tooltip(
+            "The location where projectiles will spawn. Note: "
+            + "this ought to already be a child of the ship "
+            + "gameObject if you want the spawn location to "
+            + "follow the ship."
+         )]
+        public Transform projectile_spawn_location;
 
-        private Vector3 local_projectile_spawn_location;
         private Vector3 acceleration_direction; // in LOCAL coordinates
         private bool accelerating = false;
         private bool braking = false;
@@ -76,11 +86,6 @@ namespace SpaceBattles
             oem = new OptionalEventModule();
             oem.allow_no_event_listeners = false;
             physics_body = GetComponent<Rigidbody>();
-        }
-        
-        public void initialiseLaserSpawnLocalLocation (Vector3 spawn_location)
-        {
-            local_projectile_spawn_location = spawn_location;
         }
 
         // updates for phsyics
@@ -132,13 +137,13 @@ namespace SpaceBattles
 
         public Vector3 get_projectile_spawn_location()
         {
-            if (local_projectile_spawn_location == null)
+            if (projectile_spawn_location == null)
             {
                 throw new InvalidOperationException(
                     LASER_SPAWN_LOCATION_UNINITIALISED_ERRMSG
                 );
             }
-            return transform.TransformPoint(local_projectile_spawn_location);
+            return projectile_spawn_location.position;
         }
 
         /// <summary>
@@ -160,7 +165,7 @@ namespace SpaceBattles
             // Create the bolt locally
             GameObject bolt = (GameObject)Instantiate(
                  phaser_bolt_prefab,
-                 transform.TransformPoint(local_projectile_spawn_location),
+                 projectile_spawn_location.position,
                  transform.rotation);
             bolt.GetComponent<Rigidbody>()
                 .velocity = (PHASER_BOLT_FORCE * bolt.transform.forward);

@@ -280,9 +280,6 @@ namespace SpaceBattles
             ship_controller = spawned_spaceship.GetComponent<PlayerShipController>();
             ship_controller.EventDeath += playerBodyKilled;
             ship_controller.EventHealthChanged += shipHealthChanged;
-            ship_controller.initialiseLaserSpawnLocalLocation(
-                spaceship_class_manager.getLaserBarrelOffset(current_ship_choice)
-            );
         }
 
         private IEnumerator respawnShipWithDelay(SpaceShipClass new_ship_class)
