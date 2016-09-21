@@ -5,6 +5,17 @@ namespace SpaceBattles
 {
     public class PCInputManager : InputAdapterModule
     {
+        public bool invert_pitch_controls { get; set; }
+        public bool invert_roll_controls { get; set; }
+
+        public PCInputManager ()
+        {
+            // set default values
+            // testing
+            invert_pitch_controls    = true;
+            invert_roll_controls     = false;
+        }
+
         public bool accelerateInput()
         {
             return Input.GetAxis("Acceleration") > 0;

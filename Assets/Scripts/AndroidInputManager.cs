@@ -5,6 +5,18 @@ namespace SpaceBattles
 {
     public class AndroidInputManager : InputAdapterModule
     {
+        public bool invert_pitch_controls { get; set; }
+        public bool invert_roll_controls { get; set; }
+
+        public AndroidInputManager ()
+        {
+            // set default values
+
+            // testing
+            invert_pitch_controls = true;
+            invert_roll_controls = false;
+        }
+
         /// <summary>
         /// Touching the screen (anywhere) accelerates the ship
         /// </summary>

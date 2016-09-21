@@ -202,11 +202,19 @@ namespace SpaceBattles
                     = -Input.acceleration.x * 0.5f
                     + (-CnControls.CnInputManager.GetAxis("Roll"))
                     ;
+                if (input_adapter.invert_roll_controls)
+                {
+                    new_roll *= -1;
+                }
 
                 float new_pitch
-                    = -Input.acceleration.z * 0.5f
-                    + CnControls.CnInputManager.GetAxis("Pitch")
+                    = Input.acceleration.z * 0.5f
+                    + (-CnControls.CnInputManager.GetAxis("Pitch"))
                     ;
+                if (input_adapter.invert_pitch_controls)
+                {
+                    new_pitch *= -1;
+                }
                 
                 if (Math.Abs(new_roll - input_roll)
                 >   INSIGNIFICANT_ROLL_INPUT_CHANGE_THRESHOLD)
