@@ -6,3 +6,4 @@ Unity Packages
 --------------
 UI Tween by Adi Zhavo
 Google Material Design by Adi Zhavo
+CN Controls by Cyrill Nadezhdin
