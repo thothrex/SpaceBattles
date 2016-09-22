@@ -15,6 +15,7 @@ namespace SpaceBattles
             + "(which can be done via the editor or in the parent class)";
 
         public bool allow_no_event_listeners = false;
+        public bool suppress_error_messages  = false;
 
         /// <summary>
         /// 
@@ -31,9 +32,12 @@ namespace SpaceBattles
         {
             if (allow_no_event_listeners && event_handler == null)
             {
-                Debug.Log("Event " 
-                         + event_handler.ToString()
-                         + "has no event handler, and is thus superfluous.");
+                if (!suppress_error_messages)
+                {
+                    Debug.LogWarning("Event "
+                               + event_handler.ToString()
+                               + "has no event handler, and is thus superfluous.");
+                }
                 return false;
             }
             else if (event_handler == null)
