@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SpaceBattles
@@ -24,25 +25,13 @@ namespace SpaceBattles
         public Canvas player_screen_canvas_prefab;
         public Camera fixed_UI_camera_prefab;
         public Camera ship_select_camera_prefab;
-
-        public GameObject in_game_menu_UI_prefab;
-        public GameObject main_menu_root_UI_prefab;
-        //public GameObject player_centred_UI_prefab;
-        public GameObject gameplay_UI_prefab;
-        public GameObject virtual_joystick_UI_prefab;
-        public GameObject ship_select_UI_prefab;
-        public GameObject settings_menu_UI_prefab;
+        
+        public List<GameObject> UI_component_object_prefabs;
 
         //public Vector3 player_centred_UI_offset;
-
-        private GameObject in_game_menu_UI;
-        private GameObject main_menu_root_UI_object;
-        //private GameObject player_centred_canvas_object;
-        private GameObject gameplay_UI_object;
-        private GameObject virtual_joystick_UI_object;
-        private GameObject ship_select_UI_object;
-        private GameObject settings_menu_UI_object;
-
+        
+        private Dictionary<UIElement,GameObject> UI_component_objects = null;
+        
         private float input_roll = 0.0f;
         private float input_pitch = 0.0f;
         private bool UI_objects_instantiated = false;
@@ -83,7 +72,6 @@ namespace SpaceBattles
         // -- enums --
         public enum PlayerConnectState { IDLE, SEARCHING_FOR_SERVER, JOINING_SERVER, CREATING_SERVER };
         private enum UIState { IN_GAME, MAIN_MENU };
-        private enum UIElements { GAME_UI, IN_GAME_MENU, MAIN_MENU }
 
         // -- properties --
 
@@ -102,39 +90,27 @@ namespace SpaceBattles
                 // UI objects
                 Debug.Log("UI Manager instantiating UI objects");
 
-                player_screen_canvas
-                    = GameObject.Instantiate(player_screen_canvas_prefab);
-                main_menu_root_UI_object
-                    = setupUIComponentFromPrefab(main_menu_root_UI_prefab,
-                                                 player_screen_canvas.transform);
+                instantiateUIObjects();
                 main_menu_UI_manager
-                    = main_menu_root_UI_object.GetComponent<MainMenuUIManager>();
-
-                in_game_menu_UI
-                    = setupUIComponentFromPrefab(in_game_menu_UI_prefab,
-                                                 player_screen_canvas.transform);
+                    = UI_component_objects[UIElement.MAIN_MENU]
+                    .GetComponent<MainMenuUIManager>();
+                
                 in_game_menu_manager
-                    = in_game_menu_UI.GetComponent<InGameMenuManager>();
-
-                gameplay_UI_object
-                    = setupUIComponentFromPrefab(gameplay_UI_prefab,
-                                                 player_screen_canvas.transform);
+                    = UI_component_objects[UIElement.IN_GAME_MENU]
+                    .GetComponent<InGameMenuManager>();
+                
                 gameplay_UI_manager
-                    = gameplay_UI_object.GetComponent<GameplayUIManager>();
+                    = UI_component_objects[UIElement.GAMEPLAY_UI]
+                    .GetComponent<GameplayUIManager>();
 
                 // We always instantiate because this should be possible to
                 // enable /disable dynamically
                 Debug.Log("Creating joystick");
-                virtual_joystick_UI_object
-                    = setupUIComponentFromPrefab(virtual_joystick_UI_prefab,
-                                                 player_screen_canvas.transform);
                 input_adapter.virtual_joystick_element
-                    = virtual_joystick_UI_object;
+                    = UI_component_objects[UIElement.VIRTUAL_JOYSTICK];
                 
                 //player_centred_canvas_object = GameObject.Instantiate(player_centred_UI_prefab);
                 //player_centred_canvas        = player_centred_canvas_object.GetComponent<Canvas>();
-                ship_select_UI_object       = GameObject.Instantiate(ship_select_UI_prefab);
-                //settings_menu_UI_object     = GameObject.Instantiate(settings_menu_UI_prefab);
 
                 // Initialise UI events structure
                 in_game_menu_manager.ExitNetGameButtonPress += exitNetGameButtonPress;
@@ -149,44 +125,12 @@ namespace SpaceBattles
                     UnityEngine.Object.DontDestroyOnLoad(player_screen_canvas);
                     //Sets this to not be destroyed when reloading scene
                     UnityEngine.Object.DontDestroyOnLoad(gameObject);
-                    //UnityEngine.Object.DontDestroyOnLoad(player_centred_canvas_object);
-                    //UnityEngine.Object.DontDestroyOnLoad(gameplay_UI_object);
-                    //UnityEngine.Object.DontDestroyOnLoad(in_game_menu_UI);
-                    //UnityEngine.Object.DontDestroyOnLoad(main_menu_UI);
-                    UnityEngine.Object.DontDestroyOnLoad(ship_select_UI_object);
                     UnityEngine.Object.DontDestroyOnLoad(fixed_UI_camera);
                     UnityEngine.Object.DontDestroyOnLoad(ship_select_camera);
                     Debug.Log("objects prevented from being destroyed on load");
                 }
                 UI_objects_instantiated = true;
             }
-        }
-
-        /// <summary>
-        /// Instantiates, but also sets parent canvas
-        /// and recentres UI component relative to that parent canvas
-        /// </summary>
-        /// <param name="prefab">
-        /// Prefab to instantiate the UI component from
-        /// </param>
-        /// <param name="parent_transform">
-        /// Transform which will be the parent of the instantiated GameObject
-        /// </param>
-        /// <returns></returns>
-        private GameObject setupUIComponentFromPrefab(GameObject prefab, Transform parent_transform)
-        {
-            GameObject new_obj = GameObject.Instantiate(prefab);
-            RectTransform new_UI_transform = new_obj.GetComponent<RectTransform>();
-            if (new_UI_transform == null)
-            {
-                throw new ArgumentException(PREFAB_NO_RECTTRANSFORM_ERRMSG,
-                                            "prefab");
-            }
-            new_UI_transform.SetParent(parent_transform);
-            new_UI_transform.localScale = new Vector3(1, 1, 1);
-            // translate the editor-set position into the local reference frame
-            new_UI_transform.anchoredPosition = new_obj.transform.position;
-            return new_obj;
         }
 
         public void Start ()
@@ -284,28 +228,28 @@ namespace SpaceBattles
             ui_state = UIState.MAIN_MENU;
             main_menu_UI_manager.setPlayerConnectState(PlayerConnectState.IDLE);
             hideInGameUI();
-            showMainMenu();
+            showMainMenu(true);
         }
 
         public void enterSettingsMenu ()
         {
             if (ui_state == UIState.MAIN_MENU)
             {
-                hideMainMenu();
+                showMainMenu(false);
             }
             else if (ui_state == UIState.IN_GAME)
             {
                 hideInGameMenu();
             }
-            showSettingsMenu();
+            showSettingsMenu(true);
         }
 
         public void exitSettingsMenu ()
         {
-            hideSettingsMenu();
+            showSettingsMenu(false);
             if (ui_state == UIState.MAIN_MENU)
             {
-                showMainMenu();
+                showMainMenu(true);
             }
             else if (ui_state == UIState.IN_GAME)
             {
@@ -318,7 +262,7 @@ namespace SpaceBattles
             // TODO: change to start in ship selection
             ui_state = UIState.IN_GAME;
             hideInGameMenu();
-            hideMainMenu();
+            showMainMenu(false);
             showGameplayUI(true);
         }
 
@@ -430,15 +374,72 @@ namespace SpaceBattles
             }
         }
 
+        private void instantiateUIObjects()
+        {
+            player_screen_canvas
+                    = GameObject.Instantiate(player_screen_canvas_prefab);
+            int expected_num_UI_elements
+                = Enum.GetValues(typeof(UIElement)).Length;
+            Debug.Log("Expected number of UI elements: "
+                     + expected_num_UI_elements);
+            UI_component_objects
+                = new Dictionary<UIElement, GameObject>(expected_num_UI_elements);
+            foreach (GameObject prefab in UI_component_object_prefabs)
+            {
+                GameObject instance
+                    = setupUIComponentFromPrefab(prefab, player_screen_canvas.transform);
+                UIElement element = instance.GetComponent<UIComponent>()
+                                  .ElementIdentifier;
+                if (UI_component_objects.ContainsKey(element)
+                &&  UI_component_objects[element] != null)
+                {
+                    throw new InvalidOperationException(
+                        "Trying to instantiate a second " + element.ToString()
+                    );
+                }
+                else
+                {
+                    UI_component_objects.Add(element, instance);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Instantiates, but also sets parent canvas
+        /// and recentres UI component relative to that parent canvas
+        /// </summary>
+        /// <param name="prefab">
+        /// Prefab to instantiate the UI component from
+        /// </param>
+        /// <param name="parent_transform">
+        /// Transform which will be the parent of the instantiated GameObject
+        /// </param>
+        /// <returns></returns>
+        private GameObject setupUIComponentFromPrefab(GameObject prefab, Transform parent_transform)
+        {
+            GameObject new_obj = GameObject.Instantiate(prefab);
+            RectTransform new_UI_transform = new_obj.GetComponent<RectTransform>();
+            if (new_UI_transform == null)
+            {
+                throw new ArgumentException(PREFAB_NO_RECTTRANSFORM_ERRMSG,
+                                            "prefab");
+            }
+            new_UI_transform.SetParent(parent_transform);
+            new_UI_transform.localScale = new Vector3(1, 1, 1);
+            // translate the editor-set position into the local reference frame
+            new_UI_transform.anchoredPosition = new_obj.transform.position;
+            return new_obj;
+        }
+
         private void showInGameMenu ()
         {
-            in_game_menu_UI.SetActive(true);
+            UI_component_objects[UIElement.IN_GAME_MENU].SetActive(true);
             in_game_menu_visible = true;
         }
 
         private void hideInGameMenu ()
         {
-            in_game_menu_UI.SetActive(false);
+            UI_component_objects[UIElement.IN_GAME_MENU].SetActive(false);
             in_game_menu_visible = false;
         }
 
@@ -459,43 +460,36 @@ namespace SpaceBattles
         private void showGameplayUI (bool show)
         {
             //player_centred_canvas_object.gameObject.SetActive(true);
-            gameplay_UI_object.SetActive(show);
-            virtual_joystick_UI_object.SetActive(show);
+            UI_component_objects[UIElement.GAMEPLAY_UI]
+                .SetActive(show);
+            UI_component_objects[UIElement.VIRTUAL_JOYSTICK]
+                .SetActive(show);
             setInGameUICamerasActive(show);
         }
 
-        private void showMainMenu ()
+        private void showMainMenu (bool show)
         {
-            main_menu_root_UI_object.SetActive(true);
-        }
-
-        private void hideMainMenu ()
-        {
-            main_menu_root_UI_object.SetActive(false);
+            UI_component_objects[UIElement.MAIN_MENU].SetActive(show);
         }
 
         private void showShipSelectionUI ()
         {
-            ship_select_UI_object.SetActive(true);
+            UI_component_objects[UIElement.SHIP_SELECT].SetActive(true);
             ship_select_menu_visible = true;
             ship_select_camera.gameObject.SetActive(true);
         }
 
         private void hideShipSelectionUI()
         {
-            ship_select_UI_object.SetActive(false);
+            UI_component_objects[UIElement.SHIP_SELECT].SetActive(false);
             ship_select_menu_visible = false;
             ship_select_camera.gameObject.SetActive(false);
         }
 
-        private void showSettingsMenu ()
+        private void showSettingsMenu (bool show)
         {
-            settings_menu_UI_object.SetActive(true);
-        }
-
-        private void hideSettingsMenu ()
-        {
-            settings_menu_UI_object.SetActive(false);
+            UI_component_objects[UIElement.SETTINGS_MENU]
+                .SetActive(show);
         }
 
         // event handler for in_game_menu_UI button press
