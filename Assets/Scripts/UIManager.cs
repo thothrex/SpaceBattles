@@ -38,6 +38,7 @@ namespace SpaceBattles
         private bool in_game_menu_visible = false;
         private bool ship_select_menu_visible = false;
         private UIState ui_state = UIState.MAIN_MENU;
+        private UIElement UIElement_ALL;
 
         private Camera player_UI_camera = null; // for the which UI follows player avatar
         private Camera fixed_UI_camera = null; // UI doesn't move compared to camera
@@ -90,6 +91,7 @@ namespace SpaceBattles
                 // UI objects
                 Debug.Log("UI Manager instantiating UI objects");
 
+                initialiseUIElementAll();
                 instantiateUIObjects();
                 main_menu_UI_manager
                     = UI_component_objects[UIElement.MAIN_MENU]
@@ -117,7 +119,7 @@ namespace SpaceBattles
 
                 // Initialise cameras
                 initialiseGameUICameras();
-                hideShipSelectionUI();
+                //hideShipSelectionUI();
 
                 if (dont_destroy_on_load)
                 {
@@ -155,7 +157,7 @@ namespace SpaceBattles
                 if (input_adapter.shipSelectMenuOpenInput())
                 {
                     Debug.Log("ship select button pressed");
-                    toggleShipSelectUI();
+                    //toggleShipSelectUI();
                 }
             }
         }
@@ -227,33 +229,34 @@ namespace SpaceBattles
         {
             ui_state = UIState.MAIN_MENU;
             main_menu_UI_manager.setPlayerConnectState(PlayerConnectState.IDLE);
-            hideInGameUI();
-            showMainMenu(true);
+            // disable all elements which aren't the main menu
+            showUIElementFromFlags(false, (UIElement_ALL ^ UIElement.MAIN_MENU));
+            showUIElement(true, UIElement.MAIN_MENU);
         }
 
         public void enterSettingsMenu ()
         {
             if (ui_state == UIState.MAIN_MENU)
             {
-                showMainMenu(false);
+                showUIElement(false, UIElement.MAIN_MENU);
             }
             else if (ui_state == UIState.IN_GAME)
             {
-                hideInGameMenu();
+                showUIElement(false, UIElement.IN_GAME_MENU);
             }
-            showSettingsMenu(true);
+            showUIElement(true, UIElement.SETTINGS_MENU);
         }
 
         public void exitSettingsMenu ()
         {
-            showSettingsMenu(false);
+            showUIElement(false, UIElement.SETTINGS_MENU);
             if (ui_state == UIState.MAIN_MENU)
             {
-                showMainMenu(true);
+                showUIElement(true, UIElement.MAIN_MENU);
             }
             else if (ui_state == UIState.IN_GAME)
             {
-                showInGameMenu();
+                showUIElement(true, UIElement.IN_GAME_MENU);
             }
         }
 
@@ -261,9 +264,9 @@ namespace SpaceBattles
         {
             // TODO: change to start in ship selection
             ui_state = UIState.IN_GAME;
-            hideInGameMenu();
-            showMainMenu(false);
-            showGameplayUI(true);
+            showUIElement(false, UIElement.IN_GAME_MENU, 
+                                 UIElement.MAIN_MENU);
+            showUIElement(true, UIElement.GAMEPLAY_UI);
         }
 
         public void playerShipCreated ()
@@ -276,16 +279,10 @@ namespace SpaceBattles
 
         public void toggleInGameMenu ()
         {
-            if (in_game_menu_visible)
-            {
-                hideInGameMenu();
-                showGameplayUI(true);
-            }
-            else
-            {
-                showInGameMenu();
-                showGameplayUI(false);
-            }
+            bool toggle_on = in_game_menu_visible;
+            showUIElement(!toggle_on, UIElement.IN_GAME_MENU);
+            showUIElement(toggle_on, UIElement.GAMEPLAY_UI);
+            in_game_menu_visible = !toggle_on;
         }
 
         public void setPlayerController(IncorporealPlayerController player_controller)
@@ -358,38 +355,35 @@ namespace SpaceBattles
                 Debug.Log("Warning - setting player camera to null");
             }
         }
-        
-        public void toggleShipSelectUI()
+
+        /// <summary>
+        /// Allows us to use the UIElement "all" as necessary
+        /// (we already have none included but all seems to cause problems
+        /// [if it doesn't cause problems just add it back in])
+        /// </summary>
+        private void initialiseUIElementAll ()
         {
-            if (ship_select_menu_visible)
+            Array allUIElementValues = Enum.GetValues(typeof(UIElement));
+            UIElement_ALL = UIElement.NONE;
+            foreach (UIElement e in allUIElementValues)
             {
-                hideInGameMenu();
-                showGameplayUI(false);
-                showShipSelectionUI();
-            }
-            else
-            {
-                showGameplayUI(true);
-                hideShipSelectionUI();
+                UIElement_ALL |= e;
             }
         }
 
-        private void instantiateUIObjects()
+        private void instantiateUIObjects ()
         {
             player_screen_canvas
                     = GameObject.Instantiate(player_screen_canvas_prefab);
-            int expected_num_UI_elements
-                = Enum.GetValues(typeof(UIElement)).Length;
-            Debug.Log("Expected number of UI elements: "
-                     + expected_num_UI_elements);
             UI_component_objects
-                = new Dictionary<UIElement, GameObject>(expected_num_UI_elements);
+                = new Dictionary<UIElement, GameObject>();
             foreach (GameObject prefab in UI_component_object_prefabs)
             {
                 GameObject instance
                     = setupUIComponentFromPrefab(prefab, player_screen_canvas.transform);
                 UIElement element = instance.GetComponent<UIComponent>()
                                   .ElementIdentifier;
+                //Debug.Log("Adding element " + element.ToString() + " to the dictionary.");
                 if (UI_component_objects.ContainsKey(element)
                 &&  UI_component_objects[element] != null)
                 {
@@ -431,65 +425,50 @@ namespace SpaceBattles
             return new_obj;
         }
 
-        private void showInGameMenu ()
-        {
-            UI_component_objects[UIElement.IN_GAME_MENU].SetActive(true);
-            in_game_menu_visible = true;
-        }
-
-        private void hideInGameMenu ()
-        {
-            UI_component_objects[UIElement.IN_GAME_MENU].SetActive(false);
-            in_game_menu_visible = false;
-        }
-
         /// <summary>
-        /// Hides all game-related UI.
-        /// Used for swapping to menus, etc.
+        /// Sets each element n elements to active if show is true
+        /// and vice versa.
         /// </summary>
-        private void hideInGameUI ()
+        /// <param name="show">
+        /// Whether or not the listed elements should be visible
+        /// (in this case visible also means active in the Unity sense,
+        /// so invisible UI elements will also not get Update calls, etcetera).
+        /// </param>
+        /// <param name="elements">
+        /// Variable-length number of UIElements to show or hide.
+        /// </param>
+        private void showUIElement (bool show, params UIElement[] elements)
         {
-            showGameplayUI(false);
-            hideInGameMenu();
+            foreach (UIElement e in elements)
+            {
+                //Debug.Log("Attempting to show " + e.ToString());
+                GameObject obj;
+                if (UI_component_objects.TryGetValue(e, out obj))
+                {
+                    obj.SetActive(show);
+                }
+                else
+                {
+                    Debug.LogWarning("Attempting to "
+                                   + (show ? "show" : "hide")
+                                   + " an uninitialised UI element: "
+                                   + e.ToString());
+                }
+            }
         }
 
-        /// <summary>
-        /// Specifically gameplay UI such as health bar,
-        /// targeting reticule, etcetera.
-        /// </summary>
-        private void showGameplayUI (bool show)
+        private void showUIElementFromFlags(bool show, UIElement elements)
         {
-            //player_centred_canvas_object.gameObject.SetActive(true);
-            UI_component_objects[UIElement.GAMEPLAY_UI]
-                .SetActive(show);
-            UI_component_objects[UIElement.VIRTUAL_JOYSTICK]
-                .SetActive(show);
-            setInGameUICamerasActive(show);
-        }
-
-        private void showMainMenu (bool show)
-        {
-            UI_component_objects[UIElement.MAIN_MENU].SetActive(show);
-        }
-
-        private void showShipSelectionUI ()
-        {
-            UI_component_objects[UIElement.SHIP_SELECT].SetActive(true);
-            ship_select_menu_visible = true;
-            ship_select_camera.gameObject.SetActive(true);
-        }
-
-        private void hideShipSelectionUI()
-        {
-            UI_component_objects[UIElement.SHIP_SELECT].SetActive(false);
-            ship_select_menu_visible = false;
-            ship_select_camera.gameObject.SetActive(false);
-        }
-
-        private void showSettingsMenu (bool show)
-        {
-            UI_component_objects[UIElement.SETTINGS_MENU]
-                .SetActive(show);
+            Array allUIElementValues = Enum.GetValues(typeof(UIElement));
+            List<UIElement> args = new List<UIElement>();
+            foreach (UIElement e in allUIElementValues)
+            {
+                if ((e & elements) > 0)
+                {
+                    args.Add(e);
+                }
+            }
+            showUIElement(show, args.ToArray());
         }
 
         // event handler for in_game_menu_UI button press
