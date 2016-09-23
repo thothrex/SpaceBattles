@@ -6,7 +6,7 @@ namespace SpaceBattles
     public interface InputAdapterModule
     {
         bool game_UI_enabled { set; }
-        bool virtual_joystick_enabled { set; }
+        bool virtual_joystick_enabled { get; set; }
         bool invert_pitch_controls { set; }
         bool invert_roll_controls { set; }
         GameObject virtual_joystick_element { set; }

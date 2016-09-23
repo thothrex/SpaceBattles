@@ -11,23 +11,16 @@ namespace SpaceBattles
 
         public bool virtual_joystick_enabled
         {
-            private get
+            get
             {
                 return _player_wants_joystick_enabled
-                    && virtual_joystick_element != null // short-circuit
-                    && virtual_joystick_element.activeInHierarchy;
+                    && virtual_joystick_element != null;
             }
             set
             {
+                Debug.Log((value ? "Enabling" : "Disabling")
+                         + " the virtual joystick.");
                 _player_wants_joystick_enabled = value;
-                if (virtual_joystick_element != null)
-                {
-                    virtual_joystick_element.SetActive(value);
-                    if (accelerate_button_element != null)
-                    {
-                        accelerate_button_element.SetActive(!value);
-                    }
-                }
             }
         }
         public bool invert_pitch_controls { private get; set; }
@@ -39,9 +32,6 @@ namespace SpaceBattles
                 _virtual_joystick_backing_object = value;
                 if (value != null)
                 {
-                    _virtual_joystick_backing_object.SetActive(
-                        _player_wants_joystick_enabled
-                    );
                     virtual_joystick
                         = _virtual_joystick_backing_object
                         .GetComponent<CnControls.SimpleJoystick>();

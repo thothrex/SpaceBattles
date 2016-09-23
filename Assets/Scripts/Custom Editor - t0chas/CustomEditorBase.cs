@@ -1,3 +1,5 @@
+#if UNITY_EDITOR
+
 using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
@@ -166,3 +168,5 @@ public class CustomEditorBase : Editor
     }
     #endregion
 }
+
+#endif

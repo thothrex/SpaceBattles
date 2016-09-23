@@ -5,6 +5,15 @@ namespace SpaceBattles
 {
     public class MainMenuUIManager : MonoBehaviour
     {
+        // -- fields --
+        public GameObject start_game_button_object;
+        private ButtonMainMenuPlayGame start_game_button_manager;
+
+        // -- delegates --
+        public delegate void enterSettingsMenuEventHandler();
+
+        // -- events --
+        public event enterSettingsMenuEventHandler EnterSettingsMenuEvent;
         // Propagates events from child UI elements upwards to this object,
         // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
         public event PlayGameButtonPressEventHandler PlayGameButtonPress
@@ -12,9 +21,6 @@ namespace SpaceBattles
             add { start_game_button_manager.PlayGameButtonPress += value; }
             remove { start_game_button_manager.PlayGameButtonPress -= value; }
         }
-
-        public GameObject start_game_button_object;
-        private ButtonMainMenuPlayGame start_game_button_manager;
 
         void Awake()
         {
@@ -42,6 +48,11 @@ namespace SpaceBattles
                     "new_state", new_state, "Attempting to display unexpected player connection state in UI"
                 );
             }
+        }
+
+        public void enterSettingsMenu ()
+        {
+            EnterSettingsMenuEvent();
         }
     }
 }
