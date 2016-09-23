@@ -11,7 +11,7 @@ namespace SpaceBattles
 
         public bool virtual_joystick_enabled
         {
-            get
+            private get
             {
                 return _player_wants_joystick_enabled
                     && virtual_joystick_element != null // short-circuit
@@ -23,6 +23,10 @@ namespace SpaceBattles
                 if (virtual_joystick_element != null)
                 {
                     virtual_joystick_element.SetActive(value);
+                    if (accelerate_button_element != null)
+                    {
+                        accelerate_button_element.SetActive(!value);
+                    }
                 }
             }
         }
@@ -54,12 +58,48 @@ namespace SpaceBattles
             }
         }
 
+        public GameObject accelerate_button_element
+        {
+            set; private get;
+        }
+
+        public bool game_UI_enabled
+        {
+            set
+            {
+                fire_button_element.SetActive(value);
+                if (virtual_joystick_enabled)
+                {
+                    virtual_joystick_element.SetActive(value);
+                }
+                else
+                {
+                    accelerate_button_element.SetActive(value);
+                }
+            }
+        }
+
+        public GameObject fire_button_element
+        {
+            set; private get;
+        }
+
+        public string accelerate_button_name
+        {
+            set; private get;
+        }
+
+        public string fire_button_name
+        {
+            set; private get;
+        }
+
         public AndroidInputManager ()
         {
             _virtual_joystick_backing_object = null;
             _player_wants_joystick_enabled   = true;
             // set default values
-            virtual_joystick_enabled = true;
+            virtual_joystick_enabled = false;
 
             // testing
             invert_pitch_controls = true;
@@ -72,25 +112,32 @@ namespace SpaceBattles
         /// <returns></returns>
         public bool accelerateInput()
         {
-            return virtual_joystick_enabled // short-circuit
-                && virtual_joystick.receiving_input;
+            if (virtual_joystick_enabled)
+            {
+                return virtual_joystick.receiving_input;
+            }
+            else
+            {
+                return CnControls
+                      .CnInputManager
+                      .GetButton(accelerate_button_name);
+            }
         }
 
         /// <summary>
-        /// Not touching the joystick (i.e. not accelerating)
-        /// causes the ship to brake.
+        /// When not accelerating, the ship automatically brakes.
         /// </summary>
         /// <returns></returns>
         public bool brakeInput()
         {
-            return virtual_joystick_enabled // short-circuit
-                && !virtual_joystick.receiving_input;
+            return !accelerateInput();
         }
 
         public bool fireInput()
         {
-            // TODO: Implement
-            return false;
+            return CnControls
+                  .CnInputManager
+                  .GetButton(fire_button_name);
         }
 
         public bool shipSelectMenuOpenInput()

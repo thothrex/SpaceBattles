@@ -12,6 +12,14 @@ namespace SpaceBattles
             = "attempting to setPlayerShip without having set the camera first";
         private const string PREFAB_NO_RECTTRANSFORM_ERRMSG
             = "Prefab does not have a RectTransform attached";
+        private const string UI_OBJ_GET_ERRMSG_P1
+            = "UI Object ";
+        private const string UI_OBJ_GET_ERRMSG_P2
+            = " has not been initialised, but it is being accessed.";
+        private const string ACCELERATE_BUTTON_NAME
+            = "Acceleration";
+        private const string FIRE_BUTTON_NAME
+            = "Fire";
         private const float INSIGNIFICANT_ROLL_INPUT_CHANGE_THRESHOLD
             = 0.001f;
         private const float INSIGNIFICANT_PITCH_INPUT_CHANGE_THRESHOLD
@@ -81,36 +89,25 @@ namespace SpaceBattles
         {
             if (!UI_objects_instantiated)
             {
-                // instantiate pure code objects
-#if UNITY_ANDROID
-                input_adapter = new AndroidInputManager();
-#endif
-#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-                input_adapter = new PCInputManager();
-#endif
                 // UI objects
                 Debug.Log("UI Manager instantiating UI objects");
 
                 initialiseUIElementAll();
                 instantiateUIObjects();
                 main_menu_UI_manager
-                    = UI_component_objects[UIElement.MAIN_MENU]
+                    = UI_component_objects_get(UIElement.MAIN_MENU)
                     .GetComponent<MainMenuUIManager>();
                 
                 in_game_menu_manager
-                    = UI_component_objects[UIElement.IN_GAME_MENU]
+                    = UI_component_objects_get(UIElement.IN_GAME_MENU)
                     .GetComponent<InGameMenuManager>();
                 
                 gameplay_UI_manager
-                    = UI_component_objects[UIElement.GAMEPLAY_UI]
+                    = UI_component_objects_get(UIElement.GAMEPLAY_UI)
                     .GetComponent<GameplayUIManager>();
 
-                // We always instantiate because this should be possible to
-                // enable /disable dynamically
-                Debug.Log("Creating joystick");
-                input_adapter.virtual_joystick_element
-                    = UI_component_objects[UIElement.VIRTUAL_JOYSTICK];
-                
+                initialiseInputAdapter();
+
                 //player_centred_canvas_object = GameObject.Instantiate(player_centred_UI_prefab);
                 //player_centred_canvas        = player_centred_canvas_object.GetComponent<Canvas>();
 
@@ -232,6 +229,7 @@ namespace SpaceBattles
             // disable all elements which aren't the main menu
             showUIElementFromFlags(false, (UIElement_ALL ^ UIElement.MAIN_MENU));
             showUIElement(true, UIElement.MAIN_MENU);
+            input_adapter.game_UI_enabled = false;
         }
 
         public void enterSettingsMenu ()
@@ -264,9 +262,9 @@ namespace SpaceBattles
         {
             // TODO: change to start in ship selection
             ui_state = UIState.IN_GAME;
-            showUIElement(false, UIElement.IN_GAME_MENU, 
-                                 UIElement.MAIN_MENU);
+            showUIElement(false, UIElement.MAIN_MENU);
             showUIElement(true, UIElement.GAMEPLAY_UI);
+            input_adapter.game_UI_enabled = true;
         }
 
         public void playerShipCreated ()
@@ -385,7 +383,7 @@ namespace SpaceBattles
                                   .ElementIdentifier;
                 //Debug.Log("Adding element " + element.ToString() + " to the dictionary.");
                 if (UI_component_objects.ContainsKey(element)
-                &&  UI_component_objects[element] != null)
+                &&  UI_component_objects_get(element) != null)
                 {
                     throw new InvalidOperationException(
                         "Trying to instantiate a second " + element.ToString()
@@ -423,6 +421,45 @@ namespace SpaceBattles
             // translate the editor-set position into the local reference frame
             new_UI_transform.anchoredPosition = new_obj.transform.position;
             return new_obj;
+        }
+
+        private void initialiseInputAdapter ()
+        {
+#if UNITY_ANDROID
+                input_adapter = new AndroidInputManager();
+#endif
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+            input_adapter = new AndroidInputManager();
+            //input_adapter = new PCInputManager();
+#endif
+            input_adapter.virtual_joystick_element
+                    = UI_component_objects_get(UIElement.VIRTUAL_JOYSTICK);
+
+            input_adapter.accelerate_button_name = ACCELERATE_BUTTON_NAME;
+            input_adapter.accelerate_button_element
+                = UI_component_objects_get(UIElement.ACCELERATE_BUTTON);
+            if (!CnControls
+                .CnInputManager
+                .ButtonExists(ACCELERATE_BUTTON_NAME))
+            {
+                throw new ArgumentException(
+                    button_name_errmsg(UIElement.ACCELERATE_BUTTON,
+                                       ACCELERATE_BUTTON_NAME)
+                );
+            }
+
+            input_adapter.fire_button_name = FIRE_BUTTON_NAME;
+            input_adapter.fire_button_element
+                = UI_component_objects_get(UIElement.FIRE_BUTTON);
+            if (!CnControls
+                .CnInputManager
+                .ButtonExists(FIRE_BUTTON_NAME))
+            {
+                throw new ArgumentException(
+                    button_name_errmsg(UIElement.FIRE_BUTTON,
+                                       FIRE_BUTTON_NAME)
+                );
+            }
         }
 
         /// <summary>
@@ -475,6 +512,33 @@ namespace SpaceBattles
         private void exitNetGameButtonPress ()
         {
             ExitNetGameInputEvent();
+        }
+
+        private GameObject UI_component_objects_get (UIElement element)
+        {
+            GameObject obj;
+            if (UI_component_objects.TryGetValue(element, out obj))
+            {
+                return obj;
+            }
+            else
+            {
+                string err_msg = UI_OBJ_GET_ERRMSG_P1
+                               + element.ToString()
+                               + UI_OBJ_GET_ERRMSG_P2;
+                throw new InvalidOperationException(err_msg);
+            }
+        }
+
+        private string button_name_errmsg (UIElement button_element, 
+                                           String intended_name)
+        {
+            return "The "
+                 + button_element.ToString()
+                 + " has not been set up correctly in the editor.\n"
+                 + "Please set its output name to its proper value: \""
+                 + intended_name
+                 + "\"";
         }
     }
 }

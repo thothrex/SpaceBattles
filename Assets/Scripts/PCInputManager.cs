@@ -11,11 +11,10 @@ namespace SpaceBattles
 
         public bool virtual_joystick_enabled
         {
-            get
+            private get
             {
                 return _player_wants_joystick_enabled
-                    && virtual_joystick_element != null // short-circuit
-                    && virtual_joystick_element.activeInHierarchy;
+                    && virtual_joystick_element != null;
             }
             set
             {
@@ -54,6 +53,43 @@ namespace SpaceBattles
             }
         }
 
+        /// <summary>
+        /// Unused in this implementation
+        /// </summary>
+        public GameObject accelerate_button_element
+        {
+            set; private get;
+        }
+
+        public bool game_UI_enabled
+        {
+            set
+            {
+                if (virtual_joystick_enabled)
+                {
+                    virtual_joystick_element.SetActive(value);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Unused in this implementation
+        /// </summary>
+        public GameObject fire_button_element
+        {
+            set; private get;
+        }
+
+        public string accelerate_button_name
+        {
+            set; private get;
+        }
+
+        public string fire_button_name
+        {
+            set; private get;
+        }
+
         public PCInputManager ()
         {
             // set default values
@@ -66,12 +102,21 @@ namespace SpaceBattles
 
         public bool accelerateInput()
         {
-            return CnControls.CnInputManager.GetAxis("Acceleration") > 0;
+            if (virtual_joystick_enabled)
+            {
+                return virtual_joystick.receiving_input;
+            }
+            else
+            {
+                return CnControls
+                      .CnInputManager
+                      .GetAxis("Acceleration") > 0;
+            }
         }
 
         public bool brakeInput()
         {
-            return CnControls.CnInputManager.GetAxis("Acceleration") == 0;
+            return !accelerateInput();
         }
 
         public bool fireInput()

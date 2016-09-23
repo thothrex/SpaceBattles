@@ -13,6 +13,8 @@ namespace SpaceBattles
         SHIP_SELECT = 4,
         GAMEPLAY_UI = 8,
         VIRTUAL_JOYSTICK = 16,
-        IN_GAME_MENU = 32
+        IN_GAME_MENU = 32,
+        ACCELERATE_BUTTON = 64,
+        FIRE_BUTTON = 128
     }
 }
