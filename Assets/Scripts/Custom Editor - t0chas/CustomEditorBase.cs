@@ -5,6 +5,8 @@ using UnityEditor;
 using UnityEditorInternal;
 using System.Collections.Generic;
 using UnityEditor.AnimatedValues;
+using System;
+using System.Linq;
 
 [CustomEditor(typeof(UnityEngine.Object), true, isFallback = true)]
 [CanEditMultipleObjects]
@@ -25,7 +27,7 @@ public class CustomEditorBase : Editor
 
     public override void OnInspectorGUI()
     {
-        EditorGUILayout.LabelField("Custom Editor", EditorStyles.centeredGreyMiniLabel);
+        EditorGUILayout.LabelField("t0chas Editor", EditorStyles.centeredGreyMiniLabel);
         Color cachedGuiColor = GUI.color;
         serializedObject.Update();
         var property = serializedObject.GetIterator();
@@ -48,11 +50,17 @@ public class CustomEditorBase : Editor
             GUI.enabled = false;
         //var attr = this.GetPropertyAttributes(property);
         if (property.isArray && property.propertyType != SerializedPropertyType.String)
+        {
             this.HandleArray(property);
+        }
         else
+        {
             EditorGUILayout.PropertyField(property, property.isExpanded);
+        }
         if (isdefaultScriptProperty)
+        {
             GUI.enabled = cachedGUIEnabled;
+        }
     }
 
     protected void HandleArray(SerializedProperty property)
