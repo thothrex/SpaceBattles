@@ -9,6 +9,7 @@ namespace SpaceBattles
         public bool editor_virtual_joystick_initial_state;
         public List<EasyTween> joystick_button_tweens;
         public List<EasyTween> joystick_button_antitweens;
+        public MyWaypointMover joystick_button_mover;
 
         private bool virtual_joystick_state;
         private OptionalEventModule oem = new OptionalEventModule();
@@ -43,6 +44,9 @@ namespace SpaceBattles
 
         public void initialiseVirtualJoystickButtonState (bool on)
         {
+            MyContract.RequireFieldNotNull(joystick_button_mover,
+                                           "joystick_button_mover");
+
             foreach (EasyTween et in joystick_button_tweens)
             {
                 et.ChangeSetState(on);
@@ -51,6 +55,7 @@ namespace SpaceBattles
             {
                 at.ChangeSetState(!on);
             }
+            joystick_button_mover.setMoveState(on);
         }
     }  
 }
