@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace SpaceBattles
 {
-    public class ScreenSizeChangeLogic : IScreenSizeTrigger
+    public class ScreenSizeChangeLogic : IScreenSizeRegister
     {
         private const string IMPROPER_LIST_ORDER_WARNING
             = "A list of screen size change triggers has been passed "
@@ -30,9 +30,9 @@ namespace SpaceBattles
         private Dictionary<object, SortedList<float, ScreenBreakpointHandler>>
             height_breakpoint_registrants;
 
-
-
         public delegate void ScreenBreakpointHandler();
+
+
 
         public ScreenSizeChangeLogic ()
         {
@@ -100,11 +100,11 @@ namespace SpaceBattles
             /// However, we also only want to trigger the smallest breakpoint
             /// per subscribed object (so as to avoid multiple breakpoint 
             /// calls on each object).
-            /// 
-            Debug.Log("Width triggers: ");
-            Debug.Log(printTriggers(screen_width_breakpoint_triggers));
-            Debug.Log("Height triggers: ");
-            Debug.Log(printTriggers(screen_height_breakpoint_triggers));
+            
+            //Debug.Log("Width triggers: ");
+            //Debug.Log(printTriggers(screen_width_breakpoint_triggers));
+            //Debug.Log("Height triggers: ");
+            //Debug.Log(printTriggers(screen_height_breakpoint_triggers));
 
             triggerLargestBreakpointBelow(Dimension.HEIGHT, new_size.height);
             triggerLargestBreakpointBelow(Dimension.WIDTH, new_size.width);
@@ -230,7 +230,6 @@ namespace SpaceBattles
                     Debug.Log("WTF no function?");
                 }
             }
-            Debug.Log("Key value ended with: " + trigger_enumerator.Current.Key.ToString());
         }
 
         private void triggerLargestBreakpointBelow(Dimension dimension, float size)

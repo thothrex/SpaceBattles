@@ -16,6 +16,16 @@ namespace SpaceBattles
             = "UI Object ";
         private const string UI_OBJ_GET_ERRMSG_P2
             = " has not been initialised, but it is being accessed.";
+        private const string NO_SSCT_EXC
+            = "The fixed UI canvas does not have a Screen Size Change Trigger "
+            + "attached to it.";
+        private const string NO_SSCM_EXC
+            = "The UIManager does not have a ScreenBreakpointManager "
+            + "module.MonoBehaviour attached to the same Unity GameObject "
+            + " it is attached to.";
+        private const string SSC_MANAGER_NOT_INITIALISED_EXC
+            = "The ScreenSizeChange manager has not been instantiated "
+            + "yet, but it needs to have been instantiated already";
         private const string ACCELERATE_BUTTON_NAME
             = "Acceleration";
         private const string FIRE_BUTTON_NAME
@@ -37,6 +47,9 @@ namespace SpaceBattles
         public List<GameObject> UI_component_object_prefabs;
         public GameObject menu_background_object_prefab;
 
+        public GameObject DebugTextboxPrefab;
+        public bool PrintScreenSizeDebugText;
+
         //public Vector3 player_centred_UI_offset;
 
         private Dictionary<UIElement,GameObject> UI_component_objects = null;
@@ -49,6 +62,7 @@ namespace SpaceBattles
         private UIState ui_state = UIState.MAIN_MENU;
         private UIElement UIElement_ALL;
         private GameObject menu_background_object = null;
+        private GameObject debug_textbox = null;
 
         private Camera player_UI_camera = null; // for the which UI follows player avatar
         private Camera fixed_UI_camera = null; // UI doesn't move compared to camera
@@ -57,6 +71,7 @@ namespace SpaceBattles
         //private Canvas player_centred_canvas = null;
         private Canvas player_screen_canvas = null;
 
+        private ScreenSizeChangeManager ssc_manager = null;
         private MainMenuUIManager main_menu_UI_manager = null;
         private GameplayUIManager gameplay_UI_manager = null;
         private InGameMenuManager in_game_menu_manager = null;
@@ -96,6 +111,7 @@ namespace SpaceBattles
                 Debug.Log("UI Manager instantiating UI objects");
 
                 initialiseUIElementAll();
+                ssc_manager = GetComponent<ScreenSizeChangeManager>();
                 instantiateUIObjects();
                 menu_background_object
                     = Instantiate(menu_background_object_prefab);
@@ -142,6 +158,18 @@ namespace SpaceBattles
                     UnityEngine.Object.DontDestroyOnLoad(ship_select_camera);
                     Debug.Log("objects prevented from being destroyed on load");
                 }
+
+                if (PrintScreenSizeDebugText)
+                {
+                    debug_textbox = setupUIComponentFromPrefab(DebugTextboxPrefab, player_screen_canvas.transform);
+                    VariableTextboxPrinter printer
+                        = debug_textbox.GetComponent<VariableTextboxPrinter>();
+                    MyContract.RequireField(printer != null,
+                                            "debug textbox object has a variabletextprinter component attached",
+                                            "DebugTextboxPrefab");
+                    ssc_manager.ScreenResized.AddListener(printer.printVariable);
+                }
+
                 UI_objects_instantiated = true;
             }
         }
@@ -333,6 +361,11 @@ namespace SpaceBattles
                 = Instantiate(fixed_UI_camera_prefab);
             ship_select_camera
                 = Instantiate(ship_select_camera_prefab);
+            if (ssc_manager == null)
+            {
+                throw new InvalidOperationException(SSC_MANAGER_NOT_INITIALISED_EXC);
+            }
+            ssc_manager.FixedUICamera = fixed_UI_camera;
 
             setInGameUICamerasActive(false);
         }
@@ -390,18 +423,37 @@ namespace SpaceBattles
             }
         }
 
+        /// <summary>
+        /// Prerequisites: ssc_manager is instantiated
+        /// </summary>
         private void instantiateUIObjects ()
         {
             player_screen_canvas
                     = GameObject.Instantiate(player_screen_canvas_prefab);
+            if (ssc_manager == null)
+            {
+                throw new InvalidOperationException(SSC_MANAGER_NOT_INITIALISED_EXC);
+            }
+            ScreenSizeChangeTrigger ssc_trigger
+                = player_screen_canvas.GetComponent<ScreenSizeChangeTrigger>();
+            if (ssc_trigger == null)
+            {
+                throw new InvalidOperationException(NO_SSCT_EXC);
+            }
+            ssc_trigger
+                .ScreenResized
+                .AddListener(ssc_manager.OnScreenSizeChange);
+
+
             UI_component_objects
                 = new Dictionary<UIElement, GameObject>();
             foreach (GameObject prefab in UI_component_object_prefabs)
             {
                 GameObject instance
                     = setupUIComponentFromPrefab(prefab, player_screen_canvas.transform);
-                UIElement element = instance.GetComponent<UIComponent>()
-                                  .ElementIdentifier;
+                UIComponentStem stem_script = instance.GetComponent<UIComponentStem>();
+                stem_script.doBreakpointRegistrations(ssc_manager);
+                UIElement element = stem_script.ElementIdentifier;
                 //Debug.Log("Adding element " + element.ToString() + " to the dictionary.");
                 if (UI_component_objects.ContainsKey(element)
                 &&  UI_component_objects_get(element) != null)
@@ -441,7 +493,7 @@ namespace SpaceBattles
             new_UI_transform.SetParent(parent_transform, false);
 
             // don't know why but special case
-            if (new_obj.GetComponent<UIComponent>()
+            if (new_obj.GetComponent<UIComponentStem>()
                 .ElementIdentifier == UIElement.SETTINGS_MENU)
             {
                 new_UI_transform.anchorMin = prefab_transform.anchorMin;

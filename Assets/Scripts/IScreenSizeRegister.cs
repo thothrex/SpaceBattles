@@ -6,7 +6,7 @@ using BreakpointHandler = SpaceBattles.ScreenSizeChangeLogic.ScreenBreakpointHan
 
 namespace SpaceBattles
 {
-    public interface IScreenSizeTrigger
+    public interface IScreenSizeRegister
     {
         void registerWidthBreakpointHandlers
             (SortedList<float, BreakpointHandler> object_breakpoints, 

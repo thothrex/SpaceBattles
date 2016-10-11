@@ -5,10 +5,16 @@ using UnityEngine.Assertions;
 
 namespace SpaceBattles
 {
-    public class ScreenSizeChangeTriggerIntegrationTests : MonoBehaviour
+    public class ScreenSizeChangeManagerIntegrationTests : MonoBehaviour
     {
+        public GameObject trigger_obj;
+        public GameObject manager_obj;
+
         public void Start()
         {
+            // TODO: fix this for the new program flow
+            //       rect -> trigger -> manager -> camera -> listeners
+
             RectResizeTriggerTest();
             IntegrationTest.Pass(gameObject);
         }
@@ -20,29 +26,59 @@ namespace SpaceBattles
         /// </summary>
         public void RectResizeTriggerTest()
         {
+            float test_breakpoint = 500.0f;
+            int test_resize_value = 50;
+            int test_target_resize_value = 400;
             var confirmation_dict
                 = new Dictionary<string, Dictionary<float, bool>>();
             var breakpoints_to_validate
                 = new SortedList<float, ScreenSizeChangeLogic.ScreenBreakpointHandler>
                     (new FloatInverseOrderAllowDuplicatesComparer());
-            float test_breakpoint = 20.0f;
             breakpoints_to_validate.Add(
                 test_breakpoint,
                 generateHandlerForGivenDict("A", test_breakpoint, confirmation_dict)
             );
-            var registrant_a = new GameObject();
 
-            var test_obj = gameObject;
-            RectTransform rect = GetComponent<RectTransform>();
-            Assert.IsNotNull(rect);
-            ScreenSizeChangeTrigger test_trigger = GetComponent<ScreenSizeChangeTrigger>();
+            //  rect -> trigger -> manager -> camera -> listeners
+            //  in this case the listener object is (kind of) the confirmation dict
+            Assert.IsNotNull(trigger_obj);
+            RectTransform test_rect = trigger_obj.GetComponent<RectTransform>();
+            Assert.IsNotNull(test_rect);
+            ScreenSizeChangeTrigger test_trigger
+                = trigger_obj.GetComponent<ScreenSizeChangeTrigger>();
             Assert.IsNotNull(test_trigger);
-            test_trigger.registerWidthBreakpointHandlers(breakpoints_to_validate, registrant_a);
 
-            rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 10.0f);
+            Assert.IsNotNull(manager_obj);
+            ScreenSizeChangeManager test_manager
+                = manager_obj.GetComponent<ScreenSizeChangeManager>();
+            Assert.IsNotNull(test_manager);
+            Camera test_cam = test_manager.FixedUICamera;
+            Assert.IsNotNull(test_cam);
+
+            Resolution cur_res = Screen.currentResolution;
+            Screen.SetResolution(test_target_resize_value, cur_res.height, false);
+            Debug.Log("Aspect Ratio: " + test_cam.aspect
+                      + "\nOrthographicSize: " + test_cam.orthographicSize
+                      + "\npixelWidth: " + test_cam.pixelWidth
+                      + "\tpixelHeight: " + test_cam.pixelHeight);
+            Assert.IsTrue(test_target_resize_value > test_cam.pixelWidth,
+                "Expected: " + test_cam.pixelWidth
+                + " < " + test_target_resize_value);
+            Assert.IsTrue(test_cam.orthographic,
+                          "Expected camera to be in orthographic mode");
+
+
+            test_trigger.ScreenResized.AddListener(test_manager.OnScreenSizeChange);
+            test_manager.registerWidthBreakpointHandlers(breakpoints_to_validate, confirmation_dict);
+
+            test_rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, test_resize_value);
             
-            Assert.IsTrue(confirmation_dict.ContainsKey("A"));
+            Assert.IsTrue(confirmation_dict.ContainsKey("A"),
+                          "Confirmation dict does not contain the key: " + "A");
             Assert.IsTrue(confirmation_dict["A"][test_breakpoint]);
+
+            // reset
+            Screen.SetResolution(cur_res.width, cur_res.height, false);
         }
 
         /// <summary>
