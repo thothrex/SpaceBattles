@@ -6,16 +6,20 @@
 /[Oo]bj/
 /[Bb]uild/
 /[Bb]uilds/
-/Assets/AssetStoreTools*
-/Assets/UnityTestTools*
 
 # Imported Libraries
+/Assets/AssetStoreTools*
+/Assets/UnityTestTools*
+/Assets/Standard\ Assets*
 /Assets/UITween*
 /Assets/VolumetricLines*
+/Assets/Google\ Material\ Design*
+
+/Assets/Fonts/spyagency*
+
 /Assets/Scifi_fighter_AK5*
 /Assets/Planet\ Earth\ Pack*
 /Assets/Laser_construction_kit*
-/Assets/Google\ Material\ Design*
 /Assets/!SCI_FI_Modular_Pack_Free*
 /Assets/Class\ II\ Galactic\ cruiser\ by\ Herminio\ nieves*
 /Assets/Extreme\ Sci-Fi\ LITE*
@@ -27,6 +31,8 @@
 /Assets/orbital_station_by_alkhor*
 /Assets/sci_fi_panel_by_dmaland*
 /Assets/station1_by_dmaland*
+/Assets/hipp8.tif
+/Assets/structure_mtl1_diffcol*
 
 /Assets/Materials/*
 /Assets/Meshes/*
@@ -58,7 +64,7 @@ sysinfo.txt
 *.apk
 *.unitypackage
 player_*_development*.pdb
-
+spacebattles_Data*
 
 # ============ #
 # Compiled Objects/Binary #
