@@ -12,6 +12,7 @@ namespace SpaceBattles
         public MyWaypointMover joystick_button_mover;
 
         private bool virtual_joystick_state;
+        private bool done_init = false;
         private OptionalEventModule oem = new OptionalEventModule();
         
         // -- delegates --
@@ -24,7 +25,7 @@ namespace SpaceBattles
 
         public void Start ()
         {
-            virtual_joystick_state = editor_virtual_joystick_initial_state;
+            ensureInit();
         }
 
         public void exitSettingsMenu ()
@@ -42,20 +43,38 @@ namespace SpaceBattles
             }
         }
 
-        public void initialiseVirtualJoystickButtonState (bool on)
+        public void displayVirtualJoystickButtonState (bool on)
         {
             MyContract.RequireFieldNotNull(joystick_button_mover,
                                            "joystick_button_mover");
 
-            foreach (EasyTween et in joystick_button_tweens)
+            Debug.Log("Current joystick state: " + virtual_joystick_state.ToString());
+            Debug.Log("Setting joystick state "
+                    + (on ? "on" : "off"));
+            ensureInit();
+            if (on != virtual_joystick_state)
             {
-                et.ChangeSetState(on);
-            }
-            foreach (EasyTween at in joystick_button_antitweens)
-            {
-                at.ChangeSetState(!on);
+                foreach (EasyTween et in joystick_button_tweens)
+                {
+                    et.OpenCloseObjectAnimation();
+                }
+                foreach (EasyTween at in joystick_button_antitweens)
+                {
+                    at.OpenCloseObjectAnimation();
+                }
             }
             joystick_button_mover.setMoveState(on);
+            virtual_joystick_state = on;
+        }
+
+        private void ensureInit()
+        {
+            if (!done_init)
+            {
+                Debug.Log("initialising settings menu from editor values");
+                virtual_joystick_state = editor_virtual_joystick_initial_state;
+                done_init = true;
+            }
         }
     }  
 }

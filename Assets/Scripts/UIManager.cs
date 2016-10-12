@@ -287,7 +287,7 @@ namespace SpaceBattles
             {
                 showUIElement(false, UIElement.IN_GAME_MENU);
             }
-            settings_menu_manager.initialiseVirtualJoystickButtonState(
+            settings_menu_manager.displayVirtualJoystickButtonState(
                 input_adapter.virtual_joystick_enabled
             );
             showUIElement(true, UIElement.SETTINGS_MENU);
