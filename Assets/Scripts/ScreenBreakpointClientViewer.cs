@@ -20,7 +20,7 @@ namespace SpaceBattles
             | BindingFlags.DeclaredOnly;
         private const int DEFAULT_METHOD_INDEX = 0;
 
-        private string[] selection_labels = { };
+        private List<string> selection_labels = new List<string>();
         private List<MethodInfo> listener_methods = new List<MethodInfo>();
         private Dictionary<BreakpointEntry, int>
             selected_method_index = new Dictionary<BreakpointEntry, int>();
@@ -147,7 +147,7 @@ namespace SpaceBattles
         }
 
         private void displayBreakpointList
-            (ScreenBreakpointClient sb_client, string[] method_names)
+            (ScreenBreakpointClient sb_client, List<string> method_names)
         {
 
             int num_breakpoints = 0;
@@ -225,10 +225,10 @@ namespace SpaceBattles
         /// <param name="listener_type"></param>
         /// <param name="listening_object"></param>
         /// <returns></returns>
-        private string[] retrieveMethodsAndGenerateGUILabels
+        private List<string> retrieveMethodsAndGenerateGUILabels
             (Type listener_type, MonoBehaviour listening_object)
         {
-            string[] selection_labels = { };
+            List<string> selection_labels = new List<string>();
             if (listening_object == null && listener_type != null)
             {
                 throw new ArgumentNullException("listening_object");
@@ -250,7 +250,7 @@ namespace SpaceBattles
                 selection_labels
                     = listener_methods
                     .Select(x => x.Name)
-                    .ToArray();
+                    .ToList();
             }
             
             // avoid desync
@@ -294,7 +294,7 @@ namespace SpaceBattles
         /// <returns></returns>
         private bool renderBreakpointEntry
             (BreakpointEntry entry,
-            string[] method_names,
+            List<string> method_names,
             GUILayoutOption max_button_width_opt)
         {
             //Debug.Log("Drawing a breakpoint entry");
@@ -305,10 +305,27 @@ namespace SpaceBattles
             // i.e. the list has elements already but the viewer isn't set up
             if (!selected_method_index.ContainsKey(entry))
             {
-                setMethodSelection(entry, DEFAULT_METHOD_INDEX);
+                if (method_names.Contains(entry.handler_function_name))
+                {
+                    Debug.Log("Setting breakpoint entry "
+                            + "using existing function string: "
+                            + entry.handler_function_name);
+                    int method_index
+                        = method_names.IndexOf(entry.handler_function_name);
+                    Debug.Log("Function string "
+                            + entry.handler_function_name
+                            + " gave function index "
+                            + method_index.ToString());
+                    setMethodSelection(entry, method_index);
+                }
+                else
+                {
+                    Debug.Log("Setting breakpoint entry to default");
+                    setMethodSelection(entry, DEFAULT_METHOD_INDEX);
+                }
             }
             int new_method_index
-                = EditorGUILayout.Popup(selected_method_index[entry], method_names);
+                = EditorGUILayout.Popup(selected_method_index[entry], method_names.ToArray());
             setMethodSelection(entry, new_method_index);
             bool element_deleted = GUILayout.Button(minus_text, max_button_width_opt);
             EditorGUILayout.EndHorizontal();
@@ -361,6 +378,8 @@ namespace SpaceBattles
                     var new_handler = generateMethodCallback(listener_methods[method_index]);
                     Debug.Log("new handler generated");
                     entry.handler = new_handler;
+                    entry.handler_function_name = selection_labels[method_index];
+                    entry.callback_instance = listening_object;
                     Debug.Log("new handler set");
                 }
                 else

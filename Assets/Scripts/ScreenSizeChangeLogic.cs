@@ -106,8 +106,14 @@ namespace SpaceBattles
             //Debug.Log("Height triggers: ");
             //Debug.Log(printTriggers(screen_height_breakpoint_triggers));
 
-            triggerLargestBreakpointBelow(Dimension.HEIGHT, new_size.height);
-            triggerLargestBreakpointBelow(Dimension.WIDTH, new_size.width);
+            if (screen_height_breakpoint_triggers.Count > 0)
+            {
+                triggerLargestBreakpointBelow(Dimension.HEIGHT, new_size.height);
+            }
+            if (screen_width_breakpoint_triggers.Count > 0)
+            {
+                triggerLargestBreakpointBelow(Dimension.WIDTH, new_size.width);
+            }
         }
 
         private void registerBreakpoints
@@ -146,6 +152,10 @@ namespace SpaceBattles
              Dictionary<object, SortedList<float, ScreenBreakpointHandler>> object_registry,
              SortedList<float, SortedList<float, ScreenBreakpointHandler>> trigger_list)
         {
+            MyContract.RequireArgumentNotNull(object_breakpoints, "object_breakpoints");
+            MyContract.RequireArgument(object_breakpoints.Count > 0,
+                                       "contains at least one entry",
+                                       "object_breakpoints");
             var sorted_object_breakpoints
                 = ensureTriggersAreInCorrectOrder(object_breakpoints);
 
@@ -161,6 +171,7 @@ namespace SpaceBattles
                       );
                 foreach (var breakpoint in object_breakpoints.Concat(existing_breakpoints))
                 {
+                    MyContract.RequireArgumentNotNull(breakpoint.Value, "breakpoint callback");
                     new_breakpoints.Add(breakpoint.Key, breakpoint.Value);
                 }
                 var new_key = new_breakpoints.Keys.Max();
@@ -180,6 +191,10 @@ namespace SpaceBattles
             }
             else
             {
+                Debug.Assert(sorted_object_breakpoints != null);
+                Debug.Assert(sorted_object_breakpoints.Keys != null);
+                Debug.Log("sorted_object_breakpoints: "
+                        + printBreakpoints(sorted_object_breakpoints));
                 float largest_breakpoint = sorted_object_breakpoints.Keys.Max();
                 object_registry.Add(registrant, object_breakpoints);
                 trigger_list.Add(largest_breakpoint, object_breakpoints);
@@ -196,6 +211,9 @@ namespace SpaceBattles
             (SortedList<float, SortedList<float, ScreenBreakpointHandler>> breakpoints,
              float size)
         {
+            MyContract.RequireArgument(breakpoints.Count > 0,
+                                       "contains at least one entry",
+                                       "breakpoints");
             var trigger_enumerator
                 = breakpoints.GetEnumerator();
             while (trigger_enumerator.MoveNext()
@@ -205,8 +223,14 @@ namespace SpaceBattles
                     = trigger_enumerator.Current.Key;
                 ScreenBreakpointHandler object_largest_triggered_function
                     = null;
+                var per_object_triggers
+                    = trigger_enumerator.Current.Value;
+                if (per_object_triggers.Count <= 0)
+                {
+                    throw new ArgumentException("one object has an entry without any breakpoints");
+                }
                 var per_object_trigger_enumerator
-                    = trigger_enumerator.Current.Value.GetEnumerator();
+                    = per_object_triggers.GetEnumerator();
                 while (per_object_trigger_enumerator.MoveNext()
                   && per_object_trigger_enumerator.Current.Key > size)
                 {
@@ -214,6 +238,16 @@ namespace SpaceBattles
                         = per_object_trigger_enumerator.Current.Key;
                     object_largest_triggered_function
                         = per_object_trigger_enumerator.Current.Value;
+                    if (object_largest_triggered_function == null)
+                    {
+                        throw new ArgumentException(
+                            "one object has an entry with a null function "
+                            + "for breakpoint "
+                            + per_object_trigger_enumerator.Current.Key
+                            + "\n\n"
+                            + "Full breakpoints: "
+                            + printTriggers(breakpoints));
+                    }
                 }
                 // trigger this object's largest breakpoint
                 var current_object_breakpoints
@@ -323,9 +357,11 @@ namespace SpaceBattles
             string returnstring = " (";
             foreach (var breakpoint_trigger in breakpoints)
             {
-                returnstring += "[";
-                returnstring += breakpoint_trigger.Key.ToString();
-                returnstring += "] ";
+                returnstring += "["
+                             + breakpoint_trigger.Key.ToString()
+                             + ", "
+                             + breakpoint_trigger.Value
+                             + "] ";
             }
             returnstring += ")\n";
             return returnstring;

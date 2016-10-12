@@ -19,20 +19,30 @@ namespace SpaceBattles
         // I use this camel case on the public variables
         // so that the unity editor formats them more nicely
         public MonoBehaviour ListeningObject;
+        [SerializeField]
         public List<BreakpointEntry> BreakpointEntries;
 
         private FloatInverseOrderAllowDuplicatesComparer inverse_comparer
             = new FloatInverseOrderAllowDuplicatesComparer();
+        private bool breakpoint_handlers_rebuilt = false;
 
         public void Start()
         {
-            BreakpointEntries = new List<BreakpointEntry>();
+            if (BreakpointEntries == null)
+            {
+                BreakpointEntries = new List<BreakpointEntry>();
+            }
+            else
+            {
+                ensureBreakpointHandlersHaveBeenRebuilt();
+            }
         }
 
         public void doBreakpointRegistration (IScreenSizeRegister register)
         {
             MyContract.RequireField(BreakpointEntries != null,
                                     "is not null", "BreakpointEntries");
+            ensureBreakpointHandlersHaveBeenRebuilt();
 
             SortedList<float, BreakpointHandler> height_breakpoints
                 = new SortedList<float, BreakpointHandler>(inverse_comparer);
@@ -56,10 +66,32 @@ namespace SpaceBattles
                          );
                 }
             }
-            register.registerHeightBreakpointHandlers(height_breakpoints,
+            if (height_breakpoints.Count > 0)
+            {
+                register.registerHeightBreakpointHandlers(height_breakpoints,
                                                       this);
-            register.registerWidthBreakpointHandlers(width_breakpoints,
+            }
+            if (width_breakpoints.Count > 0)
+            {
+                register.registerWidthBreakpointHandlers(width_breakpoints,
                                                      this);
+            }
+        }
+
+        /// <summary>
+        /// Need to do this when deserializing
+        /// i.e. loading from prefab/saved values
+        /// </summary>
+        public void ensureBreakpointHandlersHaveBeenRebuilt ()
+        {
+            if (!breakpoint_handlers_rebuilt)
+            {
+                foreach (BreakpointEntry breakpoint in BreakpointEntries)
+                {
+                    breakpoint.rebuildHandlerFromFunctionName();
+                }
+                breakpoint_handlers_rebuilt = true;
+            }
         }
     }
 }

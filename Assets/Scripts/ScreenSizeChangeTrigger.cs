@@ -36,6 +36,7 @@ namespace SpaceBattles
         /// <summary>
         /// Rect is the new size
         /// </summary>
+        public UnityEventRect ScreenResizedInternal;
         public UnityEvent ScreenResized;
 
         private RectTransform host_rect;
@@ -70,7 +71,11 @@ namespace SpaceBattles
                     throw new InvalidOperationException(INIT_RECTTRANSFORM_EXC);
                 }
                 ScreenResized.Invoke();
+                ScreenResizedInternal.Invoke(host_rect.rect);
             }
         }
+
+        [Serializable]
+        public class UnityEventRect : UnityEvent<Rect> { };
     }
 }

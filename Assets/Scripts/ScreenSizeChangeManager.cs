@@ -25,17 +25,34 @@ namespace SpaceBattles
             = "This ScreenSizeChangeTrigger's ScreenSizeChangeLogic module "
             + "has not been initialised yet.";
 
+        // I use CamelCase for public variables
+        // because the Unity editor makes it look nicer
+
         /// <summary>
-        /// Rect is the new size
+        /// By internal, I mean it works within a prefab/UI component.
+        /// For example, within the settings menu.
+        /// The "external", or "global" manager only uses the trigger
+        /// as a signal to retrieve the actual pixel values from its UI camera.
+        /// Conversely, the internal managers use the values directly provided
+        /// to them by their assigned trigger.
+        /// This, combined with the list of internal breakpoint clients,
+        /// allow per-component breakpoints to be used in a more local way
+        /// i.e. the action and reaction can be kept together
+        /// to make things clearer.
         /// </summary>
-        public UnityEventRect ScreenResized;
-        // I use this stupid notation because the Unity editor makes it look nicer
+        public bool IsInternal;
         /// <summary>
         /// Set by code, not the editor
         /// </summary>
         public Camera FixedUICamera;
-        
-        private ScreenSizeChangeLogic logic;
+        /// <summary>
+        /// Rect is the new size
+        /// </summary>
+        public UnityEventRect ScreenResized;
+        public List<ScreenBreakpointClient> BreakpointClients;
+
+        private ScreenSizeChangeLogic logic = null;
+        private bool init_done = false;
 
         // <max_trigger_value, per_object_triggers<trigger_value, handler>>
         /// <summary>
@@ -44,7 +61,23 @@ namespace SpaceBattles
         override
         protected void Awake()
         {
-            logic = new ScreenSizeChangeLogic();
+            ensureLogicIsInstantiated();
+        }
+
+        /// <summary>
+        /// "protected"
+        /// </summary>
+        override
+        protected void Start()
+        {
+            if (!init_done)
+            {
+                foreach (ScreenBreakpointClient client in BreakpointClients)
+                {
+                    client.doBreakpointRegistration(this);
+                }
+                init_done = true;
+            }
         }
 
         /// <summary>
@@ -57,10 +90,28 @@ namespace SpaceBattles
         public void OnScreenSizeChange()
         {
             if (this.isActiveAndEnabled
+            &&  !IsInternal
             &&  FixedUICamera.isActiveAndEnabled)
             {
                 Rect rectangle = FixedUICamera.pixelRect;
+                Debug.Log("Triggering screen size change with camera rect: "
+                        + rectangle.ToString());
                 ScreenResized.Invoke(rectangle);
+            }
+        }
+
+        /// <summary>
+        /// Overload to be used for internal breakpoints.
+        /// </summary>
+        /// <param name="new_size"></param>
+        public void OnScreenSizeChange(Rect new_size)
+        {
+            if (this.isActiveAndEnabled
+            &&  IsInternal)
+            {
+                Debug.Log("Triggering screen size change with changed rect: "
+                        + new_size.ToString());
+                ScreenResized.Invoke(new_size);
             }
         }
 
@@ -78,10 +129,7 @@ namespace SpaceBattles
             (SortedList<float, ScreenSizeChangeLogic.ScreenBreakpointHandler> object_breakpoints,
              object registrant)
         {
-            if (logic == null)
-            {
-                throw new InvalidOperationException(LOGIC_NOT_READY_EXC);
-            }
+            ensureLogicIsInstantiated();
             logic.registerWidthBreakpointHandlers(object_breakpoints, registrant);
         }
 
@@ -99,11 +147,17 @@ namespace SpaceBattles
             (SortedList<float, ScreenSizeChangeLogic.ScreenBreakpointHandler> object_breakpoints,
              object registrant)
         {
+            ensureLogicIsInstantiated();
+            logic.registerHeightBreakpointHandlers(object_breakpoints, registrant);
+        }
+
+        private void ensureLogicIsInstantiated ()
+        {
             if (logic == null)
             {
-                throw new InvalidOperationException(LOGIC_NOT_READY_EXC);
+                logic = new ScreenSizeChangeLogic();
+                ScreenResized.AddListener(logic.screenSizeChangeHandler);
             }
-            logic.registerHeightBreakpointHandlers(object_breakpoints, registrant);
         }
 
         [Serializable]
