@@ -8,11 +8,8 @@ namespace SpaceBattles
     {
         // -- fields --
         public GameObject StartGameButtonObject;
-        public GameObject ButtonBlock;
-        public GameObject ButtonGroup;
-        public GameObject HeaderBlock;
-        public Vector2 MobileButtonBlockAnchorMax;
-        public Vector2 DesktopButtonBlockAnchorMax;
+        public ExplicitLayoutGroup MobileLayout;
+        public ExplicitLayoutGroup DesktopLayout;
 
         private ButtonMainMenuPlayGame start_game_button_manager;
         private MENU_LAYOUT current_layout = MENU_LAYOUT.DESKTOP;
@@ -92,8 +89,7 @@ namespace SpaceBattles
 
         public void setLayoutToMobile ()
         {
-            MyContract.RequireFieldNotNull(ButtonBlock, "ButtonBlock");
-            MyContract.RequireFieldNotNull(HeaderBlock, "HeaderBlock");
+            MyContract.RequireFieldNotNull(MobileLayout, "Mobile Layout");
 
             Debug.Log("MainMenuManager setting layout to mobile");
 
@@ -102,8 +98,7 @@ namespace SpaceBattles
 
         public void setLayoutToDesktop ()
         {
-            MyContract.RequireFieldNotNull(ButtonBlock, "ButtonBlock");
-            MyContract.RequireFieldNotNull(HeaderBlock, "HeaderBlock");
+            MyContract.RequireFieldNotNull(DesktopLayout, "Desktop Layout");
 
             Debug.Log("MainMenuManager setting layout to desktop");
 
@@ -112,57 +107,13 @@ namespace SpaceBattles
 
         private void doLayoutChangeToMobile ()
         {
-            HeaderBlock.SetActive(false);
-
-            RectTransform bbt //button block transform
-                = ButtonBlock.GetComponent<RectTransform>();
-            MyContract.RequireFieldNotNull(
-                bbt, "ButtonBlock RectTranform component"
-            );
-            bbt.anchorMax = MobileButtonBlockAnchorMax;
-
-            VerticalLayoutGroup bgvlg //button group vertical layout group
-                = ButtonGroup.GetComponent<VerticalLayoutGroup>();
-            MyContract.RequireFieldNotNull(
-                bgvlg, "ButtonGroup VerticalLayoutGroup component"
-            );
-            bgvlg.childAlignment = TextAnchor.UpperCenter;
-
-            HorizontalLayoutGroup hlg
-                = ButtonBlock.GetComponent<HorizontalLayoutGroup>();
-            MyContract.RequireFieldNotNull(
-                hlg, "ButtonBlock HorizontalLayoutGroup component"
-            );
-            hlg.childAlignment = TextAnchor.UpperCenter;
-
+            MobileLayout.applyLayout();
             current_layout = MENU_LAYOUT.MOBILE;
         }
 
         private void doLayoutChangeToDesktop()
         {
-            HeaderBlock.SetActive(true);
-
-            RectTransform bbt //button block transform
-                = ButtonBlock.GetComponent<RectTransform>();
-            MyContract.RequireFieldNotNull(
-                bbt, "ButtonBlock RectTranform component"
-            );
-            bbt.anchorMax = DesktopButtonBlockAnchorMax;
-
-            VerticalLayoutGroup bgvlg //button group vertical layout group
-                = ButtonGroup.GetComponent<VerticalLayoutGroup>();
-            MyContract.RequireFieldNotNull(
-                bgvlg, "ButtonGroup VerticalLayoutGroup component"
-            );
-            bgvlg.childAlignment = TextAnchor.LowerLeft;
-
-            HorizontalLayoutGroup hlg
-                = ButtonBlock.GetComponent<HorizontalLayoutGroup>();
-            MyContract.RequireFieldNotNull(
-                hlg, "ButtonBlock HorizontalLayoutGroup component"
-            );
-            hlg.childAlignment = TextAnchor.LowerLeft;
-
+            DesktopLayout.applyLayout();
             current_layout = MENU_LAYOUT.DESKTOP;
         }
     }
