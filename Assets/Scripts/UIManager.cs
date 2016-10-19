@@ -139,6 +139,8 @@ namespace SpaceBattles
 
                 // Initialise UI events structure
                 in_game_menu_manager.ExitNetGameButtonPress += exitNetGameButtonPress;
+                in_game_menu_manager.ExitInGameMenuEvent += toggleInGameMenu;
+                in_game_menu_manager.EnterSettingsMenuEvent += enterSettingsMenu;
                 main_menu_UI_manager.EnterSettingsMenuEvent += enterSettingsMenu;
                 settings_menu_manager.ExitSettingsMenuEvent += exitSettingsMenu;
                 settings_menu_manager.VirtualJoystickSetEvent += virtualJoystickSetHandler;
@@ -626,6 +628,8 @@ namespace SpaceBattles
         private void virtualJoystickSetHandler(bool enabled)
         {
             input_adapter.virtual_joystick_enabled = enabled;
+            UI_component_objects_get(UIElement.VIRTUAL_JOYSTICK)
+                .SetActive(enabled);
         }
     }
 }
