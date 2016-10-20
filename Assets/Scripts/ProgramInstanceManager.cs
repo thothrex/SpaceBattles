@@ -42,8 +42,8 @@ namespace SpaceBattles
         public GameObject UI_manager_obj;
         
         // Created by the editor
-        public PassthroughNetworkManager network_manager;
-        public PassthroughNetworkDiscovery network_discoverer;
+        public PassthroughNetworkManager NetworkManager;
+        public PassthroughNetworkDiscovery NetworkDiscoverer;
         public SpaceShipClassManager spaceship_class_manager;
         
         public bool dont_destroy_on_load;
@@ -58,14 +58,14 @@ namespace SpaceBattles
         public Light nearest_planet_sunlight;
 
         private static ProgramInstanceManager instance = null;
-        private UIManager UI_manager;
+        private UIManager UIManager;
         private IncorporealPlayerController player_controller;
         private List<GameObject> orbital_bodies;
         private ClientState client_state = ClientState.MAIN_MENU;
         private bool warping = false;
         private bool looking_for_game = false;
         private bool found_game = false;
-        private bool orrery_loaded = false;
+        private bool OrreryLoaded = false;
         // TODO: Actually let the player choose their ship class
         private SpaceShipClass player_ship_class_choice_hidden_value;
         private SpaceShipClass player_ship_class_choice
@@ -102,7 +102,7 @@ namespace SpaceBattles
                 Debug.Log("Program instance manager prevented from being destroyed on load");
 
                 UI_manager_obj = GameObject.Instantiate(UI_manager_prefab);
-                UI_manager = UI_manager_obj.GetComponent<UIManager>();
+                UIManager = UI_manager_obj.GetComponent<UIManager>();
                 // TODO: Let player choose ship class
                 player_ship_class_choice = SpaceShipClass.CRUISER;
             }
@@ -117,17 +117,18 @@ namespace SpaceBattles
         void Start ()
         {
             // Register event handlers
-            UI_manager.PlayGameButtonPress += startPlayingGame;
-            UI_manager.ExitNetGameInputEvent += exitNetworkGame;
-            UI_manager.PitchInputEvent += handlePitchInput;
-            UI_manager.RollInputEvent += handleRollInput;
-            UI_manager.EnterOrreryInputEvent += enterOrrery;
+            UIManager.EnterOrreryInputEvent += EnterOrrery;
+            UIManager.ExitNetGameInputEvent += ExitNetworkGame;
+            UIManager.PlayGameButtonPress += startPlayingGame;
+            UIManager.PitchInputEvent += handlePitchInput;
+            UIManager.RollInputEvent += handleRollInput;
+            
 
-            network_discoverer.ServerDetected
+            NetworkDiscoverer.ServerDetected
                 += new PassthroughNetworkDiscovery.ServerDetectedEventHandler(OnServerDetected);
-            network_discoverer.Initialize();
+            NetworkDiscoverer.Initialize();
 
-            network_manager.LocalPlayerStarted += LocalPlayerControllerCreatedHandler;
+            NetworkManager.LocalPlayerStarted += LocalPlayerControllerCreatedHandler;
         }
 
         /// <summary>
@@ -159,7 +160,7 @@ namespace SpaceBattles
             // as this is the local player,
             // there is no need to check for existing ship spawns
             // (they would have been observed directly through the RPC in the IPC)
-            player_controller.LocalPlayerShipHealthChanged += UI_manager.setCurrentPlayerHealth;
+            player_controller.LocalPlayerShipHealthChanged += UIManager.setCurrentPlayerHealth;
 
             // Camera setup
             if (nearest_planet_camera == null && player_camera == null && solar_system_camera == null)
@@ -168,27 +169,27 @@ namespace SpaceBattles
                 setCamerasFollowTransform(player_controller.transform);
             }
             warpTo(current_nearest_orbiting_body);
-            UI_manager.setPlayerCamera(player_camera.GetComponent<Camera>());
+            UIManager.setPlayerCamera(player_camera.GetComponent<Camera>());
             // Player controller should be set after the camera
             // because the UI manager does some setup afterwards
-            UI_manager.setPlayerController(player_controller);
-            UI_manager.enteringMultiplayerGame();
+            UIManager.setPlayerController(player_controller);
+            UIManager.enteringMultiplayerGame();
 
             player_controller.CmdSpawnStartingSpaceShip(player_ship_class_choice);
         }
 
         private void localPlayerShipCreatedHandler (PlayerShipController ship_controller)
         {
-            UI_manager.setCurrentPlayerMaxHealth(PlayerShipController.MAX_HEALTH);
-            UI_manager.setCurrentPlayerHealth(PlayerShipController.MAX_HEALTH);
+            UIManager.setCurrentPlayerMaxHealth(PlayerShipController.MAX_HEALTH);
+            UIManager.setCurrentPlayerHealth(PlayerShipController.MAX_HEALTH);
 
             setCamerasFollowTransform(ship_controller.transform);
         }
 
-        public void OnDisconnectedFromServer(NetworkDisconnection info)
+        public void OnDisconnectedFromServer (NetworkDisconnection info)
         {
             player_controller = null;
-            UI_manager.enteringMainMenuRoot();
+            UIManager.EnterMainMenuRoot();
             if (Network.isServer)
             {
                 Debug.Log("Local server connection disconnected");
@@ -361,7 +362,7 @@ namespace SpaceBattles
             if (!looking_for_game)
             {
                 StartCoroutine(playGameCoroutine());
-                network_discoverer.StartAsClient();
+                NetworkDiscoverer.StartAsClient();
             }
         }
 
@@ -374,13 +375,13 @@ namespace SpaceBattles
             if (found_game) { yield break; }
             else
             {
-                network_discoverer.StopBroadcast();
+                NetworkDiscoverer.StopBroadcast();
                 Debug.Log("Game not found - starting server");
-                UI_manager.setPlayerConnectState(
+                UIManager.setPlayerConnectState(
                     UIManager.PlayerConnectState.CREATING_SERVER
                 );
-                net_client = network_manager.StartHost();
-                network_discoverer.StartAsServer();
+                net_client = NetworkManager.StartHost();
+                NetworkDiscoverer.StartAsServer();
             }
             looking_for_game = false;
         }
@@ -404,17 +405,17 @@ namespace SpaceBattles
                                       // per connection, this is fine
         }
 
-        private void exitNetworkGame ()
+        private void ExitNetworkGame ()
         {
             // I'm not sure if this is always safe to use,
             // as the documentation is very slim
             Debug.Log("Stopping game");
-            network_manager.StopHost();
-            if (network_discoverer.running)
+            NetworkManager.StopHost();
+            if (NetworkDiscoverer.running)
             {
-                network_discoverer.StopBroadcast();
+                NetworkDiscoverer.StopBroadcast();
             }
-            UI_manager.enteringMainMenuRoot();
+            UIManager.EnterMainMenuRoot();
         }
 
         private void setCamerasFollowTransform (Transform follow_transform)

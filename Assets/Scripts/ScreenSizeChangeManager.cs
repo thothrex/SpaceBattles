@@ -74,7 +74,7 @@ namespace SpaceBattles
             {
                 foreach (ScreenBreakpointClient client in BreakpointClients)
                 {
-                    client.doBreakpointRegistration(this);
+                    client.RegisterBreakpoints(this);
                 }
                 init_done = true;
             }

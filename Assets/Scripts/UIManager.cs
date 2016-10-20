@@ -181,7 +181,7 @@ namespace SpaceBattles
 
         public void Start ()
         {
-            enteringMainMenuRoot();
+            EnterMainMenuRoot();
         }
 
         public void Update ()
@@ -269,7 +269,7 @@ namespace SpaceBattles
             main_menu_UI_manager.setPlayerConnectState(new_state);
         }
 
-        public void enteringMainMenuRoot ()
+        public void EnterMainMenuRoot ()
         {
             ui_state = UIState.MAIN_MENU;
             fixed_UI_camera.gameObject.SetActive(true);
@@ -462,7 +462,7 @@ namespace SpaceBattles
                 GameObject instance
                     = setupUIComponentFromPrefab(prefab, player_screen_canvas.transform);
                 UIComponentStem stem_script = instance.GetComponent<UIComponentStem>();
-                stem_script.doBreakpointRegistrations(ssc_manager);
+                stem_script.RegisterBreakpoints(ssc_manager);
                 UIElement element = stem_script.ElementIdentifier;
                 //Debug.Log("Adding element " + element.ToString() + " to the dictionary.");
                 if (UI_component_objects.ContainsKey(element)

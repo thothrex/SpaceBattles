@@ -38,7 +38,7 @@ namespace SpaceBattles
             }
         }
 
-        public void doBreakpointRegistration (IScreenSizeRegister register)
+        public void RegisterBreakpoints (IScreenSizeRegister register)
         {
             MyContract.RequireField(BreakpointEntries != null,
                                     "is not null", "BreakpointEntries");
