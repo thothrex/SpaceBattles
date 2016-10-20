@@ -28,14 +28,15 @@ namespace SpaceBattles
 
         public void Start()
         {
-            if (is_nearest_planet)
+            if (IsNearestPlanet)
             {
-                changeToNearestRadius();
+                ChangeToNearestRadius();
             }
             else
             {
-                changeToSolarSystemRadius();
+                ChangeToSolarSystemRadius();
             }
+
             InvokeRepeating("UpdatePosition", 0.05f, 1.0f);
             
             if (Maths.has_rotation_data())
