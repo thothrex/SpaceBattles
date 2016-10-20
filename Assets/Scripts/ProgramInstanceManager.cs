@@ -301,7 +301,7 @@ namespace SpaceBattles
             // direction from origin
             Vector3 current_target_vector
                 = warp_target
-                .getCurrentGameSolarSystemCoordinates();
+                .GetCurrentGameSolarSystemCoordinates();
             Vector3 normalised_target_vector = current_target_vector.normalized;
             
             double orbit_distance_in_solar_system_scale
@@ -320,12 +320,12 @@ namespace SpaceBattles
             Vector3 nearest_planet_scale_orbit_coordinates = -normalised_target_vector * ndistance;
 
             // Solar System Warps
-            current_nearest_orbiting_body.changeToSolarSystemReferenceFrame();
+            current_nearest_orbiting_body.ChangeToSolarSystemReferenceFrame();
             solar_system_camera.warpTo(solar_scale_orbit_coordinates);
 
             // Orbital Warps
-            warp_target.changeToOrbitalReferenceFrame();
-            warp_target.updateSunDirection(nearest_planet_sunlight);
+            warp_target.ChangeToOrbitalReferenceFrame();
+            warp_target.UpdateSunDirection(nearest_planet_sunlight);
             nearest_planet_camera.warpTo(nearest_planet_scale_orbit_coordinates);
 
             // Playable Area Warp
