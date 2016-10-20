@@ -13,7 +13,11 @@ namespace SpaceBattles
             = OrbitingBodyMathematics.DISTANCE_SCALE_TO_METRES / NEAREST_PLANET_SCALE_TO_METRES;
         
         public OrbitingBodyMathematics.ORBITING_BODY PlanetNumber;
-        public double Radius; // in km i.e. nearest_planet_scale
+        /// <summary>
+        /// In km i.e. nearest_planet_scale
+        /// </summary>
+        [Tooltip("In km i.e. nearest_planet_scale")]
+        public double Radius;
 
         private Vector3 CurrentPlanetsNormalPitchAndRoll;
         private OrbitingBodyMathematics Maths;
