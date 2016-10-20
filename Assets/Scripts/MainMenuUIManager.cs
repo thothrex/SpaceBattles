@@ -18,10 +18,13 @@ namespace SpaceBattles
         // -- delegates --
         public delegate void enterSettingsMenuEventHandler();
         public delegate void enterOrreryMenuEventHandler();
+        public delegate void ExitProgramEventHandler();
+
 
         // -- events --
         public event enterSettingsMenuEventHandler EnterSettingsMenuEvent;
         public event enterOrreryMenuEventHandler EnterOrreryMenuEvent;
+        public event ExitProgramEventHandler ExitProgramEvent;
         // Propagates events from child UI elements upwards to this object,
         // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
         public event PlayGameButtonPressEventHandler PlayGameButtonPress
@@ -104,6 +107,15 @@ namespace SpaceBattles
         public void enterOrrery ()
         {
             EnterOrreryMenuEvent();
+        }
+
+        /// <summary>
+        /// Passthrough to the relevant event
+        /// so that the OnClick can be hooked up in the editor
+        /// </summary>
+        public void ExitProgram ()
+        {
+            ExitProgramEvent();
         }
 
         public void setLayoutToMobile ()

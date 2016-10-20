@@ -122,6 +122,7 @@ namespace SpaceBattles
         {
             // Register event handlers
             UIManager.EnterOrreryInputEvent += EnterOrrery;
+            UIManager.ExitProgramInputEvent += ExitProgram;
             UIManager.ExitNetGameInputEvent += ExitNetworkGame;
             UIManager.PlayGameButtonPress += startPlayingGame;
             UIManager.PitchInputEvent += handlePitchInput;
@@ -212,6 +213,24 @@ namespace SpaceBattles
                
         }
 
+        /// <summary>
+        /// Exiting during a scene load can apparently cause a nasty crash
+        /// </summary>
+        public void ExitProgram ()
+        {
+#if UNITY_EDITOR
+            Debug.Log("Exiting program");
+#endif
+            if (!SceneLoadInProgress)
+            {
+                Application.Quit();
+            }
+            else
+            {
+                StartCoroutine(ExitProgramAfterSceneLoadCoroutine());
+            }
+        }
+
         public void EnterOrrery ()
         {
             if (!OrreryLoaded)
@@ -229,6 +248,25 @@ namespace SpaceBattles
         {
             throw new NotImplementedException("setNearestPlanet disabled until it's actually used");
             //current_nearest_orbiting_body = nearest_planet;
+        }
+
+        public void OnServerDetected(string fromAddress, string data)
+        {
+            Debug.Log("Server detected at address " + fromAddress);
+            // I don't even know if this will do anything
+            if (net_client != null) return;
+            found_game = true;
+            // TODO: implement properly
+            // wait 1 second for more games
+            UIManager.setPlayerConnectState(
+                UIManager.PlayerConnectState.JOINING_SERVER
+            );
+            NetworkDiscoverer.StopBroadcast();
+            NetworkManager.networkAddress = fromAddress;
+            net_client = NetworkManager.StartClient();
+            ClientScene.AddPlayer(0); // this number is scoped to the connection
+                                      // i.e. if I only ever want one player
+                                      // per connection, this is fine
         }
 
         public void warpTo(OrbitingBodyMathematics.ORBITING_BODY orbiting_body)
@@ -432,23 +470,10 @@ namespace SpaceBattles
             looking_for_game = false;
         }
 
-        public void OnServerDetected (string fromAddress, string data)
+        private IEnumerator ExitProgramAfterSceneLoadCoroutine ()
         {
-            Debug.Log("Server detected at address " + fromAddress);
-            // I don't even know if this will do anything
-            if (net_client != null) return;
-            found_game = true;
-            // TODO: implement properly
-            // wait 1 second for more games
-            UI_manager.setPlayerConnectState(
-                UIManager.PlayerConnectState.JOINING_SERVER
-            );
-            network_discoverer.StopBroadcast();
-            network_manager.networkAddress = fromAddress;
-            net_client = network_manager.StartClient();
-            ClientScene.AddPlayer(0); // this number is scoped to the connection
-                                      // i.e. if I only ever want one player
-                                      // per connection, this is fine
+            yield return new WaitWhile(() => SceneLoadInProgress);
+            Application.Quit();
         }
 
         private void ExitNetworkGame ()

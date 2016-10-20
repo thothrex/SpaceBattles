@@ -82,12 +82,14 @@ namespace SpaceBattles
         // -- delegates --
         public delegate void enterOrreryEventHandler();
         public delegate void exitNetworkGameInputEventHandler ();
+        public delegate void exitProgramInputEventHandler ();
         public delegate void rollInputEventHandler (float roll_input);
         public delegate void pitchInputEventHandler (float pitch_input);
 
         // -- events --
         public event enterOrreryEventHandler EnterOrreryInputEvent;
         public event exitNetworkGameInputEventHandler ExitNetGameInputEvent;
+        public event exitProgramInputEventHandler ExitProgramInputEvent;
         public event rollInputEventHandler RollInputEvent;
         public event pitchInputEventHandler PitchInputEvent;
         // Propagates events from child UI elements upwards to this object,
@@ -145,6 +147,7 @@ namespace SpaceBattles
                 in_game_menu_manager.EnterSettingsMenuEvent += enterSettingsMenu;
                 main_menu_UI_manager.EnterSettingsMenuEvent += enterSettingsMenu;
                 main_menu_UI_manager.EnterOrreryMenuEvent += enterOrrery;
+                main_menu_UI_manager.ExitProgramEvent += exitProgram;
                 settings_menu_manager.ExitSettingsMenuEvent += exitSettingsMenu;
                 settings_menu_manager.VirtualJoystickSetEvent += virtualJoystickSetHandler;
 
@@ -324,6 +327,11 @@ namespace SpaceBattles
         public void enterOrrery ()
         {
             EnterOrreryInputEvent();
+        }
+
+        public void exitProgram()
+        {
+            ExitProgramInputEvent();
         }
 
         public void playerShipCreated ()
