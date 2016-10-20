@@ -80,16 +80,16 @@ namespace SpaceBattles
         private InputAdapterModule input_adapter = null;
 
         // -- delegates --
+        public delegate void enterOrreryEventHandler();
         public delegate void exitNetworkGameInputEventHandler ();
         public delegate void rollInputEventHandler (float roll_input);
         public delegate void pitchInputEventHandler (float pitch_input);
-        public delegate void enterOrreryEventHandler ();
 
         // -- events --
+        public event enterOrreryEventHandler EnterOrreryInputEvent;
         public event exitNetworkGameInputEventHandler ExitNetGameInputEvent;
         public event rollInputEventHandler RollInputEvent;
         public event pitchInputEventHandler PitchInputEvent;
-        public event enterOrreryEventHandler EnterOrreryInputEvent;
         // Propagates events from child UI elements upwards to this object,
         // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
         public event PlayGameButtonPressEventHandler PlayGameButtonPress

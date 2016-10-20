@@ -4,6 +4,7 @@ using System.Collections.Generic;       //Allows us to use Lists.
 using UnityEngine.Networking;
 using System.Linq;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 namespace SpaceBattles
 {
@@ -66,6 +67,9 @@ namespace SpaceBattles
         private bool looking_for_game = false;
         private bool found_game = false;
         private bool OrreryLoaded = false;
+        // Hopefully protected by the SceneLoadLock
+        private bool SceneLoadInProgress = false;
+        private System.Object SceneLoadLock = new System.Object();
         // TODO: Actually let the player choose their ship class
         private SpaceShipClass player_ship_class_choice_hidden_value;
         private SpaceShipClass player_ship_class_choice
@@ -208,11 +212,12 @@ namespace SpaceBattles
                
         }
 
-        public void enterOrrery ()
+        public void EnterOrrery ()
         {
-            if (!orrery_loaded)
+            if (!OrreryLoaded)
             {
                 Debug.Log("Loading Orrery");
+                StartCoroutine(SceneLoadedCallbackCoroutine(SceneIndex.ORRERY));
             }
             else
             {
@@ -366,7 +371,48 @@ namespace SpaceBattles
             }
         }
 
-        IEnumerator playGameCoroutine ()
+        private IEnumerator
+        SceneLoadedCallbackCoroutine
+        (SceneIndex sceneIndex)
+        {
+            lock (SceneLoadLock)
+            {
+                SceneLoadInProgress = true;
+                AsyncOperation SceneLoad
+                    = SceneManager.LoadSceneAsync((int)sceneIndex, LoadSceneMode.Additive);
+                ConfirmSceneLoadNotNull(sceneIndex, SceneLoad);
+                yield return new WaitUntil(() => SceneLoad.isDone);
+            }
+
+            Debug.Log("Orrery Scene Loaded");
+        }
+
+        private void
+        ConfirmSceneLoadNotNull
+        (SceneIndex sceneIndex, AsyncOperation SceneLoad)
+        {
+            if (SceneLoad == null)
+            {
+                if (SceneManager.sceneCount < (int)sceneIndex)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        "sceneIndex",
+                        sceneIndex,
+                        CreateInsufficientScenesExceptionMessage(
+                            SceneManager.sceneCount, (int)sceneIndex
+                        )
+                    );
+                }
+                else
+                {
+                    throw new InvalidOperationException(
+                        "LoadSceneAsync returned null"
+                    );
+                }
+            }
+        }
+
+        private IEnumerator playGameCoroutine ()
         {
             // shitty lock DO NOT TRUST
             looking_for_game = true;
@@ -451,6 +497,19 @@ namespace SpaceBattles
             {
                 player_controller.setRoll(roll_input);
             }
+        }
+
+        private string
+        CreateInsufficientScenesExceptionMessage
+            (int buildScenes, int sceneIndex)
+        {
+            return "There are fewer scenes specified in the project's "
+                 + "build settings than the index of the scene you are "
+                 + "trying to load.\n"
+                 + "Total Scenes: "
+                 + buildScenes.ToString()
+                 + "\tAttempted Loading Scene Index: "
+                 + sceneIndex.ToString();
         }
     }
 }
