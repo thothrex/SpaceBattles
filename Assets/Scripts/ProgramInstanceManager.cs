@@ -10,22 +10,21 @@ namespace SpaceBattles
 {
     public class ProgramInstanceManager : MonoBehaviour
     {
-        // Constants
+        // -- Constants/Readonly --
         public static readonly String NO_IPC_ERRMSG
             = "Player object does not have an Incorporeal Player Controller attached.";
         public static readonly String SOLAR_SYSTEM_LAYER_NAME = "PlanetsMoonsAndStars";
         public static readonly String NEAREST_PLANET_LAYER_NAME = "NearestPlanetScale";
         public static readonly double ORBIT_DISTANCE_IN_METRES = 7000000.0; // 7,000km
-        private enum ClientState { MAIN_MENU, MULTIPLAYER_MATCH };
 
+        // -- Fields --
         // Editor-definable components
-
         // Prefabs
         public InertialPlayerCameraController player_camera_prefab;
         public LargeScaleCamera nearest_planet_camera_prefab;
         public LargeScaleCamera solar_system_camera_prefab;
-
         public Light nearest_planet_sunlight_prefab;
+        public GameObject basic_phaser_bolt_prefab;
 
         // (NB: because each planet has so many unique elements
         //      it's cleaner to have these be editor-defined)
@@ -40,18 +39,16 @@ namespace SpaceBattles
         public GameObject uranus_prefab;
         public GameObject neptune_prefab;
         public GameObject UI_manager_prefab;
-        public GameObject UI_manager_obj;
         
         // Created by the editor
         public PassthroughNetworkManager NetworkManager;
         public PassthroughNetworkDiscovery NetworkDiscoverer;
         public SpaceShipClassManager spaceship_class_manager;
-        
+        public GameObject UI_manager_obj;
         public bool dont_destroy_on_load;
-        public GameObject basic_phaser_bolt_prefab;
+        
 
         // Code-defined components
-        
         public OrbitingBodyBackgroundGameObject current_nearest_orbiting_body;
         public InertialPlayerCameraController player_camera = null;
         public LargeScaleCamera nearest_planet_camera = null;
@@ -59,6 +56,7 @@ namespace SpaceBattles
         public Light nearest_planet_sunlight;
 
         private static ProgramInstanceManager instance = null;
+
         private UIManager UIManager;
         private IncorporealPlayerController player_controller;
         private List<GameObject> orbital_bodies;
@@ -72,6 +70,17 @@ namespace SpaceBattles
         private System.Object SceneLoadLock = new System.Object();
         // TODO: Actually let the player choose their ship class
         private SpaceShipClass player_ship_class_choice_hidden_value;
+        // might need this to avoid garbage collection (maybe I'm just dumb)
+        private NetworkClient net_client = null;
+
+        // -- Delegates --
+
+        // -- Events --
+
+        // -- Enums --
+        private enum ClientState { MAIN_MENU, MULTIPLAYER_MATCH };
+
+        // -- Properties --
         private SpaceShipClass player_ship_class_choice
         {
             get
@@ -87,8 +96,6 @@ namespace SpaceBattles
                 }
             }
         }
-        // might need this to avoid garbage collection (maybe I'm just dumb)
-        private NetworkClient net_client = null;
 
         //Awake is always called before any Start functions
         void Awake()
