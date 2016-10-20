@@ -65,6 +65,7 @@ namespace SpaceBattles
         private bool warping = false;
         private bool looking_for_game = false;
         private bool found_game = false;
+        private bool orrery_loaded = false;
         // TODO: Actually let the player choose their ship class
         private SpaceShipClass player_ship_class_choice_hidden_value;
         private SpaceShipClass player_ship_class_choice
@@ -120,23 +121,13 @@ namespace SpaceBattles
             UI_manager.ExitNetGameInputEvent += exitNetworkGame;
             UI_manager.PitchInputEvent += handlePitchInput;
             UI_manager.RollInputEvent += handleRollInput;
+            UI_manager.EnterOrreryInputEvent += enterOrrery;
 
             network_discoverer.ServerDetected
                 += new PassthroughNetworkDiscovery.ServerDetectedEventHandler(OnServerDetected);
             network_discoverer.Initialize();
 
             network_manager.LocalPlayerStarted += LocalPlayerControllerCreatedHandler;
-        }
-
-        //Initializes the game for each level.
-        private void InitGame ()
-        {
-            
-        }
-
-        //Update is called every frame
-        void Update()
-        {
         }
 
         /// <summary>
@@ -214,6 +205,18 @@ namespace SpaceBattles
                 }
             }
                
+        }
+
+        public void enterOrrery ()
+        {
+            if (!orrery_loaded)
+            {
+                Debug.Log("Loading Orrery");
+            }
+            else
+            {
+                Debug.Log("Swapping to Orrery");
+            }
         }
 
         public void setNearestPlanet (OrbitingBodyMathematics.ORBITING_BODY nearest_planet)
@@ -431,16 +434,6 @@ namespace SpaceBattles
             {
                 setCamerasFollowTransform(player_controller.transform);
             }
-        }
-
-        private void registerHostSpawnHandlers ()
-        {
-
-        }
-
-        private void deregisterHostSpawnHandlers ()
-        {
-
         }
 
         private void handlePitchInput (float pitch_input)

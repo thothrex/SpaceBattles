@@ -83,11 +83,13 @@ namespace SpaceBattles
         public delegate void exitNetworkGameInputEventHandler ();
         public delegate void rollInputEventHandler (float roll_input);
         public delegate void pitchInputEventHandler (float pitch_input);
+        public delegate void enterOrreryEventHandler ();
 
         // -- events --
         public event exitNetworkGameInputEventHandler ExitNetGameInputEvent;
         public event rollInputEventHandler RollInputEvent;
         public event pitchInputEventHandler PitchInputEvent;
+        public event enterOrreryEventHandler EnterOrreryInputEvent;
         // Propagates events from child UI elements upwards to this object,
         // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
         public event PlayGameButtonPressEventHandler PlayGameButtonPress
@@ -142,6 +144,7 @@ namespace SpaceBattles
                 in_game_menu_manager.ExitInGameMenuEvent += toggleInGameMenu;
                 in_game_menu_manager.EnterSettingsMenuEvent += enterSettingsMenu;
                 main_menu_UI_manager.EnterSettingsMenuEvent += enterSettingsMenu;
+                main_menu_UI_manager.EnterOrreryMenuEvent += enterOrrery;
                 settings_menu_manager.ExitSettingsMenuEvent += exitSettingsMenu;
                 settings_menu_manager.VirtualJoystickSetEvent += virtualJoystickSetHandler;
 
@@ -316,6 +319,11 @@ namespace SpaceBattles
             showUIElementFromFlags(false, UIElement.MAIN_MENU);
             showUIElement(true, UIElement.GAMEPLAY_UI);
             input_adapter.game_UI_enabled = true;
+        }
+
+        public void enterOrrery ()
+        {
+            EnterOrreryInputEvent();
         }
 
         public void playerShipCreated ()
@@ -513,8 +521,8 @@ namespace SpaceBattles
                 input_adapter = new AndroidInputManager();
 #endif
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-            input_adapter = new AndroidInputManager();
-            //input_adapter = new PCInputManager();
+            //input_adapter = new AndroidInputManager();
+            input_adapter = new PCInputManager();
 #endif
             input_adapter.virtual_joystick_element
                     = UI_component_objects_get(UIElement.VIRTUAL_JOYSTICK);

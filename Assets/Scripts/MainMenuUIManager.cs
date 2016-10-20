@@ -17,9 +17,11 @@ namespace SpaceBattles
 
         // -- delegates --
         public delegate void enterSettingsMenuEventHandler();
+        public delegate void enterOrreryMenuEventHandler();
 
         // -- events --
         public event enterSettingsMenuEventHandler EnterSettingsMenuEvent;
+        public event enterOrreryMenuEventHandler EnterOrreryMenuEvent;
         // Propagates events from child UI elements upwards to this object,
         // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
         public event PlayGameButtonPressEventHandler PlayGameButtonPress
@@ -44,6 +46,10 @@ namespace SpaceBattles
             // Need to do this "late" change
             // in order to avoid Unity crashes.
             // I don't understand why it crashes.
+            //
+            // Actually I think the cause of the crash was an infinite loop
+            // I had elsewhere. This "late" update method
+            // can probably be safely removed.
             if (target_layout != current_layout)
             {
                 switch (target_layout)
@@ -82,9 +88,22 @@ namespace SpaceBattles
             }
         }
 
+        /// <summary>
+        /// Passthrough to the relevant event
+        /// so that the OnClick can be hooked up in the editor
+        /// </summary>
         public void enterSettingsMenu ()
         {
             EnterSettingsMenuEvent();
+        }
+
+        /// <summary>
+        /// Passthrough to the relevant event
+        /// so that the OnClick can be hooked up in the editor
+        /// </summary>
+        public void enterOrrery ()
+        {
+            EnterOrreryMenuEvent();
         }
 
         public void setLayoutToMobile ()
