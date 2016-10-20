@@ -74,6 +74,7 @@ namespace SpaceBattles
         private NetworkClient net_client = null;
 
         // -- Delegates --
+        public delegate void SceneLoadedCallback();
 
         // -- Events --
 
@@ -243,7 +244,12 @@ namespace SpaceBattles
             if (!OrreryLoaded)
             {
                 Debug.Log("Loading Orrery");
-                StartCoroutine(SceneLoadedCallbackCoroutine(SceneIndex.ORRERY));
+                StartCoroutine(
+                    SceneLoadedCallbackCoroutine(
+                        SceneIndex.ORRERY,
+                        InitialiseOrreryScene
+                    )
+                );
             }
             else
             {
@@ -418,7 +424,7 @@ namespace SpaceBattles
 
         private IEnumerator
         SceneLoadedCallbackCoroutine
-        (SceneIndex sceneIndex)
+        (SceneIndex sceneIndex, SceneLoadedCallback callback)
         {
             lock (SceneLoadLock)
             {
@@ -428,7 +434,12 @@ namespace SpaceBattles
                 ConfirmSceneLoadNotNull(sceneIndex, SceneLoad);
                 yield return new WaitUntil(() => SceneLoad.isDone);
             }
+            
+            callback();
+        }
 
+        private void InitialiseOrreryScene ()
+        {
             Debug.Log("Orrery Scene Loaded");
         }
 
