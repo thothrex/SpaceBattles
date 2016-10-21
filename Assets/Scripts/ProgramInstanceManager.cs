@@ -321,12 +321,12 @@ namespace SpaceBattles
 
             // Solar System Warps
             current_nearest_orbiting_body.ChangeToSolarSystemReferenceFrame();
-            solar_system_camera.warpTo(solar_scale_orbit_coordinates);
+            solar_system_camera.WarpTo(solar_scale_orbit_coordinates);
 
             // Orbital Warps
             warp_target.ChangeToOrbitalReferenceFrame();
             warp_target.UpdateSunDirection(nearest_planet_sunlight);
-            nearest_planet_camera.warpTo(nearest_planet_scale_orbit_coordinates);
+            nearest_planet_camera.WarpTo(nearest_planet_scale_orbit_coordinates);
 
             // Playable Area Warp
             //transform.position = new Vector3(0, 0, 0);
@@ -388,9 +388,9 @@ namespace SpaceBattles
             Debug.Log("Instantiating cameras");
             player_camera = Instantiate(player_camera_prefab);
             nearest_planet_camera = Instantiate(nearest_planet_camera_prefab);
-            nearest_planet_camera.using_preset_scale = LargeScaleCamera.PRESET_SCALE.NEAREST_PLANET;
+            nearest_planet_camera.PresetScale = Scale.NearestPlanet;
             solar_system_camera = Instantiate(solar_system_camera_prefab);
-            solar_system_camera.using_preset_scale = LargeScaleCamera.PRESET_SCALE.SOLAR_SYSTEM;
+            solar_system_camera.PresetScale = Scale.SolarSystem;
 
 
             // instantiate with default values (arbitrary)
@@ -514,8 +514,8 @@ namespace SpaceBattles
                 throw new ArgumentNullException();
             }
             player_camera.followTransform         = follow_transform;
-            nearest_planet_camera.followTransform = follow_transform;
-            solar_system_camera.followTransform   = follow_transform;
+            nearest_planet_camera.FollowTransform = follow_transform;
+            solar_system_camera.FollowTransform   = follow_transform;
         }
 
         private void localPlayerShipDestroyedHandler ()

@@ -21,8 +21,8 @@ namespace SpaceBattles
         public float CameraScale = 1;
         public Vector3 DesiredEulerRotation = new Vector3(0, 0, 0);
 
-        public enum PRESET_SCALE { NONE, SOLAR_SYSTEM, NEAREST_PLANET }
-        public PRESET_SCALE using_preset_scale;
+        public bool UsingPresetScale;
+        public Scale PresetScale;
 
         Vector3 GoalPosition;
         Quaternion GoalRotation;
@@ -34,17 +34,10 @@ namespace SpaceBattles
                 this.enabled = false;
             }
 
-            if (using_preset_scale != PRESET_SCALE.NONE)
+            if (UsingPresetScale)
             {
-                switch (using_preset_scale)
-                {
-                    case PRESET_SCALE.SOLAR_SYSTEM:
-                        CameraScale = Convert.ToSingle(OrbitingBodyMathematics.DISTANCE_SCALE_TO_METRES);
-                        break;
-                    case PRESET_SCALE.NEAREST_PLANET:
-                        CameraScale = Convert.ToSingle(Scale.NearestPlanet.MetresMultiplier());
-                        break;
-                }
+                CameraScale
+                    = Convert.ToSingle(PresetScale.MetresMultiplier());
             }
         }
 
