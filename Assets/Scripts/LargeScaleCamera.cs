@@ -7,30 +7,29 @@ namespace SpaceBattles
 {
     public class LargeScaleCamera : MonoBehaviour
     {
-        public Transform followTransform;
+        public Transform FollowTransform;
 
-        public Vector3 camera_offset = new Vector3(0f, 2.5f, -5f);
+        public Vector3 CameraOffset = new Vector3(0f, 2.5f, -5f);
         // this is the "warp" adjustment
         // relative to the warped origin
-        public Vector3 reference_frame_internal_warp = new Vector3(0, 0, 0);
+        public Vector3 ReferenceFrameInternalWarp = new Vector3(0, 0, 0);
         // this is what origin the camera's scale is based around
         // relative to any input coordinates
-        public Vector3 reference_frame_origin_warp = new Vector3(0, 0, 0);
-        public float moveSpeed = 100f;
-        public float turnSpeed = 1f;
-        public float cameraScale = 1;
-        public Vector3 desiredEulerRotation = new Vector3(0, 0, 0);
+        public Vector3 ReferenceFrameOriginWarp = new Vector3(0, 0, 0);
+        public float MoveSpeed = 100f;
+        public float TurnSpeed = 1f;
+        public float CameraScale = 1;
+        public Vector3 DesiredEulerRotation = new Vector3(0, 0, 0);
 
         public enum PRESET_SCALE { NONE, SOLAR_SYSTEM, NEAREST_PLANET }
         public PRESET_SCALE using_preset_scale;
 
-        Vector3 goalPos;
-        Quaternion goalRot;
+        Vector3 GoalPosition;
+        Quaternion GoalRotation;
 
-        // Use this for initialization
-        void Start()
+        public void Start ()
         {
-            if (!followTransform)
+            if (!FollowTransform)
             {
                 this.enabled = false;
             }
@@ -40,34 +39,44 @@ namespace SpaceBattles
                 switch (using_preset_scale)
                 {
                     case PRESET_SCALE.SOLAR_SYSTEM:
-                        cameraScale = Convert.ToSingle(OrbitingBodyMathematics.DISTANCE_SCALE_TO_METRES);
+                        CameraScale = Convert.ToSingle(OrbitingBodyMathematics.DISTANCE_SCALE_TO_METRES);
                         break;
                     case PRESET_SCALE.NEAREST_PLANET:
-                        cameraScale = Convert.ToSingle(Scale.NearestPlanet.MetresMultiplier());
+                        CameraScale = Convert.ToSingle(Scale.NearestPlanet.MetresMultiplier());
                         break;
                 }
             }
         }
 
-        void FixedUpdate()
+        void FixedUpdate ()
         {
-            // could also use null-conditional of the form followTransform?.rotation
-            if (enabled && followTransform != null)
+            // could also use null-conditional
+            // of the form FollowTransform?.rotation
+            if (enabled && FollowTransform != null)
             {
-                goalPos = followTransform.TransformDirection(camera_offset) + (followTransform.position / cameraScale) + reference_frame_internal_warp;
-                goalRot = followTransform.rotation * Quaternion.Euler(desiredEulerRotation); // product combines quaternions
-                transform.position = goalPos;
-                transform.rotation = Quaternion.Lerp(transform.rotation, goalRot, Time.deltaTime * turnSpeed);
+                GoalPosition
+                    = FollowTransform.TransformDirection(CameraOffset)
+                    + (FollowTransform.position / CameraScale)
+                    + ReferenceFrameInternalWarp;
+                GoalRotation
+                    = FollowTransform.rotation
+                    * Quaternion.Euler(DesiredEulerRotation);
+                transform.position
+                    = GoalPosition;
+                transform.rotation
+                    = Quaternion.Lerp(transform.rotation,
+                                      GoalRotation, 
+                                      Time.deltaTime * TurnSpeed);
             }
         }
 
         /// <summary>
         /// Pass in coordinates in base units
         /// </summary>
-        /// <param name="warp_coordinates"></param>
-        public void warpTo(Vector3 warp_coordinates)
+        /// <param name="warpCoordinates"></param>
+        public void WarpTo (Vector3 warpCoordinates)
         {
-            reference_frame_internal_warp = warp_coordinates / cameraScale;
+            ReferenceFrameInternalWarp = warpCoordinates / CameraScale;
         }
     }
 }
