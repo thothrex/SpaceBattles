@@ -6,17 +6,17 @@ namespace SpaceBattles
 {
     [Serializable]
     [Flags]
-    public enum UIElement
+    public enum UIElements
     {
-        NONE = 0,
-        MAIN_MENU = 1,
-        SETTINGS_MENU = 2,
-        SHIP_SELECT = 4,
-        GAMEPLAY_UI = 8,
-        VIRTUAL_JOYSTICK = 16,
-        IN_GAME_MENU = 32,
-        ACCELERATE_BUTTON = 64,
-        FIRE_BUTTON = 128,
-        DEBUG_OUTPUT = 256
+        None = 0,
+        MainMenu = 1,
+        SettingsMenu = 2,
+        ShipSelect = 4,
+        GameplayUI = 8,
+        VirtualJoystick = 16,
+        InGameMenu = 32,
+        AccelerateButton = 64,
+        FireButton = 128,
+        DebugOutput = 256
     }
 }

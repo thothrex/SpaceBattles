@@ -6,7 +6,7 @@ namespace SpaceBattles
 {
     public class UIComponentStem : MonoBehaviour
     {
-        public UIElement ElementIdentifier;
+        public UIElements ElementIdentifier;
         public List<ScreenBreakpointClient> BreakpointClients;
 
         public void RegisterBreakpoints(IScreenSizeRegister register)

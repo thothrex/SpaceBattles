@@ -52,7 +52,7 @@ namespace SpaceBattles
 
         //public Vector3 player_centred_UI_offset;
 
-        private Dictionary<UIElement,GameObject> UI_component_objects = null;
+        private Dictionary<UIElements,GameObject> UI_component_objects = null;
         
         private float input_roll = 0.0f;
         private float input_pitch = 0.0f;
@@ -60,7 +60,7 @@ namespace SpaceBattles
         private bool in_game_menu_visible = false;
         private bool ship_select_menu_visible = false;
         private UIState ui_state = UIState.MAIN_MENU;
-        private UIElement UIElement_ALL;
+        private UIElements UIElement_ALL;
         private GameObject menu_background_object = null;
         private GameObject debug_textbox = null;
 
@@ -121,19 +121,19 @@ namespace SpaceBattles
                     = Instantiate(menu_background_object_prefab);
 
                 main_menu_UI_manager
-                    = UI_component_objects_get(UIElement.MAIN_MENU)
+                    = UI_component_objects_get(UIElements.MainMenu)
                     .GetComponent<MainMenuUIManager>();
 
                 settings_menu_manager
-                    = UI_component_objects_get(UIElement.SETTINGS_MENU)
+                    = UI_component_objects_get(UIElements.SettingsMenu)
                     .GetComponent<SettingsMenuUIManager>();
 
                 in_game_menu_manager
-                    = UI_component_objects_get(UIElement.IN_GAME_MENU)
+                    = UI_component_objects_get(UIElements.InGameMenu)
                     .GetComponent<InGameMenuManager>();
                 
                 gameplay_UI_manager
-                    = UI_component_objects_get(UIElement.GAMEPLAY_UI)
+                    = UI_component_objects_get(UIElements.GameplayUI)
                     .GetComponent<GameplayUIManager>();
 
                 initialiseInputAdapter();
@@ -279,8 +279,8 @@ namespace SpaceBattles
             main_menu_UI_manager.setPlayerConnectState(PlayerConnectState.IDLE);
             // disable all elements which aren't the main menu
             showUIElementFromFlags(false, 
-                                   (UIElement_ALL ^ UIElement.MAIN_MENU));
-            showUIElement(true, UIElement.MAIN_MENU);
+                                   (UIElement_ALL ^ UIElements.MainMenu));
+            showUIElement(true, UIElements.MainMenu);
             menu_background_object.SetActive(true);
             input_adapter.game_UI_enabled = false;
         }
@@ -289,28 +289,28 @@ namespace SpaceBattles
         {
             if (ui_state == UIState.MAIN_MENU)
             {
-                showUIElement(false, UIElement.MAIN_MENU);
+                showUIElement(false, UIElements.MainMenu);
             }
             else if (ui_state == UIState.IN_GAME)
             {
-                showUIElement(false, UIElement.IN_GAME_MENU);
+                showUIElement(false, UIElements.InGameMenu);
             }
             settings_menu_manager.displayVirtualJoystickButtonState(
                 input_adapter.virtual_joystick_enabled
             );
-            showUIElement(true, UIElement.SETTINGS_MENU);
+            showUIElement(true, UIElements.SettingsMenu);
         }
 
         public void exitSettingsMenu ()
         {
-            showUIElement(false, UIElement.SETTINGS_MENU);
+            showUIElement(false, UIElements.SettingsMenu);
             if (ui_state == UIState.MAIN_MENU)
             {
-                showUIElement(true, UIElement.MAIN_MENU);
+                showUIElement(true, UIElements.MainMenu);
             }
             else if (ui_state == UIState.IN_GAME)
             {
-                showUIElement(true, UIElement.IN_GAME_MENU);
+                showUIElement(true, UIElements.InGameMenu);
             }
         }
 
@@ -319,8 +319,8 @@ namespace SpaceBattles
             // TODO: change to start in ship selection
             ui_state = UIState.IN_GAME;
             menu_background_object.SetActive(false);
-            showUIElementFromFlags(false, UIElement.MAIN_MENU);
-            showUIElement(true, UIElement.GAMEPLAY_UI);
+            showUIElementFromFlags(false, UIElements.MainMenu);
+            showUIElement(true, UIElements.GameplayUI);
             input_adapter.game_UI_enabled = true;
         }
 
@@ -345,8 +345,8 @@ namespace SpaceBattles
         public void toggleInGameMenu ()
         {
             bool toggle_on = in_game_menu_visible;
-            showUIElement(!toggle_on, UIElement.IN_GAME_MENU);
-            showUIElement(toggle_on, UIElement.GAMEPLAY_UI);
+            showUIElement(!toggle_on, UIElements.InGameMenu);
+            showUIElement(toggle_on, UIElements.GameplayUI);
             in_game_menu_visible = !toggle_on;
         }
 
@@ -433,9 +433,9 @@ namespace SpaceBattles
         /// </summary>
         private void initialiseUIElementAll ()
         {
-            Array allUIElementValues = Enum.GetValues(typeof(UIElement));
-            UIElement_ALL = UIElement.NONE;
-            foreach (UIElement e in allUIElementValues)
+            Array allUIElementValues = Enum.GetValues(typeof(UIElements));
+            UIElement_ALL = UIElements.None;
+            foreach (UIElements e in allUIElementValues)
             {
                 UIElement_ALL |= e;
             }
@@ -464,14 +464,14 @@ namespace SpaceBattles
 
 
             UI_component_objects
-                = new Dictionary<UIElement, GameObject>();
+                = new Dictionary<UIElements, GameObject>();
             foreach (GameObject prefab in UI_component_object_prefabs)
             {
                 GameObject instance
                     = setupUIComponentFromPrefab(prefab, player_screen_canvas.transform);
                 UIComponentStem stem_script = instance.GetComponent<UIComponentStem>();
                 stem_script.RegisterBreakpoints(ssc_manager);
-                UIElement element = stem_script.ElementIdentifier;
+                UIElements element = stem_script.ElementIdentifier;
                 //Debug.Log("Adding element " + element.ToString() + " to the dictionary.");
                 if (UI_component_objects.ContainsKey(element)
                 &&  UI_component_objects_get(element) != null)
@@ -512,7 +512,7 @@ namespace SpaceBattles
 
             // don't know why but special case
             if (new_obj.GetComponent<UIComponentStem>()
-                .ElementIdentifier == UIElement.SETTINGS_MENU)
+                .ElementIdentifier == UIElements.SettingsMenu)
             {
                 new_UI_transform.anchorMin = prefab_transform.anchorMin;
                 new_UI_transform.anchorMax = prefab_transform.anchorMax;
@@ -533,30 +533,30 @@ namespace SpaceBattles
             input_adapter = new PCInputManager();
 #endif
             input_adapter.virtual_joystick_element
-                    = UI_component_objects_get(UIElement.VIRTUAL_JOYSTICK);
+                    = UI_component_objects_get(UIElements.VirtualJoystick);
 
             input_adapter.accelerate_button_name = ACCELERATE_BUTTON_NAME;
             input_adapter.accelerate_button_element
-                = UI_component_objects_get(UIElement.ACCELERATE_BUTTON);
+                = UI_component_objects_get(UIElements.AccelerateButton);
             if (!CnControls
                 .CnInputManager
                 .ButtonExists(ACCELERATE_BUTTON_NAME))
             {
                 throw new ArgumentException(
-                    button_name_errmsg(UIElement.ACCELERATE_BUTTON,
+                    button_name_errmsg(UIElements.AccelerateButton,
                                        ACCELERATE_BUTTON_NAME)
                 );
             }
 
             input_adapter.fire_button_name = FIRE_BUTTON_NAME;
             input_adapter.fire_button_element
-                = UI_component_objects_get(UIElement.FIRE_BUTTON);
+                = UI_component_objects_get(UIElements.FireButton);
             if (!CnControls
                 .CnInputManager
                 .ButtonExists(FIRE_BUTTON_NAME))
             {
                 throw new ArgumentException(
-                    button_name_errmsg(UIElement.FIRE_BUTTON,
+                    button_name_errmsg(UIElements.FireButton,
                                        FIRE_BUTTON_NAME)
                 );
             }
@@ -574,9 +574,9 @@ namespace SpaceBattles
         /// <param name="elements">
         /// Variable-length number of UIElements to show or hide.
         /// </param>
-        private void showUIElement (bool show, params UIElement[] elements)
+        private void showUIElement (bool show, params UIElements[] elements)
         {
-            foreach (UIElement e in elements)
+            foreach (UIElements e in elements)
             {
                 //Debug.Log("Attempting to show " + e.ToString());
                 GameObject obj;
@@ -594,11 +594,11 @@ namespace SpaceBattles
             }
         }
 
-        private void showUIElementFromFlags(bool show, UIElement elements)
+        private void showUIElementFromFlags(bool show, UIElements elements)
         {
-            Array allUIElementValues = Enum.GetValues(typeof(UIElement));
-            List<UIElement> args = new List<UIElement>();
-            foreach (UIElement e in allUIElementValues)
+            Array allUIElementValues = Enum.GetValues(typeof(UIElements));
+            List<UIElements> args = new List<UIElements>();
+            foreach (UIElements e in allUIElementValues)
             {
                 if ((e & elements) > 0)
                 {
@@ -614,7 +614,7 @@ namespace SpaceBattles
             ExitNetGameInputEvent();
         }
 
-        private GameObject UI_component_objects_get (UIElement element)
+        private GameObject UI_component_objects_get (UIElements element)
         {
             GameObject obj;
             if (UI_component_objects.TryGetValue(element, out obj))
@@ -630,7 +630,7 @@ namespace SpaceBattles
             }
         }
 
-        private string button_name_errmsg (UIElement button_element, 
+        private string button_name_errmsg (UIElements button_element, 
                                            String intended_name)
         {
             return "The "
@@ -644,7 +644,7 @@ namespace SpaceBattles
         private void virtualJoystickSetHandler(bool enabled)
         {
             input_adapter.virtual_joystick_enabled = enabled;
-            UI_component_objects_get(UIElement.VIRTUAL_JOYSTICK)
+            UI_component_objects_get(UIElements.VirtualJoystick)
                 .SetActive(enabled);
         }
     }
