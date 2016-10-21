@@ -43,7 +43,7 @@ namespace SpaceBattles
                         cameraScale = Convert.ToSingle(OrbitingBodyMathematics.DISTANCE_SCALE_TO_METRES);
                         break;
                     case PRESET_SCALE.NEAREST_PLANET:
-                        cameraScale = Convert.ToSingle(OrbitingBodyBackgroundGameObject.NEAREST_PLANET_SCALE_TO_METRES);
+                        cameraScale = Convert.ToSingle(Scale.NearestPlanet.MetresMultiplier());
                         break;
                 }
             }

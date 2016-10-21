@@ -313,7 +313,7 @@ namespace SpaceBattles
             Vector3 solar_scale_orbit_coordinates = normalised_target_vector * sdistance;
 
             double orbit_distance_in_nearest_planet_scale
-                = ORBIT_DISTANCE_IN_METRES / OrbitingBodyBackgroundGameObject.NEAREST_PLANET_SCALE_TO_METRES;
+                = ORBIT_DISTANCE_IN_METRES / Scale.NearestPlanet.MetresMultiplier();
             // var name is in capitals - Nearest planet scale DISTANCE
             float ndistance = System.Convert.ToSingle(orbit_distance_in_nearest_planet_scale);
             // need to go backwards i.e. towards the sun to be on the sunny side

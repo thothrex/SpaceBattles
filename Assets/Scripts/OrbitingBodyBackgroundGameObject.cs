@@ -6,23 +6,22 @@ namespace SpaceBattles
     public class OrbitingBodyBackgroundGameObject : MonoBehaviour
     {
         // -- Fields --
-        public static readonly double NEAREST_PLANET_SCALE_TO_METRES = 1000000.0; // using planetary scale of 1,000km
-        public static readonly double NEAREST_PLANET_SCALE_TO_ORBITING_BODY_SCALE
-            = NEAREST_PLANET_SCALE_TO_METRES / OrbitingBodyMathematics.DISTANCE_SCALE_TO_METRES;
-        public static readonly double ORBITING_BODY_SCALE_TO_NEAREST_PLANET_SCALE
-            = OrbitingBodyMathematics.DISTANCE_SCALE_TO_METRES / NEAREST_PLANET_SCALE_TO_METRES;
-        
         public OrbitingBodyMathematics.ORBITING_BODY PlanetNumber;
         /// <summary>
-        /// In km i.e. nearest_planet_scale
+        /// In km i.e. nearest_planet_scale. 
+        /// 
+        /// The Maths does not use radius at all (only mass)
+        /// so it is okay to be a bit loose with it.
         /// </summary>
-        [Tooltip("In km i.e. nearest_planet_scale")]
+        [Tooltip("In km i.e. NearestPlanetScale")]
         public double Radius;
 
         private Vector3 CurrentPlanetsNormalPitchAndRoll;
         private OrbitingBodyMathematics Maths;
         private bool IsNearestPlanet = false;
-        
+
+        // -- Enums --
+
 
         // -- Methods --
         public void Awake()
@@ -42,7 +41,7 @@ namespace SpaceBattles
             }
 
             InvokeRepeating("UpdatePosition", 0.05f, 1.0f);
-            
+
             if (Maths.has_rotation_data())
             {
                 transform.localEulerAngles = Maths.default_rotation_tilt_euler_angle;
@@ -83,7 +82,7 @@ namespace SpaceBattles
             return Maths.current_location_game_coordinates();
         }
 
-        private void UpdatePosition ()
+        private void UpdatePosition()
         {
             if (IsNearestPlanet)
             {
@@ -95,30 +94,55 @@ namespace SpaceBattles
             }
         }
 
-        private void UpdateRotation ()
+        private void UpdateRotation()
         {
             // negative because anti-clockwise
             float TargetRotation
-                = - Convert.ToSingle(
+                = -Convert.ToSingle(
                     Maths.current_daily_rotation_progress()
                     / OrbitingBodyMathematics.DEG_TO_RAD)
                 ;
-            float NeededRotation = TargetRotation 
+            float NeededRotation = TargetRotation
                                   - transform.localEulerAngles.y;
             transform.Rotate(transform.up, NeededRotation, Space.World);
         }
 
-        private void ChangeToNearestRadius ()
+        private void ChangeToNearestRadius()
         {
-            float fRadius = Convert.ToSingle(Radius);
-            transform.localScale = new Vector3(fRadius, fRadius, fRadius);
+            SetScale(Scale.NearestPlanet);
         }
 
-        private void ChangeToSolarSystemRadius ()
+        private void ChangeToSolarSystemRadius()
         {
-            double ScaledRadius = Radius * NEAREST_PLANET_SCALE_TO_ORBITING_BODY_SCALE;
-            float fScaledRadius = Convert.ToSingle(ScaledRadius);
-            transform.localScale = new Vector3(fScaledRadius, fScaledRadius, fScaledRadius);
+            SetScale(Scale.SolarSystem);
+        }
+
+        /// <summary>
+        /// NB: does not alter the camera rendering layer
+        /// or periodic transform updates
+        /// (use ChangeToXReferenceFrame for full functionality)
+        /// </summary>
+        /// <param name="targetScale"></param>
+        public void SetScale(Scale targetScale)
+        {
+            double ScaledRadius
+                = Scale.NearestPlanet
+                .ConvertMeasurementTo(targetScale, Radius);
+            SetScale(ScaledRadius);
+        }
+
+        /// <summary>
+        /// NB: does not alter the camera rendering layer
+        /// or periodic transform updates
+        /// (use ChangeToXReferenceFrame for full functionality)
+        /// </summary>
+        /// <param name="scaledRadius"></param>
+        public void SetScale(double scaledRadius)
+        {
+            float fScaledRadius
+                = Convert.ToSingle(scaledRadius);
+            transform.localScale
+                = new Vector3(fScaledRadius, fScaledRadius, fScaledRadius);
         }
     }
 }
