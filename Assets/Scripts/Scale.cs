@@ -56,8 +56,8 @@ namespace SpaceBattles
              Scale targetScale,
              double valueToScale)
         {
-            double ScaleRatio = targetScale.MetresMultiplier()
-                               / initialScale.MetresMultiplier();
+            double ScaleRatio = initialScale.MetresMultiplier()
+                              / targetScale.MetresMultiplier();
             return valueToScale * ScaleRatio;
         }
     }
