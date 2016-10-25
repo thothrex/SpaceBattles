@@ -5,6 +5,9 @@ namespace SpaceBattles
 {
     public class OrbitingBodyBackgroundGameObject : MonoBehaviour
     {
+        // -- Const Fields --
+        private const double DEFAULT_SCALE_VALUE = 0.0;
+
         // -- Fields --
         public OrbitingBodyMathematics.ORBITING_BODY PlanetNumber;
         /// <summary>
@@ -19,6 +22,7 @@ namespace SpaceBattles
         private Vector3 CurrentPlanetsNormalPitchAndRoll;
         private OrbitingBodyMathematics Maths;
         private bool IsNearestPlanet = false;
+        private double ExplicitScale = DEFAULT_SCALE_VALUE;
 
         // -- Enums --
 
@@ -31,13 +35,17 @@ namespace SpaceBattles
 
         public void Start()
         {
-            if (IsNearestPlanet)
+            // If not using an explicit scale value
+            if (ExplicitScale.Equals(DEFAULT_SCALE_VALUE))
             {
-                ChangeToNearestRadius();
-            }
-            else
-            {
-                ChangeToSolarSystemRadius();
+                if (IsNearestPlanet)
+                {
+                    ChangeToNearestRadius();
+                }
+                else
+                {
+                    ChangeToSolarSystemRadius();
+                }
             }
 
             InvokeRepeating("UpdatePosition", 0.05f, 1.0f);
@@ -139,6 +147,8 @@ namespace SpaceBattles
         /// <param name="scaledRadius"></param>
         public void SetScale(double scaledRadius)
         {
+            Debug.Log("Setting planet scale explicitly to " + scaledRadius);
+            ExplicitScale = scaledRadius;
             float fScaledRadius
                 = Convert.ToSingle(scaledRadius);
             transform.localScale

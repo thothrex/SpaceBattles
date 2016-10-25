@@ -17,6 +17,7 @@ namespace SpaceBattles
         InGameMenu = 32,
         AccelerateButton = 64,
         FireButton = 128,
-        DebugOutput = 256
+        DebugOutput = 256,
+        MainMenuBackgroundCamera = 512
     }
 }

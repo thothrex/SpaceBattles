@@ -89,6 +89,16 @@ namespace SpaceBattles
         /// </summary>
         public void OnScreenSizeChange()
         {
+            Debug.Log("Manager received a size change event");
+            Debug.Log("Manager is: "
+                    + (this.isActiveAndEnabled ? "not " : "")
+                    + "ActiveAndEnabled");
+            Debug.Log("Manager is: "
+                    + (IsInternal ? "not " : "")
+                    + "Internal");
+            Debug.Log("FixedUICamera is: "
+                    + (FixedUICamera.isActiveAndEnabled ? "not " : "")
+                    + "ActiveAndEnabled");
             if (this.isActiveAndEnabled
             &&  !IsInternal
             &&  FixedUICamera.isActiveAndEnabled)
@@ -106,6 +116,7 @@ namespace SpaceBattles
         /// <param name="new_size"></param>
         public void OnScreenSizeChange(Rect new_size)
         {
+            Debug.Log("Manager received an internal size change event");
             if (this.isActiveAndEnabled
             &&  IsInternal)
             {

@@ -21,8 +21,10 @@ namespace SpaceBattles
             }
         }
 
-        public void printVariable (Rect variable)
+        public void PrintVariable (Rect variable)
         {
+            MyContract.RequireArgumentNotNull(variable, "variable");
+            MyContract.RequireFieldNotNull(textbox, "textbox");
             textbox.text = variable.ToString();
         }
 

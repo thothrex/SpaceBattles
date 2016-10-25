@@ -55,10 +55,6 @@ namespace SpaceBattles
         }
 
         /// <summary>
-        /// "protected"
-        /// 
-        /// Gets the rect from the provided fixed UI camera
-        /// to propagate the viewport size to listeners.
         /// </summary>
         override
         protected void OnRectTransformDimensionsChange()
@@ -73,6 +69,7 @@ namespace SpaceBattles
                 ScreenResized.Invoke();
                 ScreenResizedInternal.Invoke(host_rect.rect);
             }
+            //Debug.Log("Trigger received a size change event");
         }
 
         [Serializable]

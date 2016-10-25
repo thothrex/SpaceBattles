@@ -35,28 +35,26 @@ namespace SpaceBattles
         public IncorporealPlayerController player_controller;
 
         public Canvas PlayerScreenCanvasPrefab;
-        public Camera fixed_UI_camera_prefab;
+        public Camera FixedUiCameraPrefab;
         public Camera ship_select_camera_prefab;
         
         public List<GameObject> UiComponentObjectPrefabs;
-        public GameObject menu_background_object_prefab;
         public bool PrintScreenSizeDebugText;
 
         //public Vector3 player_centred_UI_offset;
         
         private float input_roll = 0.0f;
         private float input_pitch = 0.0f;
-        private bool UI_objects_instantiated = false;
+        private bool UiObjectsInstantiated = false;
         private bool in_game_menu_visible = false;
         private bool ship_select_menu_visible = false;
         private UiInputState ui_state = UiInputState.MainMenu;
         private UIElements UIElement_ALL;
-        private GameObject menu_background_object = null;
-        private GameObject debug_textbox = null;
+        private GameObject DebugTextbox = null;
 
         private Camera player_UI_camera = null; // for the which UI follows player avatar
-        private Camera fixed_UI_camera = null; // UI doesn't move compared to camera
-        private Camera ship_select_camera = null; // Camera inhabits a separate "scene"
+        private Camera FixedUiCamera = null; // UI doesn't move compared to camera
+        private Camera ShipSelectCamera = null; // Camera inhabits a separate "scene"
 
         //private Canvas player_centred_canvas = null;
         private Canvas PlayerScreenCanvas = null;
@@ -97,6 +95,32 @@ namespace SpaceBattles
 
         // -- enums --
         public enum PlayerConnectState { IDLE, SEARCHING_FOR_SERVER, JOINING_SERVER, CREATING_SERVER };
+        public enum TransitionType
+        {
+            /// <summary>
+            /// Clears the UI history;
+            /// deactivates any active UI elements;
+            /// activates the target UI elements.
+            /// </summary>
+            Fresh,
+            /// <summary>
+            /// Adds the current state to the UI history;
+            /// deactivates any active UI elements;
+            /// activates the target UI elements.
+            /// </summary>
+            Tracked,
+            /// <summary>
+            /// Activates the target UI elements.
+            /// Leaves the UI history unchanged.
+            /// </summary>
+            Additive,
+            /// <summary>
+            /// Deactivates the target UI elements.
+            /// Leaves the UI history unchanged.
+            /// </summary>
+            Subtractive
+        };
+
         private enum UiInputState { InGame, MainMenu };
 
         // -- properties --
@@ -104,7 +128,7 @@ namespace SpaceBattles
         // -- methods --
         public void Awake ()
         {
-            if (!UI_objects_instantiated)
+            if (!UiObjectsInstantiated)
             {
                 // UI objects
                 Debug.Log("UI Manager instantiating UI objects");
@@ -112,8 +136,6 @@ namespace SpaceBattles
                 initialiseUIElementAll();
                 SSCManager = GetComponent<ScreenSizeChangeManager>();
                 InstantiateUIObjects();
-                menu_background_object
-                    = Instantiate(menu_background_object_prefab);
 
                 MainMenuUIManager
                     = ComponentRegistry
@@ -155,40 +177,50 @@ namespace SpaceBattles
                 settings_menu_manager.VirtualJoystickSetEvent += OnVirtualJoystickEnabled;
 
                 // Initialise cameras
-                initialiseGameUICameras();
+                InitialiseGameUICameras();
                 //hideShipSelectionUI();
 
                 if (dont_destroy_on_load)
                 {
                     //Test
                     UnityEngine.Object.DontDestroyOnLoad(PlayerScreenCanvas);
-                    UnityEngine.Object.DontDestroyOnLoad(menu_background_object);
                     //Sets this to not be destroyed when reloading scene
                     UnityEngine.Object.DontDestroyOnLoad(gameObject);
-                    UnityEngine.Object.DontDestroyOnLoad(fixed_UI_camera);
-                    UnityEngine.Object.DontDestroyOnLoad(ship_select_camera);
+                    UnityEngine.Object.DontDestroyOnLoad(FixedUiCamera);
+                    UnityEngine.Object.DontDestroyOnLoad(ShipSelectCamera);
                     Debug.Log("objects prevented from being destroyed on load");
                 }
 
                 if (PrintScreenSizeDebugText)
                 {
-                    debug_textbox
+                    DebugTextbox
                         = ComponentRegistry
                         .RetrieveGameObject(UIElements.DebugOutput);
-                    VariableTextboxPrinter printer
-                        = debug_textbox.GetComponent<VariableTextboxPrinter>();
-                    MyContract.RequireField(printer != null,
+                    DebugTextbox.SetActive(true);
+                    VariableTextboxPrinter Printer
+                        = DebugTextbox.GetComponent<VariableTextboxPrinter>();
+                    MyContract.RequireField(Printer != null,
                                             "debug textbox object has a variabletextprinter component attached",
                                             "DebugTextboxPrefab");
-                    SSCManager.ScreenResized.AddListener(printer.printVariable);
+                    SSCManager.ScreenResized.AddListener(Printer.PrintVariable);
                 }
 
-                UI_objects_instantiated = true;
+                UiObjectsInstantiated = true;
             }
         }
 
         public void Start ()
         {
+            InertialPlayerCameraController MainMenuBackgroundCamera
+                = ComponentRegistry
+                .RetrieveGameObject(UIElements.MainMenuBackgroundCamera)
+                .GetComponent<InertialPlayerCameraController>();
+            MainMenuBackgroundCamera.followTransform
+                = MainMenuUIManager
+                .BackgroundOrbitalBody
+                .GetComponent<Transform>();
+
+            showUIElementFromFlags(false, UIElement_ALL);
             EnterMainMenuRoot();
         }
 
@@ -277,15 +309,61 @@ namespace SpaceBattles
             MainMenuUIManager.SetPlayerConnectState(newState);
         }
 
+        public void
+        TransitionToUIElements
+        (TransitionType transitionType, UIElements newUIElements)
+        {
+            if (transitionType == TransitionType.Tracked)
+            {
+                // Add current active elements as a new history element
+                UITransitionHistory.Push(ActiveUIElements);
+            }
+
+            if (transitionType == TransitionType.Fresh
+            || transitionType == TransitionType.Tracked)
+            {
+                // Deactivate current UIElements
+                Debug.Log("TransitionToUIElements hiding elements " + ActiveUIElements);
+                showUIElementFromFlags(false, ActiveUIElements);
+                ActiveUIElements = UIElements.None;
+            }
+
+            if (transitionType == TransitionType.Subtractive)
+            {
+                // Deactivate newUIElements
+                showUIElementFromFlags(false, newUIElements);
+                // Remove deactivated elements from ActiveUIElements
+                UIElements DeactivatedComponents
+                    = newUIElements & ActiveUIElements;
+                ActiveUIElements ^= DeactivatedComponents;
+            }
+            else
+            {
+                // Activate new UIElements
+                Debug.Log("TransitionToUIElements showing elements " + newUIElements);
+                showUIElementFromFlags(true, newUIElements);
+                ActiveUIElements |= newUIElements;
+            }
+
+            if (transitionType == TransitionType.Fresh)
+            {
+                // Clear history
+                UITransitionHistory.Clear();
+            }
+        }
+
         public void EnterMainMenuRoot ()
         {
             ui_state = UiInputState.MainMenu;
-            fixed_UI_camera.gameObject.SetActive(true);
-            // disable all elements which aren't the main menu
-            showUIElementFromFlags(false, 
-                                   (UIElement_ALL ^ UIElements.MainMenu));
-            showUIElement(true, UIElements.MainMenu);
-            menu_background_object.SetActive(true);
+            // TODO: pull this debug text into the main menu manager
+            if (PrintScreenSizeDebugText)
+            {
+                DebugTextbox.SetActive(true);
+            }
+            TransitionToUIElements(
+                TransitionType.Fresh,
+                UIElements.MainMenu | UIElements.MainMenuBackgroundCamera
+            );
         }
 
         public void enterSettingsMenu ()
@@ -321,7 +399,6 @@ namespace SpaceBattles
         {
             // TODO: change to start in ship selection
             ui_state = UiInputState.InGame;
-            menu_background_object.SetActive(false);
             showUIElementFromFlags(false, UIElements.MainMenu);
             showUIElement(true, UIElements.GameplayUI);
         }
@@ -375,17 +452,18 @@ namespace SpaceBattles
         /// This is expected to be called at game start,
         /// as the cameras could be used from the main menu
         /// </summary>
-        public void initialiseGameUICameras()
+        public void InitialiseGameUICameras()
         {
-            fixed_UI_camera
-                = Instantiate(fixed_UI_camera_prefab);
-            ship_select_camera
+            FixedUiCamera
+                = Instantiate(FixedUiCameraPrefab);
+            ShipSelectCamera
                 = Instantiate(ship_select_camera_prefab);
             if (SSCManager == null)
             {
                 throw new InvalidOperationException(SSC_MANAGER_NOT_INITIALISED_EXC);
             }
-            SSCManager.FixedUICamera = fixed_UI_camera;
+            SSCManager.FixedUICamera = FixedUiCamera;
+            Debug.Log("Fixed UI Camera for the SSCManager has been set");
 
             setInGameUICamerasActive(false);
         }
@@ -396,8 +474,7 @@ namespace SpaceBattles
         /// <param name="active">cameras active/true or inactive/false</param>
         public void setInGameUICamerasActive(bool active)
         {
-            fixed_UI_camera.gameObject.SetActive(active);
-            ship_select_camera.gameObject.SetActive(active);
+            ShipSelectCamera.gameObject.SetActive(active);
         }
 
         /// <summary>
@@ -525,6 +602,10 @@ namespace SpaceBattles
                 if (ComponentRegistry.TryGetValue(e, out obj))
                 {
                     obj.SetActive(show);
+                    Debug.Log(
+                          (show ? "Showing" : "Hiding")
+                        + " element "
+                        + e);
                 }
                 else
                 {

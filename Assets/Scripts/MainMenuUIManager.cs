@@ -6,22 +6,26 @@ namespace SpaceBattles
 {
     public class MainMenuUIManager : MonoBehaviour
     {
-        // -- fields --
+        // -- Constant Fields --
+        private const double BACKGROUND_ORBITAL_BODY_SCALE = 10.0;
+
+        // -- Fields --
         public GameObject StartGameButtonObject;
+        public GameObject BackgroundOrbitalBody;
         public ExplicitLayoutGroup MobileLayout;
         public ExplicitLayoutGroup DesktopLayout;
 
         private ButtonMainMenuPlayGame start_game_button_manager;
-        private MENU_LAYOUT current_layout = MENU_LAYOUT.DESKTOP;
-        private MENU_LAYOUT target_layout = MENU_LAYOUT.DESKTOP;
+        private MenuLayout CurrentLayout = MenuLayout.Desktop;
+        private MenuLayout target_layout = MenuLayout.Desktop;
 
-        // -- delegates --
+        // -- Delegates --
         public delegate void enterSettingsMenuEventHandler();
         public delegate void enterOrreryMenuEventHandler();
         public delegate void ExitProgramEventHandler();
 
 
-        // -- events --
+        // -- Events --
         public event enterSettingsMenuEventHandler EnterSettingsMenuEvent;
         public event enterOrreryMenuEventHandler EnterOrreryMenuEvent;
         public event ExitProgramEventHandler ExitProgramEvent;
@@ -33,15 +37,23 @@ namespace SpaceBattles
             remove { start_game_button_manager.PlayGameButtonPress -= value; }
         }
 
-        // -- enums --
-        public enum MENU_LAYOUT { DESKTOP, MOBILE }
+        // -- Enums --
+        private enum MenuLayout { Desktop, Mobile }
 
         
-        // -- methods --
-        public void Awake()
+        // -- Methods --
+        public void Awake ()
         {
             start_game_button_manager
                 = StartGameButtonObject.GetComponent<ButtonMainMenuPlayGame>();
+        }
+
+        public void Start ()
+        {
+            Debug.Log("Setting explicit background earth scale");
+            BackgroundOrbitalBody
+                .GetComponent<OrbitingBodyBackgroundGameObject>()
+                .SetScale(BACKGROUND_ORBITAL_BODY_SCALE);
         }
 
         public void Update ()
@@ -53,18 +65,18 @@ namespace SpaceBattles
             // Actually I think the cause of the crash was an infinite loop
             // I had elsewhere. This "late" update method
             // can probably be safely removed.
-            if (target_layout != current_layout)
+            if (target_layout != CurrentLayout)
             {
                 switch (target_layout)
                 {
-                    case MENU_LAYOUT.DESKTOP:
+                    case MenuLayout.Desktop:
                         doLayoutChangeToDesktop();
                         break;
-                    case MENU_LAYOUT.MOBILE:
+                    case MenuLayout.Mobile:
                         doLayoutChangeToMobile();
                         break;
                     default:
-                        throw new UnexpectedEnumValueException<MENU_LAYOUT>(target_layout);
+                        throw new UnexpectedEnumValueException<MenuLayout>(target_layout);
                 }
             }
         }
@@ -124,7 +136,7 @@ namespace SpaceBattles
 
             Debug.Log("MainMenuManager setting layout to mobile");
 
-            target_layout = MENU_LAYOUT.MOBILE;
+            target_layout = MenuLayout.Mobile;
         }
 
         public void setLayoutToDesktop ()
@@ -133,19 +145,19 @@ namespace SpaceBattles
 
             Debug.Log("MainMenuManager setting layout to desktop");
 
-            target_layout = MENU_LAYOUT.DESKTOP;
+            target_layout = MenuLayout.Desktop;
         }
 
         private void doLayoutChangeToMobile ()
         {
             MobileLayout.applyLayout();
-            current_layout = MENU_LAYOUT.MOBILE;
+            CurrentLayout = MenuLayout.Mobile;
         }
 
         private void doLayoutChangeToDesktop()
         {
             DesktopLayout.applyLayout();
-            current_layout = MENU_LAYOUT.DESKTOP;
+            CurrentLayout = MenuLayout.Desktop;
         }
     }
 }
