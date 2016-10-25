@@ -25,11 +25,42 @@ namespace SpaceBattles
         {
             foreach (GameObject Prefab in prefabs)
             {
-                GameObject instance
+                GameObject Instance
                     = SetupUIComponentFromPrefab(Prefab, parentCanvas.transform);
-                UIComponentStem stem_script = instance.GetComponent<UIComponentStem>();
-                stem_script.RegisterBreakpoints(register);
-                UIElements element = stem_script.ElementIdentifier;
+                UIComponentStem StemScript = Instance.GetComponent<UIComponentStem>();
+                StemScript.RegisterBreakpoints(register);
+                UIElements Element = StemScript.ElementIdentifier;
+                //Debug.Log("Adding element " + element.ToString() + " to the dictionary.");
+                if (UiComponentObjects.ContainsKey(Element)
+                && RetrieveGameObject(Element) != null)
+                {
+                    throw new InvalidOperationException(
+                        "Trying to instantiate a second " + Element.ToString()
+                    );
+                }
+                else
+                {
+                    UiComponentObjects.Add(Element, Instance);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Expects GameObjects which have already been instantiated
+        /// e.g. ones which are part of the same prefab as the parent.
+        /// </summary>
+        /// <param name="gameObjects"></param>
+        /// <param name="register"></param>
+        public void
+        RegisterGameObjects
+            (List<GameObject>gameObjects,
+             IScreenSizeBreakpointRegister register)
+        {
+            foreach (GameObject CurrentObject in gameObjects)
+            {
+                UIComponentStem StemScript = CurrentObject.GetComponent<UIComponentStem>();
+                StemScript.RegisterBreakpoints(register);
+                UIElements element = StemScript.ElementIdentifier;
                 //Debug.Log("Adding element " + element.ToString() + " to the dictionary.");
                 if (UiComponentObjects.ContainsKey(element)
                 && RetrieveGameObject(element) != null)
@@ -40,12 +71,12 @@ namespace SpaceBattles
                 }
                 else
                 {
-                    UiComponentObjects.Add(element, instance);
+                    UiComponentObjects.Add(element, CurrentObject);
                 }
             }
         }
 
-        public GameObject RetrieveGameObject(UIElements element)
+        public GameObject RetrieveGameObject (UIElements element)
         {
             GameObject obj;
             if (UiComponentObjects.TryGetValue(element, out obj))
@@ -85,14 +116,18 @@ namespace SpaceBattles
         /// Transform which will be the parent of the instantiated GameObject
         /// </param>
         /// <returns></returns>
-        private GameObject SetupUIComponentFromPrefab(GameObject prefab, Transform parentTransform)
+        private GameObject
+        SetupUIComponentFromPrefab
+            (GameObject prefab, Transform parentTransform)
         {
             GameObject NewObj = GameObject.Instantiate(prefab);
             RectTransform NewTransform = NewObj.GetComponent<RectTransform>();
             RectTransform PrefabTransform = prefab.GetComponent<RectTransform>();
 
-            MyContract.RequireArgumentNotNull(NewTransform, "Prefab's RectTransform");
-            MyContract.RequireArgumentNotNull(PrefabTransform, "Prefab's RectTransform");
+            MyContract.RequireArgumentNotNull(NewTransform,
+                                              "Prefab's RectTransform");
+            MyContract.RequireArgumentNotNull(PrefabTransform,
+                                              "Prefab's RectTransform");
 
             NewTransform.SetParent(parentTransform, false);
 
