@@ -281,7 +281,6 @@ namespace SpaceBattles
         {
             ui_state = UiInputState.MainMenu;
             fixed_UI_camera.gameObject.SetActive(true);
-            MainMenuUIManager.SetPlayerConnectState(PlayerConnectState.IDLE);
             // disable all elements which aren't the main menu
             showUIElementFromFlags(false, 
                                    (UIElement_ALL ^ UIElements.MainMenu));

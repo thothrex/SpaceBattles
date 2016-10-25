@@ -202,6 +202,9 @@ namespace SpaceBattles
         public void OnDisconnectedFromServer (NetworkDisconnection info)
         {
             player_controller = null;
+            UIManager.SetPlayerConnectState(
+                UIManager.PlayerConnectState.IDLE
+            );
             UIManager.EnterMainMenuRoot();
             if (Network.isServer)
             {
@@ -504,6 +507,9 @@ namespace SpaceBattles
             {
                 NetworkDiscoverer.StopBroadcast();
             }
+            UIManager.SetPlayerConnectState(
+                UIManager.PlayerConnectState.IDLE
+            );
             UIManager.EnterMainMenuRoot();
         }
 
