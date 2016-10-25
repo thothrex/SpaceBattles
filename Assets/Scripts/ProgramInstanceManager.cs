@@ -271,7 +271,7 @@ namespace SpaceBattles
             found_game = true;
             // TODO: implement properly
             // wait 1 second for more games
-            UIManager.setPlayerConnectState(
+            UIManager.SetPlayerConnectState(
                 UIManager.PlayerConnectState.JOINING_SERVER
             );
             NetworkDiscoverer.StopBroadcast();
@@ -479,7 +479,7 @@ namespace SpaceBattles
             {
                 NetworkDiscoverer.StopBroadcast();
                 Debug.Log("Game not found - starting server");
-                UIManager.setPlayerConnectState(
+                UIManager.SetPlayerConnectState(
                     UIManager.PlayerConnectState.CREATING_SERVER
                 );
                 net_client = NetworkManager.StartHost();

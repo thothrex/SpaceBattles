@@ -9,7 +9,7 @@ namespace SpaceBattles
         public UIElements ElementIdentifier;
         public List<ScreenBreakpointClient> BreakpointClients;
 
-        public void RegisterBreakpoints(IScreenSizeRegister register)
+        public void RegisterBreakpoints(IScreenSizeBreakpointRegister register)
         {
             MyContract.RequireArgumentNotNull(register, "register");
             foreach (ScreenBreakpointClient Client in BreakpointClients)

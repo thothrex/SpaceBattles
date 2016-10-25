@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace SpaceBattles
 {
-    public class AndroidInputManager : InputAdapterModule
+    public class AndroidInputAdapter : InputAdapterModule
     {
         private GameObject _virtual_joystick_backing_object;
         private CnControls.SimpleJoystick virtual_joystick;
@@ -14,7 +14,7 @@ namespace SpaceBattles
             get
             {
                 return _player_wants_joystick_enabled
-                    && virtual_joystick_element != null;
+                    && VirtualJoystickElement != null;
             }
             set
             {
@@ -25,7 +25,7 @@ namespace SpaceBattles
         }
         public bool invert_pitch_controls { private get; set; }
         public bool invert_roll_controls { private get; set; }
-        public GameObject virtual_joystick_element
+        public GameObject VirtualJoystickElement
         {
             set
             {
@@ -48,7 +48,7 @@ namespace SpaceBattles
             }
         }
 
-        public GameObject accelerate_button_element
+        public GameObject AccelerateButtonElement
         {
             set; private get;
         }
@@ -60,11 +60,11 @@ namespace SpaceBattles
                 fire_button_element.SetActive(value);
                 if (virtual_joystick_enabled)
                 {
-                    virtual_joystick_element.SetActive(value);
+                    VirtualJoystickElement.SetActive(value);
                 }
                 else
                 {
-                    accelerate_button_element.SetActive(value);
+                    AccelerateButtonElement.SetActive(value);
                 }
             }
         }
@@ -74,7 +74,7 @@ namespace SpaceBattles
             set; private get;
         }
 
-        public string accelerate_button_name
+        public string AccelerateButtonName
         {
             set; private get;
         }
@@ -84,7 +84,7 @@ namespace SpaceBattles
             set; private get;
         }
 
-        public AndroidInputManager ()
+        public AndroidInputAdapter ()
         {
             _virtual_joystick_backing_object = null;
             _player_wants_joystick_enabled   = true;
@@ -110,7 +110,7 @@ namespace SpaceBattles
             {
                 return CnControls
                       .CnInputManager
-                      .GetButton(accelerate_button_name);
+                      .GetButton(AccelerateButtonName);
             }
         }
 

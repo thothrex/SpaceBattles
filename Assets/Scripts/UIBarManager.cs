@@ -51,7 +51,7 @@ namespace SpaceBattles
             }
         }
 
-        public void setMaxValue (double max_value)
+        public void SetMaxValue (double max_value)
         {
             this.max_bar_value = max_value;
             this.enabled = true;
@@ -69,7 +69,7 @@ namespace SpaceBattles
         /// <param name="new_value"></param>
         public void setCurrentValue (int new_value)
         {
-            setCurrentValue(Convert.ToDouble(new_value));
+            SetCurrentValue(Convert.ToDouble(new_value));
         }
 
         /// <summary>
@@ -78,13 +78,13 @@ namespace SpaceBattles
         /// <param name="new_value"></param>
         public void setCurrentValue (float new_value)
         {
-            setCurrentValue(Convert.ToDouble(new_value));
+            SetCurrentValue(Convert.ToDouble(new_value));
         }
 
         /// <summary>
         /// We assume the caller knows the scale of values used
         /// </summary>
-        public void setCurrentValue (double new_value)
+        public void SetCurrentValue (double new_value)
         {
             Debug.Log("Setting new bar value to " + new_value);
             if (new_value > max_bar_value)

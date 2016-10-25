@@ -19,7 +19,7 @@ namespace SpaceBattles
     /// otherwise one would need to link the listening behaviour
     /// on a per-scene basis.
     /// </summary>
-    public class ScreenSizeChangeManager : UIBehaviour, IScreenSizeRegister
+    public class ScreenSizeChangeManager : UIBehaviour, IScreenSizeBreakpointRegister
     {
         private const string LOGIC_NOT_READY_EXC
             = "This ScreenSizeChangeTrigger's ScreenSizeChangeLogic module "

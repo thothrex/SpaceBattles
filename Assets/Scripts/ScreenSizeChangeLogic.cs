@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace SpaceBattles
 {
-    public class ScreenSizeChangeLogic : IScreenSizeRegister
+    public class ScreenSizeChangeLogic : IScreenSizeBreakpointRegister
     {
         private const string IMPROPER_LIST_ORDER_WARNING
             = "A list of screen size change triggers has been passed "

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace SpaceBattles
 {
-    public class PCInputManager : InputAdapterModule
+    public class PCInputAdapter : InputAdapterModule
     {
         private GameObject _virtual_joystick_backing_object;
         private CnControls.SimpleJoystick virtual_joystick;
@@ -14,7 +14,7 @@ namespace SpaceBattles
             get
             {
                 return _player_wants_joystick_enabled
-                    && virtual_joystick_element != null;
+                    && VirtualJoystickElement != null;
             }
             set
             {
@@ -23,7 +23,7 @@ namespace SpaceBattles
         }
         public bool invert_pitch_controls { private get; set; }
         public bool invert_roll_controls { private get; set; }
-        public GameObject virtual_joystick_element
+        public GameObject VirtualJoystickElement
         {
             set
             {
@@ -49,7 +49,7 @@ namespace SpaceBattles
         /// <summary>
         /// Unused in this implementation
         /// </summary>
-        public GameObject accelerate_button_element
+        public GameObject AccelerateButtonElement
         {
             set; private get;
         }
@@ -60,7 +60,7 @@ namespace SpaceBattles
             {
                 if (virtual_joystick_enabled)
                 {
-                    virtual_joystick_element.SetActive(value);
+                    VirtualJoystickElement.SetActive(value);
                 }
             }
         }
@@ -73,7 +73,7 @@ namespace SpaceBattles
             set; private get;
         }
 
-        public string accelerate_button_name
+        public string AccelerateButtonName
         {
             set; private get;
         }
@@ -83,7 +83,7 @@ namespace SpaceBattles
             set; private get;
         }
 
-        public PCInputManager ()
+        public PCInputAdapter ()
         {
             // set default values
             // testing

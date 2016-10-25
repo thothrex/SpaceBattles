@@ -69,7 +69,7 @@ namespace SpaceBattles
             }
         }
 
-        public void setPlayerConnectState (UIManager.PlayerConnectState new_state)
+        public void SetPlayerConnectState (UIManager.PlayerConnectState new_state)
         {
             if (new_state == UIManager.PlayerConnectState.IDLE)
             {

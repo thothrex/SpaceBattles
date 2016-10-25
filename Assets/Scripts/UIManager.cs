@@ -10,12 +10,6 @@ namespace SpaceBattles
         // -- constant fields --
         private const string CAMERA_NOT_SET_EXCEPTION_MESSAGE
             = "attempting to setPlayerShip without having set the camera first";
-        private const string PREFAB_NO_RECTTRANSFORM_ERRMSG
-            = "Prefab does not have a RectTransform attached";
-        private const string UI_OBJ_GET_ERRMSG_P1
-            = "UI Object ";
-        private const string UI_OBJ_GET_ERRMSG_P2
-            = " has not been initialised, but it is being accessed.";
         private const string NO_SSCT_EXC
             = "The fixed UI canvas does not have a Screen Size Change Trigger "
             + "attached to it.";
@@ -40,26 +34,22 @@ namespace SpaceBattles
 
         public IncorporealPlayerController player_controller;
 
-        public Canvas player_screen_canvas_prefab;
+        public Canvas PlayerScreenCanvasPrefab;
         public Camera fixed_UI_camera_prefab;
         public Camera ship_select_camera_prefab;
         
-        public List<GameObject> UI_component_object_prefabs;
+        public List<GameObject> UiComponentObjectPrefabs;
         public GameObject menu_background_object_prefab;
-
-        public GameObject DebugTextboxPrefab;
         public bool PrintScreenSizeDebugText;
 
         //public Vector3 player_centred_UI_offset;
-
-        private Dictionary<UIElements,GameObject> UI_component_objects = null;
         
         private float input_roll = 0.0f;
         private float input_pitch = 0.0f;
         private bool UI_objects_instantiated = false;
         private bool in_game_menu_visible = false;
         private bool ship_select_menu_visible = false;
-        private UIState ui_state = UIState.MAIN_MENU;
+        private UiInputState ui_state = UiInputState.MainMenu;
         private UIElements UIElement_ALL;
         private GameObject menu_background_object = null;
         private GameObject debug_textbox = null;
@@ -69,15 +59,20 @@ namespace SpaceBattles
         private Camera ship_select_camera = null; // Camera inhabits a separate "scene"
 
         //private Canvas player_centred_canvas = null;
-        private Canvas player_screen_canvas = null;
+        private Canvas PlayerScreenCanvas = null;
 
-        private ScreenSizeChangeManager ssc_manager = null;
-        private MainMenuUIManager main_menu_UI_manager = null;
+        private ScreenSizeChangeManager SSCManager = null;
+        private MainMenuUIManager MainMenuUIManager = null;
         private GameplayUIManager gameplay_UI_manager = null;
         private InGameMenuManager in_game_menu_manager = null;
         private SettingsMenuUIManager settings_menu_manager = null;
 
-        private InputAdapterModule input_adapter = null;
+        private InputAdapterModule InputAdapter = null;
+        private UIElements ActiveUIElements = UIElements.None;
+        private Stack<UIElements> UITransitionHistory
+            = new Stack<UIElements>();
+        private UiComponentRegistryModule ComponentRegistry
+            = new UiComponentRegistryModule();
 
         // -- delegates --
         public delegate void enterOrreryEventHandler();
@@ -96,13 +91,13 @@ namespace SpaceBattles
         // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
         public event PlayGameButtonPressEventHandler PlayGameButtonPress
         {
-            add { main_menu_UI_manager.PlayGameButtonPress += value; }
-            remove { main_menu_UI_manager.PlayGameButtonPress -= value; }
+            add { MainMenuUIManager.PlayGameButtonPress += value; }
+            remove { MainMenuUIManager.PlayGameButtonPress -= value; }
         }
 
         // -- enums --
         public enum PlayerConnectState { IDLE, SEARCHING_FOR_SERVER, JOINING_SERVER, CREATING_SERVER };
-        private enum UIState { IN_GAME, MAIN_MENU };
+        private enum UiInputState { InGame, MainMenu };
 
         // -- properties --
 
@@ -115,28 +110,32 @@ namespace SpaceBattles
                 Debug.Log("UI Manager instantiating UI objects");
 
                 initialiseUIElementAll();
-                ssc_manager = GetComponent<ScreenSizeChangeManager>();
-                instantiateUIObjects();
+                SSCManager = GetComponent<ScreenSizeChangeManager>();
+                InstantiateUIObjects();
                 menu_background_object
                     = Instantiate(menu_background_object_prefab);
 
-                main_menu_UI_manager
-                    = UI_component_objects_get(UIElements.MainMenu)
+                MainMenuUIManager
+                    = ComponentRegistry
+                    .RetrieveGameObject(UIElements.MainMenu)
                     .GetComponent<MainMenuUIManager>();
 
                 settings_menu_manager
-                    = UI_component_objects_get(UIElements.SettingsMenu)
+                    = ComponentRegistry
+                    .RetrieveGameObject(UIElements.SettingsMenu)
                     .GetComponent<SettingsMenuUIManager>();
 
                 in_game_menu_manager
-                    = UI_component_objects_get(UIElements.InGameMenu)
+                    = ComponentRegistry
+                    .RetrieveGameObject(UIElements.InGameMenu)
                     .GetComponent<InGameMenuManager>();
                 
                 gameplay_UI_manager
-                    = UI_component_objects_get(UIElements.GameplayUI)
+                    = ComponentRegistry
+                    .RetrieveGameObject(UIElements.GameplayUI)
                     .GetComponent<GameplayUIManager>();
 
-                initialiseInputAdapter();
+                InitialiseInputAdapter();
 
                 //player_centred_canvas_object = GameObject.Instantiate(player_centred_UI_prefab);
                 //player_centred_canvas        = player_centred_canvas_object.GetComponent<Canvas>();
@@ -145,11 +144,11 @@ namespace SpaceBattles
                 in_game_menu_manager.ExitNetGameButtonPress += exitNetGameButtonPress;
                 in_game_menu_manager.ExitInGameMenuEvent += toggleInGameMenu;
                 in_game_menu_manager.EnterSettingsMenuEvent += enterSettingsMenu;
-                main_menu_UI_manager.EnterSettingsMenuEvent += enterSettingsMenu;
-                main_menu_UI_manager.EnterOrreryMenuEvent += enterOrrery;
-                main_menu_UI_manager.ExitProgramEvent += exitProgram;
+                MainMenuUIManager.EnterSettingsMenuEvent += enterSettingsMenu;
+                MainMenuUIManager.EnterOrreryMenuEvent += enterOrrery;
+                MainMenuUIManager.ExitProgramEvent += exitProgram;
                 settings_menu_manager.ExitSettingsMenuEvent += exitSettingsMenu;
-                settings_menu_manager.VirtualJoystickSetEvent += virtualJoystickSetHandler;
+                settings_menu_manager.VirtualJoystickSetEvent += OnVirtualJoystickEnabled;
 
                 // Initialise cameras
                 initialiseGameUICameras();
@@ -158,7 +157,7 @@ namespace SpaceBattles
                 if (dont_destroy_on_load)
                 {
                     //Test
-                    UnityEngine.Object.DontDestroyOnLoad(player_screen_canvas);
+                    UnityEngine.Object.DontDestroyOnLoad(PlayerScreenCanvas);
                     UnityEngine.Object.DontDestroyOnLoad(menu_background_object);
                     //Sets this to not be destroyed when reloading scene
                     UnityEngine.Object.DontDestroyOnLoad(gameObject);
@@ -169,13 +168,15 @@ namespace SpaceBattles
 
                 if (PrintScreenSizeDebugText)
                 {
-                    debug_textbox = setupUIComponentFromPrefab(DebugTextboxPrefab, player_screen_canvas.transform);
+                    debug_textbox
+                        = ComponentRegistry
+                        .RetrieveGameObject(UIElements.DebugOutput);
                     VariableTextboxPrinter printer
                         = debug_textbox.GetComponent<VariableTextboxPrinter>();
                     MyContract.RequireField(printer != null,
                                             "debug textbox object has a variabletextprinter component attached",
                                             "DebugTextboxPrefab");
-                    ssc_manager.ScreenResized.AddListener(printer.printVariable);
+                    SSCManager.ScreenResized.AddListener(printer.printVariable);
                 }
 
                 UI_objects_instantiated = true;
@@ -189,19 +190,19 @@ namespace SpaceBattles
 
         public void Update ()
         {
-            if (ui_state == UIState.IN_GAME)
+            if (ui_state == UiInputState.InGame)
             {
-                if (input_adapter.exitNetGameInput())
+                if (InputAdapter.exitNetGameInput())
                 {
                     ExitNetGameInputEvent();
                 }
 
-                if (input_adapter.inGameMenuOpenInput())
+                if (InputAdapter.inGameMenuOpenInput())
                 {
                     toggleInGameMenu();
                 }
 
-                if (input_adapter.shipSelectMenuOpenInput())
+                if (InputAdapter.shipSelectMenuOpenInput())
                 {
                     Debug.Log("ship select button pressed");
                     //toggleShipSelectUI();
@@ -211,10 +212,10 @@ namespace SpaceBattles
 
         public void FixedUpdate()
         {
-            if (ui_state == UIState.IN_GAME)
+            if (ui_state == UiInputState.InGame)
             {
-                float new_roll = input_adapter.getRollInputValue();
-                float new_pitch = input_adapter.getPitchInputValue();
+                float new_roll = InputAdapter.getRollInputValue();
+                float new_pitch = InputAdapter.getPitchInputValue();
                 
                 if (Math.Abs(new_roll - input_roll)
                 >   INSIGNIFICANT_ROLL_INPUT_CHANGE_THRESHOLD)
@@ -239,16 +240,16 @@ namespace SpaceBattles
                 //       here in the input manager.
                 if (player_controller != null)
                 {
-                    if (input_adapter.accelerateInput())
+                    if (InputAdapter.accelerateInput())
                     {
                         player_controller.accelerateShip(new Vector3(0, 0, 1));
                     }
-                    else if (input_adapter.brakeInput())
+                    else if (InputAdapter.brakeInput())
                     {
                         player_controller.brakeShip();
                     }
 
-                    if (input_adapter.fireInput())
+                    if (InputAdapter.fireInput())
                     {
                         player_controller.firePrimaryWeapon();
                     }
@@ -259,44 +260,44 @@ namespace SpaceBattles
         public void setCurrentPlayerHealth(double new_value)
         {
             Debug.Log("UI Manager updating local player health");
-            gameplay_UI_manager.localPlayerSetCurrentHealth(new_value);
+            gameplay_UI_manager.LocalPlayerSetCurrentHealth(new_value);
         }
 
         public void setCurrentPlayerMaxHealth(double new_value)
         {
-            gameplay_UI_manager.localPlayerSetMaxHealth(new_value);
+            gameplay_UI_manager.LocalPlayerSetMaxHealth(new_value);
         }
 
-        public void setPlayerConnectState(PlayerConnectState new_state)
+        public void SetPlayerConnectState(PlayerConnectState newState)
         {
-            main_menu_UI_manager.setPlayerConnectState(new_state);
+            MainMenuUIManager.SetPlayerConnectState(newState);
         }
 
         public void EnterMainMenuRoot ()
         {
-            ui_state = UIState.MAIN_MENU;
+            ui_state = UiInputState.MainMenu;
             fixed_UI_camera.gameObject.SetActive(true);
-            main_menu_UI_manager.setPlayerConnectState(PlayerConnectState.IDLE);
+            MainMenuUIManager.SetPlayerConnectState(PlayerConnectState.IDLE);
             // disable all elements which aren't the main menu
             showUIElementFromFlags(false, 
                                    (UIElement_ALL ^ UIElements.MainMenu));
             showUIElement(true, UIElements.MainMenu);
             menu_background_object.SetActive(true);
-            input_adapter.game_UI_enabled = false;
+            InputAdapter.game_UI_enabled = false;
         }
 
         public void enterSettingsMenu ()
         {
-            if (ui_state == UIState.MAIN_MENU)
+            if (ui_state == UiInputState.MainMenu)
             {
                 showUIElement(false, UIElements.MainMenu);
             }
-            else if (ui_state == UIState.IN_GAME)
+            else if (ui_state == UiInputState.InGame)
             {
                 showUIElement(false, UIElements.InGameMenu);
             }
             settings_menu_manager.displayVirtualJoystickButtonState(
-                input_adapter.virtual_joystick_enabled
+                InputAdapter.virtual_joystick_enabled
             );
             showUIElement(true, UIElements.SettingsMenu);
         }
@@ -304,11 +305,11 @@ namespace SpaceBattles
         public void exitSettingsMenu ()
         {
             showUIElement(false, UIElements.SettingsMenu);
-            if (ui_state == UIState.MAIN_MENU)
+            if (ui_state == UiInputState.MainMenu)
             {
                 showUIElement(true, UIElements.MainMenu);
             }
-            else if (ui_state == UIState.IN_GAME)
+            else if (ui_state == UiInputState.InGame)
             {
                 showUIElement(true, UIElements.InGameMenu);
             }
@@ -317,11 +318,11 @@ namespace SpaceBattles
         public void enteringMultiplayerGame ()
         {
             // TODO: change to start in ship selection
-            ui_state = UIState.IN_GAME;
+            ui_state = UiInputState.InGame;
             menu_background_object.SetActive(false);
             showUIElementFromFlags(false, UIElements.MainMenu);
             showUIElement(true, UIElements.GameplayUI);
-            input_adapter.game_UI_enabled = true;
+            InputAdapter.game_UI_enabled = true;
         }
 
         public void enterOrrery ()
@@ -379,11 +380,11 @@ namespace SpaceBattles
                 = Instantiate(fixed_UI_camera_prefab);
             ship_select_camera
                 = Instantiate(ship_select_camera_prefab);
-            if (ssc_manager == null)
+            if (SSCManager == null)
             {
                 throw new InvalidOperationException(SSC_MANAGER_NOT_INITIALISED_EXC);
             }
-            ssc_manager.FixedUICamera = fixed_UI_camera;
+            SSCManager.FixedUICamera = fixed_UI_camera;
 
             setInGameUICamerasActive(false);
         }
@@ -444,100 +445,47 @@ namespace SpaceBattles
         /// <summary>
         /// Prerequisites: ssc_manager is instantiated
         /// </summary>
-        private void instantiateUIObjects ()
+        private void InstantiateUIObjects ()
         {
-            player_screen_canvas
-                    = GameObject.Instantiate(player_screen_canvas_prefab);
-            if (ssc_manager == null)
+            PlayerScreenCanvas
+                    = GameObject.Instantiate(PlayerScreenCanvasPrefab);
+            if (SSCManager == null)
             {
                 throw new InvalidOperationException(SSC_MANAGER_NOT_INITIALISED_EXC);
             }
-            ScreenSizeChangeTrigger ssc_trigger
-                = player_screen_canvas.GetComponent<ScreenSizeChangeTrigger>();
-            if (ssc_trigger == null)
+            ScreenSizeChangeTrigger SSCTrigger
+                = PlayerScreenCanvas.GetComponent<ScreenSizeChangeTrigger>();
+            if (SSCTrigger == null)
             {
                 throw new InvalidOperationException(NO_SSCT_EXC);
             }
-            ssc_trigger
+            SSCTrigger
                 .ScreenResized
-                .AddListener(ssc_manager.OnScreenSizeChange);
+                .AddListener(SSCManager.OnScreenSizeChange);
 
-
-            UI_component_objects
-                = new Dictionary<UIElements, GameObject>();
-            foreach (GameObject prefab in UI_component_object_prefabs)
-            {
-                GameObject instance
-                    = setupUIComponentFromPrefab(prefab, player_screen_canvas.transform);
-                UIComponentStem stem_script = instance.GetComponent<UIComponentStem>();
-                stem_script.RegisterBreakpoints(ssc_manager);
-                UIElements element = stem_script.ElementIdentifier;
-                //Debug.Log("Adding element " + element.ToString() + " to the dictionary.");
-                if (UI_component_objects.ContainsKey(element)
-                &&  UI_component_objects_get(element) != null)
-                {
-                    throw new InvalidOperationException(
-                        "Trying to instantiate a second " + element.ToString()
-                    );
-                }
-                else
-                {
-                    UI_component_objects.Add(element, instance);
-                }
-            }
+            ComponentRegistry.InitialiseAndRegisterPrefabs(
+                UiComponentObjectPrefabs, SSCManager, PlayerScreenCanvas
+            );
         }
+        
 
-        /// <summary>
-        /// Instantiates, but also sets parent canvas
-        /// and recentres UI component relative to that parent canvas
-        /// </summary>
-        /// <param name="prefab">
-        /// Prefab to instantiate the UI component from
-        /// </param>
-        /// <param name="parent_transform">
-        /// Transform which will be the parent of the instantiated GameObject
-        /// </param>
-        /// <returns></returns>
-        private GameObject setupUIComponentFromPrefab(GameObject prefab, Transform parent_transform)
-        {
-            GameObject new_obj = GameObject.Instantiate(prefab);
-            RectTransform new_UI_transform = new_obj.GetComponent<RectTransform>();
-            RectTransform prefab_transform = prefab.GetComponent<RectTransform>();
-            if (new_UI_transform == null || prefab_transform == null)
-            {
-                throw new ArgumentException(PREFAB_NO_RECTTRANSFORM_ERRMSG,
-                                            "prefab");
-            }
-            new_UI_transform.SetParent(parent_transform, false);
-
-            // don't know why but special case
-            if (new_obj.GetComponent<UIComponentStem>()
-                .ElementIdentifier == UIElements.SettingsMenu)
-            {
-                new_UI_transform.anchorMin = prefab_transform.anchorMin;
-                new_UI_transform.anchorMax = prefab_transform.anchorMax;
-                new_UI_transform.offsetMin = prefab_transform.offsetMin;
-                new_UI_transform.offsetMax = prefab_transform.offsetMax;
-            }
-            new_UI_transform.localScale = new Vector3(1, 1, 1);
-            return new_obj;
-        }
-
-        private void initialiseInputAdapter ()
+        private void InitialiseInputAdapter ()
         {
 #if UNITY_ANDROID
-                input_adapter = new AndroidInputManager();
+                InputAdapter = new AndroidInputAdapter();
 #endif
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
             //input_adapter = new AndroidInputManager();
-            input_adapter = new PCInputManager();
+            InputAdapter = new PCInputAdapter();
 #endif
-            input_adapter.virtual_joystick_element
-                    = UI_component_objects_get(UIElements.VirtualJoystick);
+            InputAdapter.VirtualJoystickElement
+                    = ComponentRegistry
+                    .RetrieveGameObject(UIElements.VirtualJoystick);
 
-            input_adapter.accelerate_button_name = ACCELERATE_BUTTON_NAME;
-            input_adapter.accelerate_button_element
-                = UI_component_objects_get(UIElements.AccelerateButton);
+            InputAdapter.AccelerateButtonName = ACCELERATE_BUTTON_NAME;
+            InputAdapter.AccelerateButtonElement
+                = ComponentRegistry
+                .RetrieveGameObject(UIElements.AccelerateButton);
             if (!CnControls
                 .CnInputManager
                 .ButtonExists(ACCELERATE_BUTTON_NAME))
@@ -548,9 +496,10 @@ namespace SpaceBattles
                 );
             }
 
-            input_adapter.fire_button_name = FIRE_BUTTON_NAME;
-            input_adapter.fire_button_element
-                = UI_component_objects_get(UIElements.FireButton);
+            InputAdapter.fire_button_name = FIRE_BUTTON_NAME;
+            InputAdapter.fire_button_element
+                = ComponentRegistry
+                .RetrieveGameObject(UIElements.FireButton);
             if (!CnControls
                 .CnInputManager
                 .ButtonExists(FIRE_BUTTON_NAME))
@@ -580,7 +529,7 @@ namespace SpaceBattles
             {
                 //Debug.Log("Attempting to show " + e.ToString());
                 GameObject obj;
-                if (UI_component_objects.TryGetValue(e, out obj))
+                if (ComponentRegistry.TryGetValue(e, out obj))
                 {
                     obj.SetActive(show);
                 }
@@ -614,22 +563,6 @@ namespace SpaceBattles
             ExitNetGameInputEvent();
         }
 
-        private GameObject UI_component_objects_get (UIElements element)
-        {
-            GameObject obj;
-            if (UI_component_objects.TryGetValue(element, out obj))
-            {
-                return obj;
-            }
-            else
-            {
-                string err_msg = UI_OBJ_GET_ERRMSG_P1
-                               + element.ToString()
-                               + UI_OBJ_GET_ERRMSG_P2;
-                throw new InvalidOperationException(err_msg);
-            }
-        }
-
         private string button_name_errmsg (UIElements button_element, 
                                            String intended_name)
         {
@@ -641,10 +574,11 @@ namespace SpaceBattles
                  + "\"";
         }
 
-        private void virtualJoystickSetHandler(bool enabled)
+        private void OnVirtualJoystickEnabled(bool enabled)
         {
-            input_adapter.virtual_joystick_enabled = enabled;
-            UI_component_objects_get(UIElements.VirtualJoystick)
+            InputAdapter.virtual_joystick_enabled = enabled;
+            ComponentRegistry
+                .RetrieveGameObject(UIElements.VirtualJoystick)
                 .SetActive(enabled);
         }
     }
