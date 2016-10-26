@@ -11,8 +11,8 @@ namespace SpaceBattles
         public UIBarManager LocalPlayerHealthBar;
         public List<GameObject> SubComponents;
         
-        private UiComponentRegistryModule ComponentRegistry
-            = new UiComponentRegistryModule();
+        private GameObjectRegistryModule ComponentRegistry
+            = new GameObjectRegistryModule();
 
         // -- Methods --
 
@@ -20,7 +20,7 @@ namespace SpaceBattles
         InitialiseSubComponents
             (IScreenSizeBreakpointRegister register)
         {
-            ComponentRegistry.RegisterGameObjects(SubComponents, register);
+            ComponentRegistry.RegisterUiGameObjects(SubComponents, register);
         }
 
         public void LocalPlayerSetMaxHealth (double value)
@@ -37,10 +37,10 @@ namespace SpaceBattles
         {
             GameObject Joystick
                 = ComponentRegistry
-                .RetrieveGameObject(UIElements.VirtualJoystick);
+                .RetrieveGameObject((int)UIElements.VirtualJoystick);
             GameObject AccelerateButton
                 = ComponentRegistry
-                .RetrieveGameObject(UIElements.AccelerateButton);
+                .RetrieveGameObject((int)UIElements.AccelerateButton);
 
             MyContract.RequireFieldNotNull(Joystick,
                                           "Joystick Component");

@@ -4,10 +4,18 @@ using UnityEngine;
 
 namespace SpaceBattles
 {
-    public class UIComponentStem : MonoBehaviour
+    public class UIComponentStem : MonoBehaviour, IGameObjectRegistryKeyComponent
     {
         public UIElements ElementIdentifier;
         public List<ScreenBreakpointClient> BreakpointClients;
+
+        public int Key
+        {
+            get
+            {
+                return (int)ElementIdentifier;
+            }
+        }
 
         public void RegisterBreakpoints(IScreenSizeBreakpointRegister register)
         {

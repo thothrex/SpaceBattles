@@ -62,15 +62,15 @@ namespace SpaceBattles
         private ScreenSizeChangeManager SSCManager = null;
         private MainMenuUIManager MainMenuUIManager = null;
         private GameplayUIManager GameplayUiManager = null;
-        private InGameMenuManager in_game_menu_manager = null;
+        private InGameMenuManager InGameMenuManager = null;
         private SettingsMenuUIManager SettingsMenuManager = null;
 
         private GameplayInputAdapterModule InputAdapter = null;
         private UIElements ActiveUIElements = UIElements.None;
         private Stack<UIElements> UITransitionHistory
             = new Stack<UIElements>();
-        private UiComponentRegistryModule ComponentRegistry
-            = new UiComponentRegistryModule();
+        private GameObjectRegistryModule ComponentRegistry
+            = new GameObjectRegistryModule();
 
         // -- delegates --
         public delegate void enterOrreryEventHandler();
@@ -139,22 +139,28 @@ namespace SpaceBattles
 
                 MainMenuUIManager
                     = ComponentRegistry
-                    .RetrieveGameObject(UIElements.MainMenu)
+                    .RetrieveGameObject((int)UIElements.MainMenu)
                     .GetComponent<MainMenuUIManager>();
 
                 SettingsMenuManager
                     = ComponentRegistry
-                    .RetrieveGameObject(UIElements.SettingsMenu)
+                    .RetrieveGameObject((int)UIElements.SettingsMenu)
                     .GetComponent<SettingsMenuUIManager>();
 
-                in_game_menu_manager
+                InGameMenuManager
                     = ComponentRegistry
-                    .RetrieveGameObject(UIElements.InGameMenu)
+                    .RetrieveGameObject((int)UIElements.InGameMenu)
                     .GetComponent<InGameMenuManager>();
+
+                // DEBUG
+                Debug.Log(
+                    "InGameMenuManager is "
+                  + (InGameMenuManager == null ? "null" : "not null")
+                );
                 
                 GameplayUiManager
                     = ComponentRegistry
-                    .RetrieveGameObject(UIElements.GameplayUI)
+                    .RetrieveGameObject((int)UIElements.GameplayUI)
                     .GetComponent<GameplayUIManager>();
 
                 GameplayUiManager.InitialiseSubComponents(SSCManager);
@@ -167,11 +173,11 @@ namespace SpaceBattles
                 //player_centred_canvas        = player_centred_canvas_object.GetComponent<Canvas>();
 
                 // Initialise UI events structure
-                in_game_menu_manager.ExitNetGameButtonPress += exitNetGameButtonPress;
-                in_game_menu_manager.ExitInGameMenuEvent += ToggleInGameMenu;
-                in_game_menu_manager.EnterSettingsMenuEvent += EnterSettingsMenu;
+                InGameMenuManager.ExitNetGameButtonPress += exitNetGameButtonPress;
+                InGameMenuManager.ExitInGameMenuEvent += ToggleInGameMenu;
+                InGameMenuManager.EnterSettingsMenuEvent += EnterSettingsMenu;
                 MainMenuUIManager.EnterSettingsMenuEvent += EnterSettingsMenu;
-                MainMenuUIManager.EnterOrreryMenuEvent += enterOrrery;
+                MainMenuUIManager.EnterOrreryMenuEvent += EnterOrreryTrigger;
                 MainMenuUIManager.ExitProgramEvent += exitProgram;
                 SettingsMenuManager.ExitSettingsMenuEvent += ExitSettingsMenu;
                 SettingsMenuManager.VirtualJoystickSetEvent += OnVirtualJoystickEnabled;
@@ -195,7 +201,7 @@ namespace SpaceBattles
                 {
                     DebugTextbox
                         = ComponentRegistry
-                        .RetrieveGameObject(UIElements.DebugOutput);
+                        .RetrieveGameObject((int)UIElements.DebugOutput);
                     DebugTextbox.SetActive(true);
                     VariableTextboxPrinter Printer
                         = DebugTextbox.GetComponent<VariableTextboxPrinter>();
@@ -213,7 +219,7 @@ namespace SpaceBattles
         {
             InertialPlayerCameraController MainMenuBackgroundCamera
                 = ComponentRegistry
-                .RetrieveGameObject(UIElements.MainMenuBackgroundCamera)
+                .RetrieveGameObject((int)UIElements.MainMenuBackgroundCamera)
                 .GetComponent<InertialPlayerCameraController>();
             MainMenuBackgroundCamera.followTransform
                 = MainMenuUIManager
@@ -415,7 +421,7 @@ namespace SpaceBattles
             );
         }
 
-        public void enterOrrery ()
+        public void EnterOrreryTrigger ()
         {
             EnterOrreryInputEvent();
         }
@@ -435,6 +441,8 @@ namespace SpaceBattles
 
         public void ToggleInGameMenu ()
         {
+            // TODO: Pull this toggle bool into the InputAdapter
+            //       and pass back an enter/exit in-game menu event
             InGameMenuVisible = !InGameMenuVisible;
             if (InGameMenuVisible)
             {
@@ -572,7 +580,7 @@ namespace SpaceBattles
                 .ScreenResized
                 .AddListener(SSCManager.OnScreenSizeChange);
 
-            ComponentRegistry.InitialiseAndRegisterPrefabs(
+            ComponentRegistry.InitialiseAndRegisterUiPrefabs(
                 UiComponentObjectPrefabs, SSCManager, PlayerScreenCanvas
             );
         }
@@ -626,24 +634,24 @@ namespace SpaceBattles
         /// </param>
         private void showUIElement (bool show, params UIElements[] elements)
         {
-            foreach (UIElements e in elements)
+            foreach (UIElements Element in elements)
             {
                 //Debug.Log("Attempting to show " + e.ToString());
                 GameObject obj;
-                if (ComponentRegistry.TryGetValue(e, out obj))
+                if (ComponentRegistry.TryGetValue((int)Element, out obj))
                 {
                     obj.SetActive(show);
                     Debug.Log(
                           (show ? "Showing" : "Hiding")
                         + " element "
-                        + e);
+                        + Element);
                 }
                 else
                 {
                     Debug.LogWarning("Attempting to "
                                    + (show ? "show" : "hide")
                                    + " an uninitialised UI element: "
-                                   + e.ToString());
+                                   + Element.ToString());
                 }
             }
         }
