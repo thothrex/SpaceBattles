@@ -225,7 +225,7 @@ namespace SpaceBattles
                 = ComponentRegistry
                 .RetrieveGameObject((int)UIElements.MainMenuBackgroundCamera)
                 .GetComponent<InertialPlayerCameraController>();
-            MainMenuBackgroundCamera.followTransform
+            MainMenuBackgroundCamera.FollowTransform
                 = MainMenuUIManager
                 .BackgroundOrbitalBody
                 .GetComponent<Transform>();

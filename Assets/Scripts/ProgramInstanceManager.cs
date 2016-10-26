@@ -21,30 +21,21 @@ namespace SpaceBattles
         // -- Fields --
         // Editor-definable components
         // Prefabs
-        public InertialPlayerCameraController player_camera_prefab;
-        public LargeScaleCamera nearest_planet_camera_prefab;
-        public LargeScaleCamera solar_system_camera_prefab;
+        public List<GameObject> CameraPrefabs;
         public Light nearest_planet_sunlight_prefab;
         public GameObject basic_phaser_bolt_prefab;
-
-        // (NB: because each planet has so many unique elements
-        //      it's cleaner to have these be editor-defined)
         public List<GameObject> PlanetPrefabs;
         public GameObject UI_manager_prefab;
         
         // Created by the editor
         public PassthroughNetworkManager NetworkManager;
         public PassthroughNetworkDiscovery NetworkDiscoverer;
-        public SpaceShipClassManager spaceship_class_manager;
+        public SpaceShipClassManager SpaceshipClassManager;
         public GameObject UI_manager_obj;
         public bool dont_destroy_on_load;
-        
 
         // Code-defined components
-        public OrbitingBodyBackgroundGameObject current_nearest_orbiting_body;
-        public InertialPlayerCameraController player_camera = null;
-        public LargeScaleCamera nearest_planet_camera = null;
-        public LargeScaleCamera solar_system_camera = null;
+        public OrbitingBodyBackgroundGameObject CurrentNearestOrbitingBody;
         public Light nearest_planet_sunlight;
 
         private static ProgramInstanceManager instance = null;
@@ -57,14 +48,16 @@ namespace SpaceBattles
         private bool SceneLoadInProgress = false;
 
         private UIManager UIManager;
-        private IncorporealPlayerController player_controller;
+        private IncorporealPlayerController PlayerController;
         private ClientState client_state = ClientState.MAIN_MENU;
         private System.Object SceneLoadLock = new System.Object();
         // TODO: Actually let the player choose their ship class
-        private SpaceShipClass player_ship_class_choice_hidden_value;
+        private SpaceShipClass PlayerShipClassChoiceBackingValue;
         // might need this to avoid garbage collection (maybe I'm just dumb)
         private NetworkClient net_client = null;
         private GameObjectRegistryModule PlanetRegistry
+            = new GameObjectRegistryModule();
+        private GameObjectRegistryModule CameraRegistry
             = new GameObjectRegistryModule();
 
         // -- Delegates --
@@ -76,18 +69,18 @@ namespace SpaceBattles
         private enum ClientState { MAIN_MENU, MULTIPLAYER_MATCH };
 
         // -- Properties --
-        private SpaceShipClass player_ship_class_choice
+        private SpaceShipClass PlayerShipClassChoice
         {
             get
             {
-                return player_ship_class_choice_hidden_value;
+                return PlayerShipClassChoiceBackingValue;
             }
             set
             {
-                player_ship_class_choice_hidden_value = value;
-                if (player_controller != null)
+                PlayerShipClassChoiceBackingValue = value;
+                if (PlayerController != null)
                 {
-                    player_controller.setCurrentShipChoice(value);
+                    PlayerController.setCurrentShipChoice(value);
                 }
             }
         }
@@ -110,7 +103,7 @@ namespace SpaceBattles
                 UI_manager_obj = GameObject.Instantiate(UI_manager_prefab);
                 UIManager = UI_manager_obj.GetComponent<UIManager>();
                 // TODO: Let player choose ship class
-                player_ship_class_choice = SpaceShipClass.CRUISER;
+                PlayerShipClassChoice = SpaceShipClass.CRUISER;
             }
             else if (instance != this) // If instance already exists and it's not this:
             {
@@ -155,35 +148,35 @@ namespace SpaceBattles
             InstantiateSunlight();
 
             // TODO: replace this with a query to server about what planet we are near
-            current_nearest_orbiting_body = getPlanet(OrbitingBody.EARTH);
+            CurrentNearestOrbitingBody = getPlanet(OrbitingBody.EARTH);
             // this is a Network player controller, not a SpaceBattles player controller!
-            this.player_controller = IPC;
+            this.PlayerController = IPC;
 
-            player_controller.setCurrentShipChoice(player_ship_class_choice);
-            player_controller.initialiseShipClassManager(spaceship_class_manager);
+            PlayerController.setCurrentShipChoice(PlayerShipClassChoice);
+            PlayerController.initialiseShipClassManager(SpaceshipClassManager);
 
             // Hook up spaceship spawn event
-            player_controller.LocalPlayerShipSpawned += localPlayerShipCreatedHandler;
+            PlayerController.LocalPlayerShipSpawned += localPlayerShipCreatedHandler;
             // as this is the local player,
             // there is no need to check for existing ship spawns
             // (they would have been observed directly through the RPC in the IPC)
-            player_controller.LocalPlayerShipHealthChanged += UIManager.setCurrentPlayerHealth;
+            PlayerController.LocalPlayerShipHealthChanged += UIManager.setCurrentPlayerHealth;
 
             // Camera setup
-            if (nearest_planet_camera == null && player_camera == null && solar_system_camera == null)
+            if (CameraRegistry.Count() == 0)
             {
-                InstantiateCameras(player_controller.transform);
-                setCamerasFollowTransform(player_controller.transform);
+                InstantiateCameras(PlayerController.transform);
             }
-            warpTo(current_nearest_orbiting_body);
+            SetCamerasFollowTransform(PlayerController.transform);
+            WarpTo(CurrentNearestOrbitingBody);
             //UIManager.setPlayerCamera(player_camera.GetComponent<Camera>());
             // Following is archived and not relevant any more:
             // -- Player controller should be set after the camera
             // -- because the UI manager does some setup afterwards
-            UIManager.setPlayerController(player_controller);
+            UIManager.setPlayerController(PlayerController);
             UIManager.EnteringMultiplayerGame();
 
-            player_controller.CmdSpawnStartingSpaceShip(player_ship_class_choice);
+            PlayerController.CmdSpawnStartingSpaceShip(PlayerShipClassChoice);
         }
 
         private void localPlayerShipCreatedHandler (PlayerShipController ship_controller)
@@ -191,16 +184,12 @@ namespace SpaceBattles
             UIManager.setCurrentPlayerMaxHealth(PlayerShipController.MAX_HEALTH);
             UIManager.setCurrentPlayerHealth(PlayerShipController.MAX_HEALTH);
 
-            setCamerasFollowTransform(ship_controller.transform);
+            SetCamerasFollowTransform(ship_controller.transform);
         }
 
         public void OnDisconnectedFromServer (NetworkDisconnection info)
         {
-            player_controller = null;
-            UIManager.SetPlayerConnectState(
-                UIManager.PlayerConnectState.IDLE
-            );
-            UIManager.EnterMainMenuRoot();
+            PlayerController = null;
             if (Network.isServer)
             {
                 Debug.Log("Local server connection disconnected");
@@ -216,7 +205,7 @@ namespace SpaceBattles
                     Debug.Log("Successfully diconnected from the server");
                 }
             }
-               
+            ExitNetworkGame();
         }
 
         /// <summary>
@@ -282,15 +271,15 @@ namespace SpaceBattles
 
         public void warpTo (OrbitingBody orbiting_body)
         {
-            warpTo(getPlanet(orbiting_body));
+            WarpTo(getPlanet(orbiting_body));
         }
 
         /// <summary>
         /// Warps to warp_target, at ORBIT_DISTANCE in the direction of the sun
         /// (i.e. warps to the sunny side of the target)
         /// </summary>
-        /// <param name="warp_target"></param>
-        public void warpTo(OrbitingBodyBackgroundGameObject warp_target)
+        /// <param name="warpTarget"></param>
+        public void WarpTo(OrbitingBodyBackgroundGameObject warpTarget)
         {
             // shitty lock - DO NOT RELY ON THIS
             if (warping) { Debug.Log("Already warping! Not warping again"); return; }
@@ -298,7 +287,7 @@ namespace SpaceBattles
             warping = true;
             // direction from origin
             Vector3 current_target_vector
-                = warp_target
+                = warpTarget
                 .GetCurrentGameSolarSystemCoordinates();
             Vector3 normalised_target_vector = current_target_vector.normalized;
             
@@ -308,29 +297,36 @@ namespace SpaceBattles
             float sdistance = System.Convert.ToSingle(
                 current_target_vector.magnitude - orbit_distance_in_solar_system_scale
             );
-            Vector3 solar_scale_orbit_coordinates = normalised_target_vector * sdistance;
+            Vector3 SolarScaleOrbitCoordinates = normalised_target_vector * sdistance;
 
             double orbit_distance_in_nearest_planet_scale
                 = ORBIT_DISTANCE_IN_METRES / Scale.NearestPlanet.MetresMultiplier();
             // var name is in capitals - Nearest planet scale DISTANCE
             float ndistance = System.Convert.ToSingle(orbit_distance_in_nearest_planet_scale);
             // need to go backwards i.e. towards the sun to be on the sunny side
-            Vector3 nearest_planet_scale_orbit_coordinates = -normalised_target_vector * ndistance;
+            Vector3 NearestPlanetScaleOrbitCoordinates
+                = -normalised_target_vector * ndistance;
 
             // Solar System Warps
-            current_nearest_orbiting_body.ChangeToSolarSystemReferenceFrame();
-            solar_system_camera.WarpTo(solar_scale_orbit_coordinates);
+            CurrentNearestOrbitingBody.ChangeToSolarSystemReferenceFrame();
+            CameraRegistry
+                .RetrieveGameObject((int)CameraRoles.SolarSystem)
+                .GetComponent<LargeScaleCamera>()
+                .WarpTo(SolarScaleOrbitCoordinates);
 
             // Orbital Warps
-            warp_target.ChangeToOrbitalReferenceFrame();
-            warp_target.UpdateSunDirection(nearest_planet_sunlight);
-            nearest_planet_camera.WarpTo(nearest_planet_scale_orbit_coordinates);
+            warpTarget.ChangeToOrbitalReferenceFrame();
+            warpTarget.UpdateSunDirection(nearest_planet_sunlight);
+            CameraRegistry
+                .RetrieveGameObject((int)CameraRoles.NearestPlanet)
+                .GetComponent<LargeScaleCamera>()
+                .WarpTo(NearestPlanetScaleOrbitCoordinates);
 
             // Playable Area Warp
             //transform.position = new Vector3(0, 0, 0);
             Debug.Log("TODO: warp player position (maybe?) (CURRENTLY DOES NOTHING)");
 
-            current_nearest_orbiting_body = warp_target;
+            CurrentNearestOrbitingBody = warpTarget;
 
             warping = false;
         }
@@ -371,32 +367,38 @@ namespace SpaceBattles
             }
         }
 
-        private void InstantiateCameras (Transform initial_follow_transform)
+        private void InstantiateCameras (Transform initialFollowTransform)
         {
+            MyContract.RequireFieldNotNull(
+               SpaceshipClassManager, "SpaceshipClassManager"
+            );
             Debug.Log("Instantiating cameras");
-            player_camera = Instantiate(player_camera_prefab);
-            nearest_planet_camera = Instantiate(nearest_planet_camera_prefab);
-            nearest_planet_camera.PresetScale = Scale.NearestPlanet;
-            solar_system_camera = Instantiate(solar_system_camera_prefab);
-            solar_system_camera.PresetScale = Scale.SolarSystem;
 
+            CameraRegistry.InitialiseAndRegisterGenericPrefabs(CameraPrefabs);
 
             // instantiate with default values (arbitrary)
-            player_camera.offset
-                = spaceship_class_manager.getCameraOffset(player_ship_class_choice);
-            setCamerasFollowTransform(initial_follow_transform);
+            CameraRegistry
+                .RetrieveGameObject((int)CameraRoles.Player)
+                .GetComponent<InertialPlayerCameraController>()
+                .offset
+                    = SpaceshipClassManager
+                    .getCameraOffset(PlayerShipClassChoice);
+            SetCamerasFollowTransform(initialFollowTransform);
 
             //TODO: move this activation somewhere else(?)
-            setPlayerCamerasActive(true);
+            SetPlayerCamerasActive(true);
             
             Debug.Log("Cameras created?");
         }
 
-        private void setPlayerCamerasActive (bool active)
+        private void SetPlayerCamerasActive (bool active)
         {
-            player_camera.enabled = active;
-            nearest_planet_camera.enabled = active;
-            solar_system_camera.enabled = active;
+            CameraRegistry.ActivateGameObjects(
+                active,
+                (int)CameraRoles.Player,
+                (int)CameraRoles.NearestPlanet,
+                (int)CameraRoles.SolarSystem
+            );
         }
 
         private void startPlayingGame ()
@@ -487,6 +489,7 @@ namespace SpaceBattles
             // I'm not sure if this is always safe to use,
             // as the documentation is very slim
             Debug.Log("Stopping game");
+            SetPlayerCamerasActive(false);
             NetworkManager.StopHost();
             if (NetworkDiscoverer.running)
             {
@@ -498,38 +501,45 @@ namespace SpaceBattles
             UIManager.EnterMainMenuRoot();
         }
 
-        private void setCamerasFollowTransform (Transform follow_transform)
+        private void SetCamerasFollowTransform (Transform followTransform)
         {
-            if (follow_transform == null)
-            {
-                throw new ArgumentNullException();
-            }
-            player_camera.followTransform         = follow_transform;
-            nearest_planet_camera.FollowTransform = follow_transform;
-            solar_system_camera.FollowTransform   = follow_transform;
+            MyContract.RequireArgumentNotNull(followTransform,
+                                             "followTransform");
+            CameraRegistry
+                .RetrieveGameObject((int)CameraRoles.Player)
+                .GetComponent<InertialPlayerCameraController>()
+                .FollowTransform = followTransform;
+            CameraRegistry
+                .RetrieveGameObject((int)CameraRoles.NearestPlanet)
+                .GetComponent<LargeScaleCamera>()
+                .FollowTransform = followTransform;
+            CameraRegistry
+                .RetrieveGameObject((int)CameraRoles.SolarSystem)
+                .GetComponent<LargeScaleCamera>()
+                .FollowTransform = followTransform;
         }
 
         private void localPlayerShipDestroyedHandler ()
         {
-            if (player_controller != null)
+            if (PlayerController != null)
             {
-                setCamerasFollowTransform(player_controller.transform);
+                SetCamerasFollowTransform(PlayerController.transform);
             }
         }
 
         private void handlePitchInput (float pitch_input)
         {
-            if (player_controller != null)
+            if (PlayerController != null)
             {
-                player_controller.setPitch(pitch_input);
+                PlayerController.setPitch(pitch_input);
             }
         }
 
         private void handleRollInput(float roll_input)
         {
-            if (player_controller != null)
+            if (PlayerController != null)
             {
-                player_controller.setRoll(roll_input);
+                PlayerController.setRoll(roll_input);
             }
         }
 

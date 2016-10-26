@@ -5,7 +5,9 @@ namespace SpaceBattles
 {
     public class WarpEngineMathematics
     {
-        public Vector3 calculateOrbitForPlanetAtDistance (OrbitingBodyMathematics.ORBITING_BODY planet_number, double distance)
+        public Vector3
+        CalculateOrbitForPlanetAtDistance
+            (OrbitingBody planetNumber, double distance)
         {
             return new Vector3(0, 0, 0);
         }

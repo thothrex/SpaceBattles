@@ -7,7 +7,7 @@ using UnityEngine.Networking;
 
 public class InertialPlayerCameraController: MonoBehaviour
 {
-	public Transform followTransform;
+	public Transform FollowTransform;
 	
 	public Vector3 offset = new Vector3(0f, 2.5f, -5f);
 	public float moveSpeed = 1;
@@ -20,7 +20,7 @@ public class InertialPlayerCameraController: MonoBehaviour
 	// Use this for initialization
 	void Start()
 	{
-        if (!followTransform)
+        if (!FollowTransform)
         {
             this.enabled = false;
         }
@@ -34,10 +34,10 @@ public class InertialPlayerCameraController: MonoBehaviour
 	
 	void FixedUpdate()
 	{
-        if (enabled && followTransform != null)
+        if (enabled && FollowTransform != null)
         {
-            goalPos = followTransform.position + followTransform.TransformDirection(offset);
-            goalRot = followTransform.rotation * Quaternion.Euler(desiredEulerRotation); // product combines quaternions
+            goalPos = FollowTransform.position + FollowTransform.TransformDirection(offset);
+            goalRot = FollowTransform.rotation * Quaternion.Euler(desiredEulerRotation); // product combines quaternions
             transform.position = Vector3.Lerp(transform.position, goalPos, Time.deltaTime * moveSpeed);
             transform.rotation = Quaternion.Lerp(transform.rotation, goalRot, Time.deltaTime * turnSpeed);
         }
