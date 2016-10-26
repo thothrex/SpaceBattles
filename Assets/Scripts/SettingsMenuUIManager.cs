@@ -43,7 +43,7 @@ namespace SpaceBattles
             }
         }
 
-        public void displayVirtualJoystickButtonState (bool on)
+        public void DisplayVirtualJoystickButtonState (bool on)
         {
             MyContract.RequireFieldNotNull(joystick_button_mover,
                                            "joystick_button_mover");

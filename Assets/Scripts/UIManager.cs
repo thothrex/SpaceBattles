@@ -46,7 +46,7 @@ namespace SpaceBattles
         private float input_roll = 0.0f;
         private float input_pitch = 0.0f;
         private bool UiObjectsInstantiated = false;
-        private bool in_game_menu_visible = false;
+        private bool InGameMenuVisible = false;
         private bool ship_select_menu_visible = false;
         private UiInputState ui_state = UiInputState.MainMenu;
         private UIElements UIElement_ALL;
@@ -63,7 +63,7 @@ namespace SpaceBattles
         private MainMenuUIManager MainMenuUIManager = null;
         private GameplayUIManager GameplayUiManager = null;
         private InGameMenuManager in_game_menu_manager = null;
-        private SettingsMenuUIManager settings_menu_manager = null;
+        private SettingsMenuUIManager SettingsMenuManager = null;
 
         private GameplayInputAdapterModule InputAdapter = null;
         private UIElements ActiveUIElements = UIElements.None;
@@ -142,7 +142,7 @@ namespace SpaceBattles
                     .RetrieveGameObject(UIElements.MainMenu)
                     .GetComponent<MainMenuUIManager>();
 
-                settings_menu_manager
+                SettingsMenuManager
                     = ComponentRegistry
                     .RetrieveGameObject(UIElements.SettingsMenu)
                     .GetComponent<SettingsMenuUIManager>();
@@ -168,13 +168,13 @@ namespace SpaceBattles
 
                 // Initialise UI events structure
                 in_game_menu_manager.ExitNetGameButtonPress += exitNetGameButtonPress;
-                in_game_menu_manager.ExitInGameMenuEvent += toggleInGameMenu;
-                in_game_menu_manager.EnterSettingsMenuEvent += enterSettingsMenu;
-                MainMenuUIManager.EnterSettingsMenuEvent += enterSettingsMenu;
+                in_game_menu_manager.ExitInGameMenuEvent += ToggleInGameMenu;
+                in_game_menu_manager.EnterSettingsMenuEvent += EnterSettingsMenu;
+                MainMenuUIManager.EnterSettingsMenuEvent += EnterSettingsMenu;
                 MainMenuUIManager.EnterOrreryMenuEvent += enterOrrery;
                 MainMenuUIManager.ExitProgramEvent += exitProgram;
-                settings_menu_manager.ExitSettingsMenuEvent += exitSettingsMenu;
-                settings_menu_manager.VirtualJoystickSetEvent += OnVirtualJoystickEnabled;
+                SettingsMenuManager.ExitSettingsMenuEvent += ExitSettingsMenu;
+                SettingsMenuManager.VirtualJoystickSetEvent += OnVirtualJoystickEnabled;
 
                 // Initialise cameras
                 InitialiseGameUICameras();
@@ -235,7 +235,7 @@ namespace SpaceBattles
 
                 if (InputAdapter.InGameMenuOpenInput())
                 {
-                    toggleInGameMenu();
+                    ToggleInGameMenu();
                 }
 
                 if (InputAdapter.ShipSelectMenuOpenInput())
@@ -352,6 +352,17 @@ namespace SpaceBattles
             }
         }
 
+        public void TransitionUIElementsBacktrack ()
+        {
+            MyContract.RequireField(UITransitionHistory.Count > 0,
+                                    "has at least one entry",
+                                    "UITransitionHistory");
+            UIElements PreviousState = UITransitionHistory.Pop();
+            showUIElementFromFlags(false, ActiveUIElements);
+            showUIElementFromFlags(true, PreviousState);
+            ActiveUIElements = PreviousState;
+        }
+
         public void EnterMainMenuRoot ()
         {
             ui_state = UiInputState.MainMenu;
@@ -366,41 +377,42 @@ namespace SpaceBattles
             );
         }
 
-        public void enterSettingsMenu ()
+        public void EnterSettingsMenu ()
         {
-            if (ui_state == UiInputState.MainMenu)
+            bool ShouldUseMainMenuBackgroundCamera
+                = (ActiveUIElements & UIElements.MainMenu) > 0;
+
+            TransitionToUIElements(
+                TransitionType.Tracked,
+                UIElements.SettingsMenu
+            );
+            if (ShouldUseMainMenuBackgroundCamera)
             {
-                showUIElement(false, UIElements.MainMenu);
+                TransitionToUIElements(
+                    TransitionType.Additive,
+                    UIElements.MainMenuBackgroundCamera
+                );
             }
-            else if (ui_state == UiInputState.InGame)
-            {
-                showUIElement(false, UIElements.InGameMenu);
-            }
-            settings_menu_manager.displayVirtualJoystickButtonState(
+            // TODO: Investigate putting this into
+            //       settings manager's start function
+            SettingsMenuManager.DisplayVirtualJoystickButtonState(
                 InputAdapter.VirtualJoystickEnabled
             );
-            showUIElement(true, UIElements.SettingsMenu);
         }
 
-        public void exitSettingsMenu ()
+        public void ExitSettingsMenu ()
         {
-            showUIElement(false, UIElements.SettingsMenu);
-            if (ui_state == UiInputState.MainMenu)
-            {
-                showUIElement(true, UIElements.MainMenu);
-            }
-            else if (ui_state == UiInputState.InGame)
-            {
-                showUIElement(true, UIElements.InGameMenu);
-            }
+            TransitionUIElementsBacktrack();
         }
 
-        public void enteringMultiplayerGame ()
+        public void EnteringMultiplayerGame ()
         {
             // TODO: change to start in ship selection
             ui_state = UiInputState.InGame;
-            showUIElementFromFlags(false, UIElements.MainMenu);
-            showUIElement(true, UIElements.GameplayUI);
+            TransitionToUIElements(
+                TransitionType.Fresh,
+                UIElements.GameplayUI
+            );
         }
 
         public void enterOrrery ()
@@ -421,12 +433,31 @@ namespace SpaceBattles
             Debug.Log("UI Manager received playerShipCreated message");
         }
 
-        public void toggleInGameMenu ()
+        public void ToggleInGameMenu ()
         {
-            bool toggle_on = in_game_menu_visible;
-            showUIElement(!toggle_on, UIElements.InGameMenu);
-            showUIElement(toggle_on, UIElements.GameplayUI);
-            in_game_menu_visible = !toggle_on;
+            InGameMenuVisible = !InGameMenuVisible;
+            if (InGameMenuVisible)
+            {
+                TransitionToUIElements(
+                    TransitionType.Additive,
+                    UIElements.InGameMenu
+                );
+                TransitionToUIElements(
+                    TransitionType.Subtractive,
+                    UIElements.GameplayUI
+                );
+            }
+            else
+            {
+                TransitionToUIElements(
+                    TransitionType.Subtractive,
+                    UIElements.InGameMenu
+                );
+                TransitionToUIElements(
+                    TransitionType.Additive,
+                    UIElements.GameplayUI
+                );
+            }
         }
 
         public void setPlayerController(IncorporealPlayerController player_controller)
@@ -554,8 +585,8 @@ namespace SpaceBattles
 #endif
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
             // testing
-            InputAdapter = new GameplayInputAdapterAndroid();
-            //InputAdapter = new GameplayInputAdapterPc();
+            //InputAdapter = new GameplayInputAdapterAndroid();
+            InputAdapter = new GameplayInputAdapterPc();
 #endif
 
             InputAdapter.AccelerateButtonName = ACCELERATE_BUTTON_NAME;

@@ -186,7 +186,7 @@ namespace SpaceBattles
             // Player controller should be set after the camera
             // because the UI manager does some setup afterwards
             UIManager.setPlayerController(player_controller);
-            UIManager.enteringMultiplayerGame();
+            UIManager.EnteringMultiplayerGame();
 
             player_controller.CmdSpawnStartingSpaceShip(player_ship_class_choice);
         }
