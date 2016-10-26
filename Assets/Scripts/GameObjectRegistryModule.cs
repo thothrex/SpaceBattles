@@ -21,6 +21,15 @@ namespace SpaceBattles
             void InitialisationDelegate
                 (GameObject objectToInitialise, int index);
 
+        // -- Properties --
+        public GameObject this[int index]
+        {
+            get
+            {
+                return RetrieveGameObject(index);
+            }
+        }
+
         // -- Methods --
         public void
         InitialiseAndRegisterUiPrefabs

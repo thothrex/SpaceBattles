@@ -194,10 +194,10 @@ namespace SpaceBattles
                     Debug.Log("objects prevented from being destroyed on load");
 
                     UnityEngine.Object.DontDestroyOnLoad(
-                        CameraRegistry.RetrieveGameObject((int)CameraRoles.FixedUi)
+                        CameraRegistry[(int)CameraRoles.FixedUi]
                     );
                     UnityEngine.Object.DontDestroyOnLoad(
-                        CameraRegistry.RetrieveGameObject((int)CameraRoles.ShipSelection)
+                        CameraRegistry[(int)CameraRoles.ShipSelection]
                     );
                 }
 
