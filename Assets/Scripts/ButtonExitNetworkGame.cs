@@ -28,7 +28,7 @@ namespace SpaceBattles
 			else if (Network.isClient) // we're a client
             {
                 Debug.Log("We're a client");
-                Network.CloseConnection(Network.connections[0], true);
+                
             }
             else
             {
