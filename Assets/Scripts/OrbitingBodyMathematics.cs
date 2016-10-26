@@ -22,7 +22,7 @@ namespace SpaceBattles
         static public readonly double CONSTANT_OF_GRAVITATION = 0.0000000000667408; // m^3 kg^-1 s^-2
         static public readonly double FULL_ROTATION_ANGLE = 2 * Math.PI; // radians
         static public readonly double ACCEPTABLE_ECCENTRIC_ANOMALY_ERROR = 0.0001;
-        public enum ORBITING_BODY {SUN, MERCURY, VENUS, EARTH, MOON, MARS, JUPITER, SATURN, URANUS, NEPTUNE};
+
         // Primary orbital elements
         private double semi_major_axis; // 10^6km
         private double eccentricity;
@@ -363,29 +363,29 @@ namespace SpaceBattles
             return rotation_elements_set;
         }
 
-        public static OrbitingBodyMathematics generate_planet (ORBITING_BODY planet)
+        public static OrbitingBodyMathematics generate_planet (OrbitingBody planet)
         {
             switch (planet)
             {
-                case ORBITING_BODY.SUN:
+                case OrbitingBody.SUN:
                     throw new Exception("Tried to generate the Sun as an OrbitingBody");
-                case ORBITING_BODY.MERCURY:
+                case OrbitingBody.MERCURY:
                     return generate_mercury();
-                case ORBITING_BODY.VENUS:
+                case OrbitingBody.VENUS:
                     return generate_venus();
-                case ORBITING_BODY.EARTH:
+                case OrbitingBody.EARTH:
                     return generate_earth();
-                case ORBITING_BODY.MOON:
+                case OrbitingBody.MOON:
                     return generate_moon(generate_earth());
-                case ORBITING_BODY.MARS:
+                case OrbitingBody.MARS:
                     return generate_mars();
-                case ORBITING_BODY.JUPITER:
+                case OrbitingBody.JUPITER:
                     return generate_jupiter();
-                case ORBITING_BODY.SATURN:
+                case OrbitingBody.SATURN:
                     return generate_saturn();
-                case ORBITING_BODY.URANUS:
+                case OrbitingBody.URANUS:
                     return generate_uranus();
-                case ORBITING_BODY.NEPTUNE:
+                case OrbitingBody.NEPTUNE:
                     return generate_neptune();
                 default:
                     // cannot happen - this is an enum!

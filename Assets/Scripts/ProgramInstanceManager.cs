@@ -1,9 +1,10 @@
-﻿using UnityEngine;
+﻿
 using System;
-using System.Collections.Generic;       //Allows us to use Lists. 
-using UnityEngine.Networking;
 using System.Linq;
 using System.Collections;
+using System.Collections.Generic;       //Allows us to use Lists. 
+using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
 namespace SpaceBattles
@@ -28,16 +29,7 @@ namespace SpaceBattles
 
         // (NB: because each planet has so many unique elements
         //      it's cleaner to have these be editor-defined)
-        public GameObject sun_prefab;
-        public GameObject mercury_prefab;
-        public GameObject venus_prefab;
-        public GameObject earth_prefab;
-        public GameObject moon_prefab;
-        public GameObject mars_prefab;
-        public GameObject jupiter_prefab;
-        public GameObject saturn_prefab;
-        public GameObject uranus_prefab;
-        public GameObject neptune_prefab;
+        public List<GameObject> PlanetPrefabs;
         public GameObject UI_manager_prefab;
         
         // Created by the editor
@@ -57,21 +49,23 @@ namespace SpaceBattles
 
         private static ProgramInstanceManager instance = null;
 
-        private UIManager UIManager;
-        private IncorporealPlayerController player_controller;
-        private List<GameObject> orbital_bodies;
-        private ClientState client_state = ClientState.MAIN_MENU;
         private bool warping = false;
         private bool looking_for_game = false;
         private bool found_game = false;
         private bool OrreryLoaded = false;
         // Hopefully protected by the SceneLoadLock
         private bool SceneLoadInProgress = false;
+
+        private UIManager UIManager;
+        private IncorporealPlayerController player_controller;
+        private ClientState client_state = ClientState.MAIN_MENU;
         private System.Object SceneLoadLock = new System.Object();
         // TODO: Actually let the player choose their ship class
         private SpaceShipClass player_ship_class_choice_hidden_value;
         // might need this to avoid garbage collection (maybe I'm just dumb)
         private NetworkClient net_client = null;
+        private GameObjectRegistryModule PlanetRegistry
+            = new GameObjectRegistryModule();
 
         // -- Delegates --
         public delegate void SceneLoadedCallback();
@@ -157,11 +151,11 @@ namespace SpaceBattles
 
             // Generate local scene (including play space entities)
             // i.e. there are dependencies from here
-            InstantiatePlanets();
+            ActivatePlanets();
             InstantiateSunlight();
 
             // TODO: replace this with a query to server about what planet we are near
-            current_nearest_orbiting_body = getPlanet(OrbitingBodyMathematics.ORBITING_BODY.EARTH);
+            current_nearest_orbiting_body = getPlanet(OrbitingBody.EARTH);
             // this is a Network player controller, not a SpaceBattles player controller!
             this.player_controller = IPC;
 
@@ -182,9 +176,10 @@ namespace SpaceBattles
                 setCamerasFollowTransform(player_controller.transform);
             }
             warpTo(current_nearest_orbiting_body);
-            UIManager.setPlayerCamera(player_camera.GetComponent<Camera>());
-            // Player controller should be set after the camera
-            // because the UI manager does some setup afterwards
+            //UIManager.setPlayerCamera(player_camera.GetComponent<Camera>());
+            // Following is archived and not relevant any more:
+            // -- Player controller should be set after the camera
+            // -- because the UI manager does some setup afterwards
             UIManager.setPlayerController(player_controller);
             UIManager.EnteringMultiplayerGame();
 
@@ -260,7 +255,7 @@ namespace SpaceBattles
             }
         }
 
-        public void setNearestPlanet (OrbitingBodyMathematics.ORBITING_BODY nearest_planet)
+        public void setNearestPlanet (OrbitingBody nearest_planet)
         {
             throw new NotImplementedException("setNearestPlanet disabled until it's actually used");
             //current_nearest_orbiting_body = nearest_planet;
@@ -285,7 +280,7 @@ namespace SpaceBattles
                                       // per connection, this is fine
         }
 
-        public void warpTo(OrbitingBodyMathematics.ORBITING_BODY orbiting_body)
+        public void warpTo (OrbitingBody orbiting_body)
         {
             warpTo(getPlanet(orbiting_body));
         }
@@ -340,11 +335,14 @@ namespace SpaceBattles
             warping = false;
         }
 
-        private OrbitingBodyBackgroundGameObject getPlanet(OrbitingBodyMathematics.ORBITING_BODY orbiting_body)
+        private OrbitingBodyBackgroundGameObject
+        getPlanet(OrbitingBody orbitingBody)
         {
-            GameObject body_obj = orbital_bodies[(int)orbiting_body];
-            var body_background_obj = body_obj.GetComponent<OrbitingBodyBackgroundGameObject>();
-            return body_background_obj;
+            GameObject BodyObj
+                = PlanetRegistry.RetrieveGameObject((int)orbitingBody);
+            var BodyBackgroundObj
+                = BodyObj.GetComponent<OrbitingBodyBackgroundGameObject>();
+            return BodyBackgroundObj;
         }
 
         private void InstantiateSunlight()
@@ -353,37 +351,24 @@ namespace SpaceBattles
                 = UnityEngine.Object.Instantiate(nearest_planet_sunlight_prefab);
         }
 
-        private void InstantiatePlanets()
+        private void ActivatePlanets()
         {
-            orbital_bodies = new List<GameObject>();
-            int number_of_orbiting_bodies
-                = Enum.GetNames(typeof(OrbitingBodyMathematics.ORBITING_BODY)).Length;
-            orbital_bodies.Capacity = number_of_orbiting_bodies;
+            if (PlanetRegistry.Count() == 0)
+            {
+                PlanetRegistry
+                    .InitialiseAndRegisterGenericPrefabs(PlanetPrefabs);
+            }
+            else
+            {
+                int[] BodiesToActivate = {
+                    (int)OrbitingBody.SUN,
+                    (int)OrbitingBody.EARTH,
+                    (int)OrbitingBody.MOON,
+                    (int)OrbitingBody.MARS
+                };
 
-            GameObject sun = Instantiate(sun_prefab);
-            GameObject mercury = Instantiate(mercury_prefab);
-            GameObject venus = Instantiate(venus_prefab);
-            GameObject earth = Instantiate(earth_prefab);
-            GameObject moon = Instantiate(moon_prefab);
-            moon.transform.parent = earth.transform;
-            GameObject mars = Instantiate(mars_prefab);
-            GameObject jupiter = Instantiate(jupiter_prefab);
-            GameObject saturn = Instantiate(saturn_prefab);
-            GameObject uranus = Instantiate(uranus_prefab);
-            GameObject neptune = Instantiate(neptune_prefab);
-
-            orbital_bodies.Add(sun);
-            orbital_bodies.Add(mercury);
-            orbital_bodies.Add(venus);
-            orbital_bodies.Add(earth);
-            orbital_bodies.Add(moon);
-            orbital_bodies.Add(mars);
-            orbital_bodies.Add(jupiter);
-            orbital_bodies.Add(saturn);
-            orbital_bodies.Add(uranus);
-            orbital_bodies.Add(neptune);
-
-            Debug.Assert(orbital_bodies.Count == number_of_orbiting_bodies);
+                PlanetRegistry.ActivateGameObjects(true, BodiesToActivate);
+            }
         }
 
         private void InstantiateCameras (Transform initial_follow_transform)

@@ -116,9 +116,26 @@ namespace SpaceBattles
             }
         }
 
+        public void ActivateGameObjects(bool active, params int[] bodiesToActivate)
+        {
+            if (bodiesToActivate.Length <= 0)
+            {
+                Debug.LogWarning("Redundant or broken registry activation call");
+            }
+            foreach (int elementIdentifier in bodiesToActivate)
+            {
+                ActivateGameObject(elementIdentifier, active);
+            }
+        }
+
         public bool Contains (int key)
         {
             return RegisteredObjects.ContainsKey(key);
+        }
+
+        public int Count ()
+        {
+            return RegisteredObjects.Count;
         }
 
         /// <summary>

@@ -3,13 +3,16 @@ using UnityEngine;
 
 namespace SpaceBattles
 {
-    public class OrbitingBodyBackgroundGameObject : MonoBehaviour
+    public class
+    OrbitingBodyBackgroundGameObject
+        : MonoBehaviour,
+          IGameObjectRegistryKeyComponent
     {
         // -- Const Fields --
         private const double DEFAULT_SCALE_VALUE = 0.0;
 
         // -- Fields --
-        public OrbitingBodyMathematics.ORBITING_BODY PlanetNumber;
+        public OrbitingBody PlanetNumber;
         /// <summary>
         /// In km i.e. nearest_planet_scale. 
         /// 
@@ -24,13 +27,22 @@ namespace SpaceBattles
         private bool IsNearestPlanet = false;
         private double ExplicitScale = DEFAULT_SCALE_VALUE;
 
+        // -- Properties --
+        public int Key
+        {
+            get { return (int)PlanetNumber; }
+        }
+
         // -- Enums --
 
 
         // -- Methods --
         public void Awake()
         {
-            Maths = OrbitingBodyMathematics.generate_planet(PlanetNumber);
+            if (PlanetNumber != OrbitingBody.SUN)
+            {
+                Maths = OrbitingBodyMathematics.generate_planet(PlanetNumber);
+            }
         }
 
         public void Start()
@@ -48,12 +60,15 @@ namespace SpaceBattles
                 }
             }
 
-            InvokeRepeating("UpdatePosition", 0.05f, 1.0f);
-
-            if (Maths.has_rotation_data())
+            if (PlanetNumber != OrbitingBody.SUN)
             {
-                transform.localEulerAngles = Maths.default_rotation_tilt_euler_angle;
-                InvokeRepeating("UpdateRotation", 0.05f, 1.0f);
+                InvokeRepeating("UpdatePosition", 0.05f, 1.0f);
+
+                if (Maths.has_rotation_data())
+                {
+                    transform.localEulerAngles = Maths.default_rotation_tilt_euler_angle;
+                    InvokeRepeating("UpdateRotation", 0.05f, 1.0f);
+                }
             }
         }
 
@@ -79,19 +94,25 @@ namespace SpaceBattles
 
         public void UpdateSunDirection(Light sunlight)
         {
-            Debug.Assert(Maths != null);
+            MyContract.RequireField(PlanetNumber != OrbitingBody.SUN,
+                                    "this must not be the sun",
+                                    "PlanetNumber");
+            MyContract.RequireFieldNotNull(Maths, "Maths");
+
             Vector3 current_position = Maths.current_location_game_coordinates();
-            var Rotation = Quaternion.LookRotation(current_position);
+            Quaternion Rotation = Quaternion.LookRotation(current_position);
             sunlight.transform.rotation = Rotation;
         }
 
         public Vector3 GetCurrentGameSolarSystemCoordinates()
         {
+            MyContract.RequireFieldNotNull(Maths, "Maths");
             return Maths.current_location_game_coordinates();
         }
 
         private void UpdatePosition()
         {
+            MyContract.RequireFieldNotNull(Maths, "Maths");
             if (IsNearestPlanet)
             {
                 transform.position = new Vector3(0, 0, 0);
@@ -104,6 +125,7 @@ namespace SpaceBattles
 
         private void UpdateRotation()
         {
+            MyContract.RequireFieldNotNull(Maths, "Maths");
             // negative because anti-clockwise
             float TargetRotation
                 = -Convert.ToSingle(
