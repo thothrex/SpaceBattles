@@ -7,9 +7,9 @@ namespace SpaceBattles
     public class GameObjectRegistryModule
     {
         // -- Constant Fields --
-        private const string UI_OBJ_GET_ERRMSG_P1
-            = "UI Object ";
-        private const string UI_OBJ_GET_ERRMSG_P2
+        private const string GAME_OBJECT_RETRIEVAL_ERRMSG_P1
+            = "GameObject with element identifier ";
+        private const string GAME_OBJECT_RETRIEVAL_ERRMSG_P2
             = " has not been initialised, but it is being accessed.";
 
         // -- Fields --
@@ -89,9 +89,9 @@ namespace SpaceBattles
             }
             else
             {
-                string err_msg = UI_OBJ_GET_ERRMSG_P1
+                string err_msg = GAME_OBJECT_RETRIEVAL_ERRMSG_P1
                                + element.ToString()
-                               + UI_OBJ_GET_ERRMSG_P2;
+                               + GAME_OBJECT_RETRIEVAL_ERRMSG_P2;
                 throw new InvalidOperationException(err_msg);
             }
         }
