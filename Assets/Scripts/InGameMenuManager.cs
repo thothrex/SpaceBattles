@@ -15,19 +15,16 @@ namespace SpaceBattles
         public event enterSettingsMenuEventHandler EnterSettingsMenuEvent;
         // Propagates events from child UI elements upwards to this object,
         // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
-        public event ButtonExitNetworkGame.exitNetworkGameButtonPressEventHandler ExitNetGameButtonPress
-        {
-            add { exit_game_button_manager.ExitNetGameButtonPress += value; }
-            remove { exit_game_button_manager.ExitNetGameButtonPress -= value; }
-        }
+        public event ButtonExitNetworkGame.exitNetworkGameButtonPressEventHandler ExitNetGameButtonPress;
 
         public GameObject exit_game_button_object;
-        private ButtonExitNetworkGame exit_game_button_manager;
+        private ButtonExitNetworkGame ExitGameButtonManager;
 
         public void Awake()
         {
-            exit_game_button_manager
+            ExitGameButtonManager
                 = exit_game_button_object.GetComponent<ButtonExitNetworkGame>();
+            ExitGameButtonManager.ExitNetGameButtonPress += ExitNetGameButtonPressPropagator;
         }
 
         public void enterSettingsMenu()
@@ -38,6 +35,11 @@ namespace SpaceBattles
         public void exitInGameMenu()
         {
             ExitInGameMenuEvent();
+        }
+
+        public void ExitNetGameButtonPressPropagator ()
+        {
+            ExitNetGameButtonPress();
         }
     }
 }

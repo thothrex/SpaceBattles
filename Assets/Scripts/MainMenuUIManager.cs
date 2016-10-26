@@ -31,11 +31,7 @@ namespace SpaceBattles
         public event ExitProgramEventHandler ExitProgramEvent;
         // Propagates events from child UI elements upwards to this object,
         // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
-        public event PlayGameButtonPressEventHandler PlayGameButtonPress
-        {
-            add { start_game_button_manager.PlayGameButtonPress += value; }
-            remove { start_game_button_manager.PlayGameButtonPress -= value; }
-        }
+        public event PlayGameButtonPressEventHandler PlayGameButtonPress;
 
         // -- Enums --
         private enum MenuLayout { Desktop, Mobile }
@@ -46,6 +42,7 @@ namespace SpaceBattles
         {
             start_game_button_manager
                 = StartGameButtonObject.GetComponent<ButtonMainMenuPlayGame>();
+            start_game_button_manager.PlayGameButtonPress += PlayGameButtonPressPropagator;
         }
 
         public void Start ()
@@ -146,6 +143,11 @@ namespace SpaceBattles
             Debug.Log("MainMenuManager setting layout to desktop");
 
             target_layout = MenuLayout.Desktop;
+        }
+
+        public void PlayGameButtonPressPropagator ()
+        {
+            PlayGameButtonPress();
         }
 
         private void doLayoutChangeToMobile ()
