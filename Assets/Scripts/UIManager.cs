@@ -39,6 +39,7 @@ namespace SpaceBattles
         public Camera ship_select_camera_prefab;
         
         public List<GameObject> UiComponentObjectPrefabs;
+        public List<GameObject> CameraPrefabs;
         public bool PrintScreenSizeDebugText;
 
         //public Vector3 player_centred_UI_offset;
@@ -51,10 +52,6 @@ namespace SpaceBattles
         private UiInputState ui_state = UiInputState.MainMenu;
         private UIElements UIElement_ALL;
         private GameObject DebugTextbox = null;
-
-        private Camera player_UI_camera = null; // for the which UI follows player avatar
-        private Camera FixedUiCamera = null; // UI doesn't move compared to camera
-        private Camera ShipSelectCamera = null; // Camera inhabits a separate "scene"
 
         //private Canvas player_centred_canvas = null;
         private Canvas PlayerScreenCanvas = null;
@@ -70,6 +67,8 @@ namespace SpaceBattles
         private Stack<UIElements> UITransitionHistory
             = new Stack<UIElements>();
         private GameObjectRegistryModule ComponentRegistry
+            = new GameObjectRegistryModule();
+        private GameObjectRegistryModule CameraRegistry
             = new GameObjectRegistryModule();
 
         // -- delegates --
@@ -192,9 +191,14 @@ namespace SpaceBattles
                     UnityEngine.Object.DontDestroyOnLoad(PlayerScreenCanvas);
                     //Sets this to not be destroyed when reloading scene
                     UnityEngine.Object.DontDestroyOnLoad(gameObject);
-                    UnityEngine.Object.DontDestroyOnLoad(FixedUiCamera);
-                    UnityEngine.Object.DontDestroyOnLoad(ShipSelectCamera);
                     Debug.Log("objects prevented from being destroyed on load");
+
+                    UnityEngine.Object.DontDestroyOnLoad(
+                        CameraRegistry.RetrieveGameObject((int)CameraRoles.FixedUi)
+                    );
+                    UnityEngine.Object.DontDestroyOnLoad(
+                        CameraRegistry.RetrieveGameObject((int)CameraRoles.ShipSelection)
+                    );
                 }
 
                 if (PrintScreenSizeDebugText)
@@ -470,7 +474,7 @@ namespace SpaceBattles
 
         public void setPlayerController(IncorporealPlayerController player_controller)
         {
-            if (player_UI_camera == null)
+            if (!CameraRegistry.Contains((int)CameraRoles.FixedUi))
             {
                 throw new InvalidOperationException(CAMERA_NOT_SET_EXCEPTION_MESSAGE);
             }
@@ -493,15 +497,15 @@ namespace SpaceBattles
         /// </summary>
         public void InitialiseGameUICameras()
         {
-            FixedUiCamera
-                = Instantiate(FixedUiCameraPrefab);
-            ShipSelectCamera
-                = Instantiate(ship_select_camera_prefab);
+            CameraRegistry.InitialiseAndRegisterGenericPrefabs(CameraPrefabs);
             if (SSCManager == null)
             {
                 throw new InvalidOperationException(SSC_MANAGER_NOT_INITIALISED_EXC);
             }
-            SSCManager.FixedUICamera = FixedUiCamera;
+            SSCManager.FixedUICamera
+                = CameraRegistry
+                .RetrieveGameObject((int)CameraRoles.FixedUi)
+                .GetComponent<Camera>();
             Debug.Log("Fixed UI Camera for the SSCManager has been set");
 
             setInGameUICamerasActive(false);
@@ -513,35 +517,9 @@ namespace SpaceBattles
         /// <param name="active">cameras active/true or inactive/false</param>
         public void setInGameUICamerasActive(bool active)
         {
-            ShipSelectCamera.gameObject.SetActive(active);
-        }
-
-        /// <summary>
-        /// Tells the UI manager which camera follows the player's avatar
-        /// This camera will also be used by the general graphics of the game
-        /// to display things other than the UI (e.g. FX, game state, etc.)
-        /// so I currently feel it belongs in the more general
-        /// Program Instance Manager (PIM) class
-        /// 
-        /// Note that the camera is assumed to be set up and controlled
-        /// by the PIM, so the UI Manager should only ever read values
-        /// from the camera, and shouldn't write anything to it
-        /// e.g. the UIManager shouldn't change the location, orientation, etc.
-        /// of the camera.
-        /// This should probably be enforced by passing through a read only view
-        /// of the camera, but I'm not sure what that will break atm,
-        /// as I'm still changing this code a lot.
-        /// </summary>
-        /// <param name="player_camera">
-        /// The Camera which follows the player's in-game avatar
-        /// </param>
-        public void setPlayerCamera(Camera player_camera)
-        {
-            this.player_UI_camera = player_camera;
-            if (player_camera == null)
-            {
-                Debug.Log("Warning - setting player camera to null");
-            }
+            CameraRegistry.ActivateGameObject(
+                (int)CameraRoles.ShipSelection, active
+            );
         }
 
         /// <summary>

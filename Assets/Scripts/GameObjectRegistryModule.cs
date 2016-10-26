@@ -71,6 +71,56 @@ namespace SpaceBattles
             );
         }
 
+        public GameObject RetrieveGameObject(int element)
+        {
+            GameObject obj;
+            if (RegisteredObjects.TryGetValue(element, out obj))
+            {
+                return obj;
+            }
+            else
+            {
+                string err_msg = UI_OBJ_GET_ERRMSG_P1
+                               + element.ToString()
+                               + UI_OBJ_GET_ERRMSG_P2;
+                throw new InvalidOperationException(err_msg);
+            }
+        }
+
+        /// <summary>
+        /// Just a passthrough for Dictionary.TryGetValue
+        /// i.e. still used semantically for cases where returning a value
+        /// is not necessary
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public bool TryGetValue(int key, out GameObject value)
+        {
+            return RegisteredObjects.TryGetValue(key, out value);
+        }
+
+        public void ActivateGameObject(int elementIdentifier, bool active)
+        {
+            GameObject obj;
+            if (RegisteredObjects.TryGetValue(elementIdentifier, out obj))
+            {
+                obj.SetActive(active);
+            }
+            else
+            {
+                string err_msg = "Target GameObject with element identifier "
+                               + elementIdentifier
+                               + " could not be found in this registry.";
+                throw new InvalidOperationException(err_msg);
+            }
+        }
+
+        public bool Contains (int key)
+        {
+            return RegisteredObjects.ContainsKey(key);
+        }
+
         /// <summary>
         /// The big one - contains all the shared logic
         /// </summary>
@@ -119,51 +169,6 @@ namespace SpaceBattles
                 }
             }
             Debug.Log("Registered indices: " + PrintRegistry());
-        }
-
-        public GameObject RetrieveGameObject (int element)
-        {
-            GameObject obj;
-            if (RegisteredObjects.TryGetValue(element, out obj))
-            {
-                return obj;
-            }
-            else
-            {
-                string err_msg = UI_OBJ_GET_ERRMSG_P1
-                               + element.ToString()
-                               + UI_OBJ_GET_ERRMSG_P2;
-                throw new InvalidOperationException(err_msg);
-            }
-        }
-
-        /// <summary>
-        /// Just a passthrough for Dictionary.TryGetValue
-        /// i.e. still used semantically for cases where returning a value
-        /// is not necessary
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public bool TryGetValue (int key, out GameObject value)
-        {
-            return RegisteredObjects.TryGetValue(key, out value);
-        }
-
-        public void ActivateGameObject (int elementIdentifier, bool active)
-        {
-            GameObject obj;
-            if (RegisteredObjects.TryGetValue(elementIdentifier, out obj))
-            {
-                obj.SetActive(active);
-            }
-            else
-            {
-                string err_msg = "Target GameObject with element identifier "
-                               + elementIdentifier
-                               + " could not be found in this registry.";
-                throw new InvalidOperationException(err_msg);
-            }
         }
 
         /// <summary>
