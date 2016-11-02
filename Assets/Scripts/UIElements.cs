@@ -18,6 +18,7 @@ namespace SpaceBattles
         AccelerateButton = 64,
         FireButton = 128,
         DebugOutput = 256,
-        MainMenuBackgroundCamera = 512
+        // FreeSlot = 512,
+        OrreryUI = 1024
     }
 }

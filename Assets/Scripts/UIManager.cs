@@ -64,6 +64,7 @@ namespace SpaceBattles
 
         private GameplayInputAdapterModule InputAdapter = null;
         private UIElements ActiveUIElements = UIElements.None;
+        private CameraRoles ActiveCameras = CameraRoles.None;
         private Stack<UIElements> UITransitionHistory
             = new Stack<UIElements>();
         private GameObjectRegistryModule ComponentRegistry
@@ -196,10 +197,12 @@ namespace SpaceBattles
 
         public void Start ()
         {
-            InertialPlayerCameraController MainMenuBackgroundCamera
-                = ComponentRegistry
-                .RetrieveGameObject((int)UIElements.MainMenuBackgroundCamera)
-                .GetComponent<InertialPlayerCameraController>();
+            InertialCameraController MainMenuBackgroundCamera
+                = CameraRegistry
+                .RetrieveGameObject((int)CameraRoles.MainMenuAndOrrery)
+                .GetComponent<InertialCameraController>();
+            MyContract.RequireFieldNotNull(MainMenuBackgroundCamera,
+                                           "MainMenuBackgroundCamera");
             MainMenuBackgroundCamera.FollowTransform
                 = MainMenuUIManager
                 .BackgroundOrbitalBody
@@ -294,6 +297,21 @@ namespace SpaceBattles
             MainMenuUIManager.SetPlayerConnectState(newState);
         }
 
+        public void CameraTransition (CameraRoles newActiveCameras)
+        {
+            // Deactivate cameras
+            CameraRegistry.ActivateGameObjectsFromIntFlag(
+                false,
+                (int)ActiveCameras
+            );
+            // Activate cameras
+            CameraRegistry.ActivateGameObjectsFromIntFlag(
+                true,
+                (int)newActiveCameras
+            );
+            ActiveCameras = newActiveCameras;
+        }
+
         public void
         TransitionToUIElements
             (UiElementTransition transition)
@@ -369,26 +387,22 @@ namespace SpaceBattles
             }
             TransitionToUIElements(
                 UiElementTransitionType.Fresh,
-                UIElements.MainMenu | UIElements.MainMenuBackgroundCamera
+                UIElements.MainMenu
             );
+            CameraTransition(CameraRoles.MainMenuAndOrrery
+                           | CameraRoles.FixedUi);
         }
 
         public void EnterSettingsMenu ()
         {
-            bool ShouldUseMainMenuBackgroundCamera
-                = (ActiveUIElements & UIElements.MainMenu) > 0;
-
+            // Deprecated - cameras now persist independently
+            //bool ShouldUseMainMenuBackgroundCamera
+            //    = (ActiveUIElements & UIElements.MainMenu) > 0;
             TransitionToUIElements(
                 UiElementTransitionType.Tracked,
                 UIElements.SettingsMenu
             );
-            if (ShouldUseMainMenuBackgroundCamera)
-            {
-                TransitionToUIElements(
-                    TransitionType.Additive,
-                    UIElements.MainMenuBackgroundCamera
-                );
-            }
+
             // TODO: Investigate putting this into
             //       settings manager's start function
             SettingsMenuManager.DisplayVirtualJoystickButtonState(
@@ -409,6 +423,7 @@ namespace SpaceBattles
                 UiElementTransitionType.Fresh,
                 UIElements.GameplayUI
             );
+            CameraTransition(CameraRoles.FixedUi);
         }
 
         public void EnterOrreryTrigger ()
@@ -506,6 +521,18 @@ namespace SpaceBattles
             CameraRegistry.ActivateGameObject(
                 (int)CameraRoles.ShipSelection, active
             );
+        }
+
+        public void ProvideCamera (GameObject cameraHostObject)
+        {
+            List<GameObject> NewCameraList
+                = new List<GameObject>();
+            NewCameraList.Add(cameraHostObject);
+            CameraRegistry.RegisterGameObjects(NewCameraList);
+            //Debug.Log("Camera provided to UIManager with key "
+            //        + cameraHostObject
+            //         .GetComponent<IGameObjectRegistryKeyComponent>()
+            //         .Key);
         }
 
         /// <summary>

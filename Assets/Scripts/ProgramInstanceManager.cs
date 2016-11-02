@@ -86,7 +86,7 @@ namespace SpaceBattles
         }
 
         //Awake is always called before any Start functions
-        void Awake()
+        public void Awake()
         {
             Debug.Log("Program instance manager awakened");
 
@@ -104,16 +104,21 @@ namespace SpaceBattles
                 UIManager = UI_manager_obj.GetComponent<UIManager>();
                 // TODO: Let player choose ship class
                 PlayerShipClassChoice = SpaceShipClass.CRUISER;
+
+                // The UIManager is dependant on these before it starts AFAIK
+                //Debug.Log("Instantiating cameras");
+                CameraRegistry.PersistThroughScenes = true;
+                CameraRegistry.InitialiseAndRegisterGenericPrefabs(CameraPrefabs);
+                CameraRegistry.ActivateAllGameObjects(false);
             }
             else if (instance != this) // If instance already exists and it's not this:
             {
                 //Then destroy this. This enforces our singleton pattern, meaning there can only ever be one instance of a GameManager.
                 Destroy(gameObject);
             }
-
         }
 
-        void Start ()
+        public void Start ()
         {
             // Register event handlers
             UIManager.EnterOrreryInputEvent += EnterOrrery;
@@ -123,9 +128,14 @@ namespace SpaceBattles
             UIManager.PitchInputEvent += handlePitchInput;
             UIManager.RollInputEvent += handleRollInput;
             
+            GameObject MainMenuAndOrreryCamera
+                = CameraRegistry
+                .RetrieveGameObject((int)CameraRoles.MainMenuAndOrrery);
+            UIManager.ProvideCamera(MainMenuAndOrreryCamera);
 
             NetworkDiscoverer.ServerDetected
-                += new PassthroughNetworkDiscovery.ServerDetectedEventHandler(OnServerDetected);
+                += new PassthroughNetworkDiscovery
+                      .ServerDetectedEventHandler(OnServerDetected);
             NetworkDiscoverer.Initialize();
 
             NetworkManager.LocalPlayerStarted += LocalPlayerControllerCreatedHandler;
@@ -144,6 +154,7 @@ namespace SpaceBattles
 
             // Generate local scene (including play space entities)
             // i.e. there are dependencies from here
+            PlanetRegistry.PersistThroughScenes = true;
             ActivatePlanets();
             InstantiateSunlight();
 
@@ -163,11 +174,8 @@ namespace SpaceBattles
             PlayerController.LocalPlayerShipHealthChanged += UIManager.setCurrentPlayerHealth;
 
             // Camera setup
-            if (CameraRegistry.Count() == 0)
-            {
-                InstantiateCameras(PlayerController.transform);
-            }
-            SetCamerasFollowTransform(PlayerController.transform);
+            ActivateGameCameras(PlayerController.transform);
+            //SetCamerasFollowTransform(PlayerController.transform);
             WarpTo(CurrentNearestOrbitingBody);
             //UIManager.setPlayerCamera(player_camera.GetComponent<Camera>());
             // Following is archived and not relevant any more:
@@ -367,19 +375,18 @@ namespace SpaceBattles
             }
         }
 
-        private void InstantiateCameras (Transform initialFollowTransform)
+        private void ActivateGameCameras (Transform initialFollowTransform)
         {
+            Debug.Log("Activating game cameras");
             MyContract.RequireFieldNotNull(
                SpaceshipClassManager, "SpaceshipClassManager"
             );
-            Debug.Log("Instantiating cameras");
-
-            CameraRegistry.InitialiseAndRegisterGenericPrefabs(CameraPrefabs);
+            
 
             // instantiate with default values (arbitrary)
             CameraRegistry
                 .RetrieveGameObject((int)CameraRoles.Player)
-                .GetComponent<InertialPlayerCameraController>()
+                .GetComponent<InertialCameraController>()
                 .offset
                     = SpaceshipClassManager
                     .getCameraOffset(PlayerShipClassChoice);
@@ -507,7 +514,7 @@ namespace SpaceBattles
                                              "followTransform");
             CameraRegistry
                 .RetrieveGameObject((int)CameraRoles.Player)
-                .GetComponent<InertialPlayerCameraController>()
+                .GetComponent<InertialCameraController>()
                 .FollowTransform = followTransform;
             CameraRegistry
                 .RetrieveGameObject((int)CameraRoles.NearestPlanet)

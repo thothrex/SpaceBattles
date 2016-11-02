@@ -6,11 +6,15 @@ namespace SpaceBattles
     [Flags]
     public enum CameraRoles
     {
-        Player = 0,
+        None = 0,
         NearestPlanet = 1,
         SolarSystem = 2,
         FixedUi = 4,
-        ShipSelection = 8
+        ShipSelection = 8,
+        MainMenuAndOrrery = 16,
+        Player = 32,
+
+        GameplayCameras = NearestPlanet | SolarSystem | Player | FixedUi
     }
 }
 
