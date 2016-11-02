@@ -17,9 +17,6 @@ namespace SpaceBattles
             = "The UIManager does not have a ScreenBreakpointManager "
             + "module.MonoBehaviour attached to the same Unity GameObject "
             + " it is attached to.";
-        private const string SSC_MANAGER_NOT_INITIALISED_EXC
-            = "The ScreenSizeChange manager has not been instantiated "
-            + "yet, but it needs to have been instantiated already";
         private const string ACCELERATE_BUTTON_NAME
             = "Acceleration";
         private const string FIRE_BUTTON_NAME
@@ -61,6 +58,7 @@ namespace SpaceBattles
         private GameplayUIManager GameplayUiManager = null;
         private InGameMenuManager InGameMenuManager = null;
         private SettingsMenuUIManager SettingsMenuManager = null;
+        private OrreryUIManager OrreryUiManager = null;
 
         private GameplayInputAdapterModule InputAdapter = null;
         private UIElements ActiveUIElements = UIElements.None;
@@ -99,6 +97,11 @@ namespace SpaceBattles
         private enum UiInputState { InGame, MainMenu };
 
         // -- properties --
+        public OrreryManager OrreryManager
+        {
+            set;
+            private get;
+        }
 
         // -- methods --
         public void Awake ()
@@ -126,17 +129,16 @@ namespace SpaceBattles
                     = ComponentRegistry
                     .RetrieveGameObject((int)UIElements.InGameMenu)
                     .GetComponent<InGameMenuManager>();
-
-                // DEBUG
-                Debug.Log(
-                    "InGameMenuManager is "
-                  + (InGameMenuManager == null ? "null" : "not null")
-                );
                 
                 GameplayUiManager
                     = ComponentRegistry
                     .RetrieveGameObject((int)UIElements.GameplayUI)
                     .GetComponent<GameplayUIManager>();
+
+                OrreryUiManager
+                    = ComponentRegistry
+                    .RetrieveGameObject((int)UIElements.OrreryUI)
+                    .GetComponent<OrreryUIManager>();
 
                 GameplayUiManager.InitialiseSubComponents(SSCManager);
                 InitialiseInputAdapter();
@@ -156,9 +158,18 @@ namespace SpaceBattles
                 MainMenuUIManager.ExitProgramEvent += exitProgram;
                 SettingsMenuManager.ExitSettingsMenuEvent += ExitSettingsMenu;
                 SettingsMenuManager.VirtualJoystickSetEvent += OnVirtualJoystickEnabled;
+                OrreryUiManager.DateTimeSet += SetOrreryDateTimeTrigger;
+
+                // TODO: Move to InstantiateUIObjects
+                ITransitionRequestBroadcaster TransitionBroadcaster
+                    = ComponentRegistry
+                    .RetrieveGameObject((int)UIElements.OrreryUI)
+                    .GetComponent<UIComponentStem>();
+                RegisterTransitionHandlers(TransitionBroadcaster);
+                
 
                 // Initialise cameras
-                InitialiseGameUICameras();
+                InitialiseUICameras();
                 //hideShipSelectionUI();
 
                 if (dont_destroy_on_load)
@@ -168,13 +179,6 @@ namespace SpaceBattles
                     //Sets this to not be destroyed when reloading scene
                     UnityEngine.Object.DontDestroyOnLoad(gameObject);
                     Debug.Log("objects prevented from being destroyed on load");
-
-                    UnityEngine.Object.DontDestroyOnLoad(
-                        CameraRegistry[(int)CameraRoles.FixedUi]
-                    );
-                    UnityEngine.Object.DontDestroyOnLoad(
-                        CameraRegistry[(int)CameraRoles.ShipSelection]
-                    );
                 }
 
                 if (PrintScreenSizeDebugText)
@@ -496,13 +500,10 @@ namespace SpaceBattles
         /// This is expected to be called at game start,
         /// as the cameras could be used from the main menu
         /// </summary>
-        public void InitialiseGameUICameras()
+        public void InitialiseUICameras()
         {
             CameraRegistry.InitialiseAndRegisterGenericPrefabs(CameraPrefabs);
-            if (SSCManager == null)
-            {
-                throw new InvalidOperationException(SSC_MANAGER_NOT_INITIALISED_EXC);
-            }
+            MyContract.RequireFieldNotNull(SSCManager, "Screen Size Change Manager");
             SSCManager.FixedUICamera
                 = CameraRegistry
                 .RetrieveGameObject((int)CameraRoles.FixedUi)
@@ -535,6 +536,11 @@ namespace SpaceBattles
             //         .Key);
         }
 
+        public void SetOrreryDateTimeTrigger (DateTime newTime)
+        {
+            OrreryManager.SetExplicitDateTime(newTime);
+        }
+
         /// <summary>
         /// Allows us to use the UIElement "all" as necessary
         /// (we already have none included but all seems to cause problems
@@ -557,10 +563,8 @@ namespace SpaceBattles
         {
             PlayerScreenCanvas
                     = GameObject.Instantiate(PlayerScreenCanvasPrefab);
-            if (SSCManager == null)
-            {
-                throw new InvalidOperationException(SSC_MANAGER_NOT_INITIALISED_EXC);
-            }
+            MyContract.RequireFieldNotNull(SSCManager, "SSCManager");
+
             ScreenSizeChangeTrigger SSCTrigger
                 = PlayerScreenCanvas.GetComponent<ScreenSizeChangeTrigger>();
             if (SSCTrigger == null)

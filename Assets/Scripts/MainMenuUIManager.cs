@@ -7,13 +7,14 @@ namespace SpaceBattles
     public class MainMenuUIManager : MonoBehaviour
     {
         // -- Constant Fields --
-        private const double BACKGROUND_ORBITAL_BODY_SCALE = 10.0;
 
         // -- Fields --
         public GameObject StartGameButtonObject;
         public GameObject BackgroundOrbitalBody;
         public ExplicitLayoutGroup MobileLayout;
         public ExplicitLayoutGroup DesktopLayout;
+        [Tooltip("Relative to km, e.g. 0.001 means metres")]
+        public double BackgroundOrbitalBodyScale = 0.01;
 
         private ButtonMainMenuPlayGame start_game_button_manager;
         private MenuLayout CurrentLayout = MenuLayout.Desktop;
@@ -50,7 +51,7 @@ namespace SpaceBattles
             Debug.Log("Setting explicit background earth scale");
             BackgroundOrbitalBody
                 .GetComponent<OrbitingBodyBackgroundGameObject>()
-                .SetScale(BACKGROUND_ORBITAL_BODY_SCALE);
+                .SetRelativeScaleExplicitly(BackgroundOrbitalBodyScale);
         }
 
         public void Update ()

@@ -13,6 +13,7 @@ namespace SpaceBattles
         public delegate void UiTransitionBacktrackHandler();
 
         // -- Events --
+        // TODO: make optional events using an optionaleventmodule
         public event UiTransitionRequestHandler UiTransitionRequest;
         public event UiTransitionBacktrackHandler UiBacktrackRequest;
 

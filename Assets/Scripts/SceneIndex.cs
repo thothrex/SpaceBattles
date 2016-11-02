@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace SpaceBattles
@@ -10,8 +9,26 @@ namespace SpaceBattles
     /// </summary>
     public enum SceneIndex
     {
-        MAIN_MENU = 0,
-        MULTIPLAYER_GAME = 1,
-        ORRERY = 2
+        MainMenu = 0,
+        MultiplayerGame = 1,
+        Orrery = 2
+    }
+
+    public static class SceneIndexExtensions
+    {
+        public static string SceneName (this SceneIndex sceneIndex)
+        {
+            switch (sceneIndex)
+            {
+                case SceneIndex.MainMenu:
+                    return "MainMenu";
+                case SceneIndex.MultiplayerGame:
+                    return "EarthOrbit";
+                case SceneIndex.Orrery:
+                    return "Orrery";
+                default:
+                    throw new UnexpectedEnumValueException<SceneIndex>(sceneIndex);
+            }
+        }
     }
 }

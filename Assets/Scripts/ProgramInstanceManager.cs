@@ -241,14 +241,14 @@ namespace SpaceBattles
                 Debug.Log("Loading Orrery");
                 StartCoroutine(
                     SceneLoadedCallbackCoroutine(
-                        SceneIndex.ORRERY,
-                        InitialiseOrreryScene
+                        SceneIndex.Orrery,
+                        SwapToOrreryScene
                     )
                 );
             }
             else
             {
-                Debug.Log("Swapping to Orrery");
+                Debug.Log("Swapping to already-loaded Orrery");
             }
         }
 
@@ -414,7 +414,7 @@ namespace SpaceBattles
             // shitty lock DO NOT TRUST
             if (!looking_for_game)
             {
-                StartCoroutine(playGameCoroutine());
+                StartCoroutine(PlayGameCoroutine());
                 NetworkDiscoverer.StartAsClient();
             }
         }
@@ -435,9 +435,33 @@ namespace SpaceBattles
             callback();
         }
 
-        private void InitialiseOrreryScene ()
+        private void SwapToOrreryScene ()
         {
             Debug.Log("Orrery Scene Loaded");
+            Scene SceneSwappingFrom = SceneManager.GetActiveScene();
+            Scene OrreryScene
+                = SceneManager.GetSceneByName(SceneIndex.Orrery.SceneName());
+            SceneManager.SetActiveScene(OrreryScene);
+            SceneManager.UnloadScene(SceneSwappingFrom);
+            UIManager.TransitionToUIElements(
+                UiElementTransitionType.Tracked,
+                UIElements.OrreryUI
+            );
+            UIManager.CameraTransition(CameraRoles.FixedUi
+                                     | CameraRoles.MainMenuAndOrrery);
+            GameObject OrreryManagerHost = GameObject.Find("OrreryManager");
+            OrreryManager OrreryManager
+                = OrreryManagerHost.GetComponent<OrreryManager>();
+            UIManager.OrreryManager = OrreryManager;
+            Camera MainMenuBackgroundCamera
+                = CameraRegistry
+                .RetrieveGameObject((int)CameraRoles.MainMenuAndOrrery)
+                .GetComponent<Camera>();
+            MyContract.RequireFieldNotNull(MainMenuBackgroundCamera,
+                                           "MainMenuBackgroundCamera");
+            OrreryManager.UseProvidedCameraAsMainCamera(
+                MainMenuBackgroundCamera
+            );
         }
 
         private void
@@ -465,7 +489,7 @@ namespace SpaceBattles
             }
         }
 
-        private IEnumerator playGameCoroutine ()
+        private IEnumerator PlayGameCoroutine ()
         {
             // shitty lock DO NOT TRUST
             looking_for_game = true;
