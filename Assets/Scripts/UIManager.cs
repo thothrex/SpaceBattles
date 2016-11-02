@@ -656,5 +656,13 @@ namespace SpaceBattles
             InputAdapter.VirtualJoystickEnabled = enabled;
             GameplayUiManager.ActivateVirtualJoystick(enabled);
         }
+
+        private void
+        RegisterTransitionHandlers
+        (ITransitionRequestBroadcaster broadcaster)
+        {
+            broadcaster.UiBacktrackRequest += TransitionUIElementsBacktrack;
+            broadcaster.UiTransitionRequest += TransitionToUIElements;
+        }
     }
 }
