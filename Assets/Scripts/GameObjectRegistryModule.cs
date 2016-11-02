@@ -13,6 +13,13 @@ namespace SpaceBattles
             = " has not been initialised, but it is being accessed.";
 
         // -- Fields --
+
+        /// <summary>
+        /// N.B. Only applies to newly registered objects
+        /// - will not update objects already in the registry
+        /// </summary>
+        public bool PersistThroughScenes = false;
+
         private Dictionary<int, GameObject> RegisteredObjects
             = new Dictionary<int, GameObject>();
 
@@ -80,6 +87,24 @@ namespace SpaceBattles
             );
         }
 
+        /// <summary>
+        /// Expects GameObjects which have already been instantiated
+        /// e.g. ones which are part of the same prefab as the parent.
+        /// </summary>
+        /// <param name="gameObjects">
+        /// </param>
+        /// <param name="register"></param>
+        public void
+        RegisterGameObjects
+            (List<GameObject> gameObjects)
+        {
+            GenericRegisterFromList(
+                gameObjects,
+                false,
+                null
+            );
+        }
+
         public GameObject RetrieveGameObject(int element)
         {
             GameObject obj;
@@ -114,6 +139,10 @@ namespace SpaceBattles
             GameObject obj;
             if (RegisteredObjects.TryGetValue(elementIdentifier, out obj))
             {
+                MyContract.RequireFieldNotNull(
+                    obj,
+                    "Object registered to identifier " + elementIdentifier
+                );
                 obj.SetActive(active);
             }
             else
@@ -125,7 +154,34 @@ namespace SpaceBattles
             }
         }
 
-        public void ActivateGameObjects(bool active, params int[] bodiesToActivate)
+        public void
+        ActivateGameObjectsFromIntFlag
+            (bool active, int bodiesToActivate)
+        {
+            if (bodiesToActivate == 0) // corresponds to none for flags
+                { return; }
+
+            List<int> FlaggedBodiesToActivate = new List<int>();
+            for (int CurrentFlagChecking = 1;
+                 CurrentFlagChecking <= bodiesToActivate;
+                 CurrentFlagChecking <<= 1)
+            {
+                if ((CurrentFlagChecking & bodiesToActivate) > 0)
+                {
+                    FlaggedBodiesToActivate.Add(CurrentFlagChecking);
+                }
+            }
+            MyContract.RequireArgument(
+                FlaggedBodiesToActivate.Count > 0,
+                "corresponds to at least one registered GameObject",
+                "bodiesToActivate"
+            );
+            ActivateGameObjects(active, FlaggedBodiesToActivate.ToArray());
+        }
+
+        public void
+        ActivateGameObjects
+            (bool active, params int[] bodiesToActivate)
         {
             if (bodiesToActivate.Length <= 0)
             {
@@ -134,6 +190,14 @@ namespace SpaceBattles
             foreach (int elementIdentifier in bodiesToActivate)
             {
                 ActivateGameObject(elementIdentifier, active);
+            }
+        }
+
+        public void ActivateAllGameObjects(bool active)
+        {
+            foreach (GameObject RegisteredObject in RegisteredObjects.Values)
+            {
+                RegisteredObject.SetActive(active);
             }
         }
 
@@ -192,6 +256,11 @@ namespace SpaceBattles
                 else
                 {
                     RegisteredObjects.Add(element, Instance);
+                }
+
+                if (PersistThroughScenes)
+                {
+                    GameObject.DontDestroyOnLoad(Instance);
                 }
             }
             Debug.Log("Registered indices: " + PrintRegistry());
