@@ -94,31 +94,6 @@ namespace SpaceBattles
 
         // -- enums --
         public enum PlayerConnectState { IDLE, SEARCHING_FOR_SERVER, JOINING_SERVER, CREATING_SERVER };
-        public enum TransitionType
-        {
-            /// <summary>
-            /// Clears the UI history;
-            /// deactivates any active UI elements;
-            /// activates the target UI elements.
-            /// </summary>
-            Fresh,
-            /// <summary>
-            /// Adds the current state to the UI history;
-            /// deactivates any active UI elements;
-            /// activates the target UI elements.
-            /// </summary>
-            Tracked,
-            /// <summary>
-            /// Activates the target UI elements.
-            /// Leaves the UI history unchanged.
-            /// </summary>
-            Additive,
-            /// <summary>
-            /// Deactivates the target UI elements.
-            /// Leaves the UI history unchanged.
-            /// </summary>
-            Subtractive
-        };
 
         private enum UiInputState { InGame, MainMenu };
 
@@ -321,16 +296,27 @@ namespace SpaceBattles
 
         public void
         TransitionToUIElements
-        (TransitionType transitionType, UIElements newUIElements)
+            (UiElementTransition transition)
         {
-            if (transitionType == TransitionType.Tracked)
+            TransitionToUIElements(
+                transition.Type,
+                transition.Targets
+            );
+        }
+
+        public void
+        TransitionToUIElements
+            (UiElementTransitionType transitionType,
+            UIElements newUIElements)
+        {
+            if (transitionType == UiElementTransitionType.Tracked)
             {
                 // Add current active elements as a new history element
                 UITransitionHistory.Push(ActiveUIElements);
             }
 
-            if (transitionType == TransitionType.Fresh
-            || transitionType == TransitionType.Tracked)
+            if (transitionType == UiElementTransitionType.Fresh
+            || transitionType == UiElementTransitionType.Tracked)
             {
                 // Deactivate current UIElements
                 Debug.Log("TransitionToUIElements hiding elements " + ActiveUIElements);
@@ -338,7 +324,7 @@ namespace SpaceBattles
                 ActiveUIElements = UIElements.None;
             }
 
-            if (transitionType == TransitionType.Subtractive)
+            if (transitionType == UiElementTransitionType.Subtractive)
             {
                 // Deactivate newUIElements
                 showUIElementFromFlags(false, newUIElements);
@@ -355,7 +341,7 @@ namespace SpaceBattles
                 ActiveUIElements |= newUIElements;
             }
 
-            if (transitionType == TransitionType.Fresh)
+            if (transitionType == UiElementTransitionType.Fresh)
             {
                 // Clear history
                 UITransitionHistory.Clear();
@@ -382,7 +368,7 @@ namespace SpaceBattles
                 DebugTextbox.SetActive(true);
             }
             TransitionToUIElements(
-                TransitionType.Fresh,
+                UiElementTransitionType.Fresh,
                 UIElements.MainMenu | UIElements.MainMenuBackgroundCamera
             );
         }
@@ -393,7 +379,7 @@ namespace SpaceBattles
                 = (ActiveUIElements & UIElements.MainMenu) > 0;
 
             TransitionToUIElements(
-                TransitionType.Tracked,
+                UiElementTransitionType.Tracked,
                 UIElements.SettingsMenu
             );
             if (ShouldUseMainMenuBackgroundCamera)
@@ -420,7 +406,7 @@ namespace SpaceBattles
             // TODO: change to start in ship selection
             ui_state = UiInputState.InGame;
             TransitionToUIElements(
-                TransitionType.Fresh,
+                UiElementTransitionType.Fresh,
                 UIElements.GameplayUI
             );
         }
@@ -451,22 +437,22 @@ namespace SpaceBattles
             if (InGameMenuVisible)
             {
                 TransitionToUIElements(
-                    TransitionType.Additive,
+                    UiElementTransitionType.Additive,
                     UIElements.InGameMenu
                 );
                 TransitionToUIElements(
-                    TransitionType.Subtractive,
+                    UiElementTransitionType.Subtractive,
                     UIElements.GameplayUI
                 );
             }
             else
             {
                 TransitionToUIElements(
-                    TransitionType.Subtractive,
+                    UiElementTransitionType.Subtractive,
                     UIElements.InGameMenu
                 );
                 TransitionToUIElements(
-                    TransitionType.Additive,
+                    UiElementTransitionType.Additive,
                     UIElements.GameplayUI
                 );
             }
