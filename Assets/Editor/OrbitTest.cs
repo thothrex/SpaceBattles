@@ -136,6 +136,80 @@ namespace SpaceBattles
                                "Distance Error: " + distance_error_message);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="expected_rotation_progress"></param>
+        /// <param name="test_time"></param>
+        /// <param name="planet"></param>
+        public void
+        RotationAbsoluteTest(double expected_rotation_progress,
+                     DateTime test_time,
+                     OrbitingBodyMathematics planet)
+        {
+            double actual_rotation_progress
+                = planet.current_stellar_day_rotation_progress(test_time);
+
+            double acceptable_error = 0.001;
+            double actual_error
+                = Math.Abs(actual_rotation_progress
+                         - expected_rotation_progress);
+            string error_message = differing_results_error_message(
+                Convert.ToString(actual_rotation_progress),
+                Convert.ToString(expected_rotation_progress),
+                ""
+            );
+            Assert.LessOrEqual(actual_error, acceptable_error, error_message);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="expected_rotation_progress"></param>
+        /// <param name="test_time"></param>
+        /// <param name="planet"></param>
+        public void
+        RotationRelativeToSunTest(double expected_angle,
+                                  DateTime test_time,
+                                  OrbitingBodyMathematics planet)
+        {
+            Vector3 planet_position
+                = planet.current_location(test_time);
+            Debug.Log("Planet position 3D: " + planet_position.ToString());
+            Vector2 planet_position_2d
+                = new Vector2(planet_position.x, planet_position.y);
+
+            double rotation_progress
+                = planet.current_stellar_day_rotation_progress(test_time);
+            Debug.Log("Rotation progress: " + rotation_progress);
+            Debug.Log("Anti-clockwise angle = " + (rotation_progress * 360.0));
+            float angle_from_up = (float)rotation_progress * 2 * Mathf.PI;
+            // angle is anti-clockwise due to earth's/solar system's rotation
+            Vector2 rotation
+                = new Vector2(Mathf.Sin(angle_from_up), Mathf.Cos(angle_from_up));
+
+            Vector2 planet_normalised = planet_position_2d / planet_position_2d.magnitude;
+            Vector2 rotation_normalised = rotation / rotation.magnitude;
+
+            Debug.Log("Planet vector: " + planet_normalised.ToString());
+            Debug.Log("Rotation vector: " + rotation_normalised.ToString());
+
+            double actual_angle
+                = Vector2.Angle(planet_normalised, rotation_normalised);
+
+            double acceptable_error = 0.1;
+            double actual_error
+                = Math.Abs(actual_angle
+                         - expected_angle);
+
+            string error_message = differing_results_error_message(
+                Convert.ToString(actual_angle),
+                Convert.ToString(expected_angle),
+                "degrees"
+            );
+            Assert.LessOrEqual(actual_error, acceptable_error, error_message);
+        }
+
         // --------------------------------------
 
         [Test]
@@ -443,6 +517,104 @@ namespace SpaceBattles
             OrbitingBodyMathematics neptune = OrbitingBodyMathematics.generate_neptune();
             var test_time = new DateTime(2016, 2, 10);
             PositionTest(neptune, test_time, 339.59, -0.81, 29.898);
+        }
+
+        // ------------------------------------------------------------
+        [Test]
+        public void EarthRotationTestMidnight()
+        {
+            OrbitingBodyMathematics earth
+                = OrbitingBodyMathematics.generate_earth();
+            var today = DateTime.Now;
+            var test_time = new DateTime(
+                today.Year, today.Month, today.Day, 0, 0, 0
+            );
+            RotationAbsoluteTest(0.5, test_time, earth);
+        }
+
+        [Test]
+        public void EarthRotationTestSix()
+        {
+            OrbitingBodyMathematics earth
+                = OrbitingBodyMathematics.generate_earth();
+            var today = DateTime.Now;
+            var test_time = new DateTime(
+                today.Year, today.Month, today.Day, 6, 0, 0
+            );
+            RotationAbsoluteTest(0.75, test_time, earth);
+        }
+
+        [Test]
+        public void EarthRotationTestNoon()
+        {
+            OrbitingBodyMathematics earth
+                = OrbitingBodyMathematics.generate_earth();
+            var today = DateTime.Now;
+            var test_time = new DateTime(
+                today.Year, today.Month, today.Day, 12, 0, 0
+            );
+            RotationAbsoluteTest(0.0, test_time, earth);
+        }
+
+        [Test]
+        public void EarthRotationTestEighteen()
+        {
+            OrbitingBodyMathematics earth
+                = OrbitingBodyMathematics.generate_earth();
+            var today = DateTime.Now;
+            var test_time = new DateTime(
+                today.Year, today.Month, today.Day, 18, 0, 0
+            );
+            RotationAbsoluteTest(0.25, test_time, earth);
+        }
+
+        // ------------------------------------------------------------
+        [Test]
+        public void EarthRotationRelativeToSunTestMidnight()
+        {
+            OrbitingBodyMathematics earth
+                = OrbitingBodyMathematics.generate_earth();
+            var today = DateTime.Now;
+            var test_time = new DateTime(
+                today.Year, today.Month, today.Day, 0, 0, 0
+            );
+            RotationRelativeToSunTest(0, test_time, earth);
+        }
+
+        [Test]
+        public void EarthRotationRelativeToSunTestSix()
+        {
+            OrbitingBodyMathematics earth
+                = OrbitingBodyMathematics.generate_earth();
+            var today = DateTime.Now;
+            var test_time = new DateTime(
+                today.Year, today.Month, today.Day, 6, 0, 0
+            );
+            RotationRelativeToSunTest(90, test_time, earth);
+        }
+
+        [Test]
+        public void EarthRotationRelativeToSunTestNoon()
+        {
+            OrbitingBodyMathematics earth
+                = OrbitingBodyMathematics.generate_earth();
+            var today = DateTime.Now;
+            var test_time = new DateTime(
+                today.Year, today.Month, today.Day, 12, 0, 0
+            );
+            RotationRelativeToSunTest(180, test_time, earth);
+        }
+
+        [Test]
+        public void EarthRotationRelativeToSunTestEighteen()
+        {
+            OrbitingBodyMathematics earth
+                = OrbitingBodyMathematics.generate_earth();
+            var today = DateTime.Now;
+            var test_time = new DateTime(
+                today.Year, today.Month, today.Day, 18, 0, 0
+            );
+            RotationRelativeToSunTest(90, test_time, earth);
         }
     }
 }

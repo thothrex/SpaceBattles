@@ -44,11 +44,20 @@ namespace SpaceBattles
         private double mean_angular_motion; // in degrees/radians per unit time (e.g. degrees/second)
 
         // Rotation elements
-        private uint rotation_period; // seconds
+        /// <summary>
+        /// In seconds
+        /// </summary>
+        private double rotation_period;
         private DateTime time_last_at_original_rotation;
-        public readonly Vector3 default_rotation_tilt_euler_angle;
+        
 
         private bool rotation_elements_set = false;
+
+        public Vector3 default_rotation_tilt_euler_angle
+        {
+            private set;
+            get;
+        }
 
 
         /// <summary>
@@ -335,27 +344,37 @@ namespace SpaceBattles
             + " does not have its rotation parameters set.";
 
         /// <summary>
-        /// Returns the rotation in radians from some arbitrary start point.
+        /// Returns the rotation as a decimal from some arbitrary start point.
         /// For the Earth, it uses GMT as a rough approximation.
         /// </summary>
-        public double current_daily_rotation_progress (DateTime current_time)
+        /// <param name="current_time"></param>
+        /// <returns>
+        /// The rotation progress as a decimal in the range [0 - 1)
+        /// N.B. Can be negative
+        /// </returns>
+        public double current_stellar_day_rotation_progress (DateTime current_time)
         {
             if (!rotation_elements_set)
             {
                 throw new InvalidOperationException(NO_ORBITAL_ELEMENTS_EXCEPTION_MESSAGE);
             }
-            var num_seconds_elapsed = current_time - time_last_at_original_rotation;
-            var rotation_seconds    = num_seconds_elapsed.TotalSeconds % rotation_period;
-            return (rotation_seconds / rotation_period) * FULL_ROTATION_ANGLE;
+            TimeSpan time_elapsed = current_time - time_last_at_original_rotation;
+            double rotation_seconds
+                = time_elapsed.TotalSeconds
+                % rotation_period;
+            //Debug.Log("Got total seconds: " + time_elapsed.TotalSeconds);
+            //Debug.Log("rotation seconds: " + rotation_seconds);
+            //Debug.Log("rotation period: " + rotation_period);
+            return rotation_seconds / rotation_period;
         }
 
         /// <summary>
-        /// Returns the rotation in radians from some arbitrary start point.
+        /// Returns the rotation as a decimal from some arbitrary start point.
         /// For the Earth, it uses GMT as a rough approximation.
         /// </summary>
-        public double current_daily_rotation_progress ()
+        public double current_stellar_day_rotation_progress ()
         {
-            return current_daily_rotation_progress(DateTime.Now);
+            return current_stellar_day_rotation_progress(DateTime.Now);
         }
 
         public bool has_rotation_data ()
@@ -414,14 +433,46 @@ namespace SpaceBattles
         {
             // from http://aa.usno.navy.mil/data/docs/EarthSeasons.php
             var last_earth_perihelion = new DateTime(2016, 1, 2, 22, 49, 0);
-            // Assumed/approximated
-            var last_earth_origin_rotation = new DateTime(2016, 5, 30, 12, 00, 00);
+
             // from http://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
-            return new OrbitingBodyMathematics(
+            OrbitingBodyMathematics return_maths = new OrbitingBodyMathematics(
                 149.60, 0.01671022, last_earth_perihelion,
-                0.00005, -11.26064, 102.94719, 5.9726,
-                86400, last_earth_origin_rotation, new Vector3(-23.4f, 180.0f, 0)
+                0.00005, -11.26064, 102.94719, 5.9726
             );
+
+            // relative to the stars NOT to the sun
+            // from https://en.wikipedia.org/wiki/Earth%27s_rotation#Stellar_and_sidereal_day
+            double earth_rotation_period = 86164.098;
+            // Assumed/approximated
+            var last_earth_facing_the_sun
+                = new DateTime(2016, 11, 2, 12, 00, 00);
+            //Debug.Log("Last time facing the sun: " + last_earth_facing_the_sun);
+            Vector3 earth_position_when_facing_the_sun
+                = return_maths.current_location(last_earth_facing_the_sun);
+            Vector2 earth_pos_2d
+                = new Vector2(earth_position_when_facing_the_sun.x,
+                              earth_position_when_facing_the_sun.y);
+            //Debug.Log("Earth position when facing the sun: " + earth_pos_2d.ToString());
+            Vector2 earth_facing_vec = -earth_pos_2d;
+            //Debug.Log("So earth was facing: " + earth_facing_vec.ToString());
+            double earth_stellar_angle_when_facing_the_sun
+                = Vector2.Angle(Vector2.up, earth_facing_vec);
+            //Debug.Log("Which translates to angle: " + earth_stellar_angle_when_facing_the_sun);
+            double progress_decimal
+                = earth_stellar_angle_when_facing_the_sun / 360.0;
+            double time_until_up_facing
+                = progress_decimal * earth_rotation_period;
+            DateTime last_time_facing_stellar_north
+                = last_earth_facing_the_sun.AddSeconds(time_until_up_facing);
+            //Debug.Log("Last time facing stellar north:" + last_time_facing_stellar_north);
+
+            return_maths.time_last_at_original_rotation = last_time_facing_stellar_north;
+            return_maths.rotation_period = earth_rotation_period;
+            return_maths.default_rotation_tilt_euler_angle
+                = new Vector3(-23.4f, 180.0f, 0);
+            return_maths.rotation_elements_set = true;
+
+            return return_maths;
         }
 
         public static OrbitingBodyMathematics generate_moon(OrbitingBodyMathematics earth)
