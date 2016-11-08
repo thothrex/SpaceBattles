@@ -20,44 +20,48 @@ namespace SpaceBattles
             | BindingFlags.DeclaredOnly;
         private const int DEFAULT_METHOD_INDEX = 0;
 
+        private MethodSelectionEditorModule<BreakpointEntry> MSEM
+            = new MethodSelectionEditorModule<BreakpointEntry>();
+
         private List<string> selection_labels = new List<string>();
         private List<MethodInfo> listener_methods = new List<MethodInfo>();
-        private Dictionary<BreakpointEntry, int>
-            selected_method_index = new Dictionary<BreakpointEntry, int>();
         private ScreenBreakpointClient sb_client = null;
-        private MonoBehaviour listening_object   = null;
-        private Type listening_object_type;
+        private MonoBehaviour listening_object = null;
 
-        private GUILayoutOption min_width_opt    = GUILayout.MaxWidth(100.0f);
-        private GUILayoutOption expand_width_opt = GUILayout.ExpandWidth(true);
-
-        private GUIContent dimension_text  = new GUIContent("Dimension");
-        private GUIContent callback_text   = new GUIContent("Callback");
+        private GUIContent dimension_text = new GUIContent("Dimension");
+        private GUIContent callback_text = new GUIContent("Callback");
         private GUIContent breakpoint_text = new GUIContent("Breakpoint");
-        private GUIContent header_text     = new GUIContent("Registered Breakpoints");
-        private GUIContent minus_text      = new GUIContent("-");
-        private GUIContent plus_text       = new GUIContent("+");
-        private GUIContent listener_label  = new GUIContent("Object To Trigger");
-        private GUIContent script_label    = new GUIContent("Script");
+        private GUIContent header_text = new GUIContent("Registered Breakpoints");
+        private GUIContent minus_text = new GUIContent("-");
+        private GUIContent plus_text = new GUIContent("+");
+        private GUIContent listener_label = new GUIContent("Object To Trigger");
 
         private Stack<BreakpointEntry> items_to_delete
             = new Stack<BreakpointEntry>();
+        private List<GUIContent> KeyLabels = null;
 
-        GUIStyle italic_style = null;
-
+        /// <summary>
+        /// This is called every time we swap back to this
+        /// i.e. this will be re-entered while it's still active
+        /// </summary>
         public void OnEnable()
         {
+            Debug.Log("SBCV enabled");
             if (target != null)
             {
                 sb_client = (ScreenBreakpointClient)target;
                 listening_object = sb_client.ListeningObject;
+
                 if (listening_object != null)
                 {
-                    listening_object_type = listening_object.GetType();
-                    selection_labels
-                        = retrieveMethodsAndGenerateGUILabels(listening_object_type, listening_object);
+                    if (!MSEM.IsInitialised)
+                    {
+                        MSEM.Initialise(OnBreakpointEntryUpdate);
+                    }
+                    MSEM.ProvideObjectForMethodsToBeInvokedUpon(listening_object);
+                    selection_labels = MSEM.SelectionNames;
                 }
-            }            
+            }
         }
 
         /// <summary>
@@ -72,12 +76,9 @@ namespace SpaceBattles
         override
         public void OnInspectorGUI()
         {
+            serializedObject.Update();
+
             //Debug.Log("Drawing ScreenBreakpointClient");
-            if (italic_style == null)
-            {
-                italic_style = new GUIStyle(GUI.skin.label);
-                italic_style.fontStyle = FontStyle.Italic;
-            }
 
             EditorGUILayout.LabelField("LunaShroom Editor", EditorStyles.centeredGreyMiniLabel);
             renderScriptDisplay();
@@ -85,19 +86,23 @@ namespace SpaceBattles
             displayBreakpointList(sb_client, selection_labels);
         }
 
-        
+        public void
+        OnBreakpointEntryUpdate
+        (BreakpointEntry entry, MemberInfo handlerInfo, string newHandlerFunctionName)
+        {
+            var new_handler = generateMethodCallback(handlerInfo);
+            //Debug.Log("new handler generated");
+            entry.handler = new_handler;
+            entry.handler_function_name = newHandlerFunctionName;
+            entry.callback_instance = listening_object;
+            //Debug.Log("Changing entry " + entry.ToString());
+            //Debug.Log("Adding handler function \"" + newHandlerFunctionName + "\"");
+        }
+
+
         private void renderScriptDisplay()
         {
-            EditorGUILayout.BeginHorizontal();
-            GUI.enabled = false;
-            EditorGUILayout.PrefixLabel(script_label);
-            EditorGUILayout.ObjectField(
-                MonoScript.FromMonoBehaviour(sb_client),
-                typeof(MonoBehaviour),
-                true
-            );
-            GUI.enabled = true;
-            EditorGUILayout.EndHorizontal();
+            MyStandardEditorUI.RenderScriptDisplay(sb_client);
         }
 
         private void renderListenerObjectSelector
@@ -120,60 +125,26 @@ namespace SpaceBattles
                 // (null is valid - no object)
                 this.listening_object = new_listening_object;
                 sb_client.ListeningObject = new_listening_object;
-                if (new_listening_object != null)
-                {
-                    Debug.Log("Setting new listener object");
-                    if (new_listening_object.GetType() != listening_object_type)
-                    {
-                        Debug.Log("Getting new type's new methods");
-                        listening_object_type = new_listening_object.GetType();
-                        selection_labels
-                           = retrieveMethodsAndGenerateGUILabels(listening_object_type, new_listening_object);
-                    }
-                    // if they are the same type then don't bother
-                    // recalculating the method labels
-                }
-                else
-                {
-                    Debug.Log("Setting new listener object to none: setting selection methods to empty");
-                    listening_object_type = null;
-                    selection_labels
-                           = retrieveMethodsAndGenerateGUILabels(listening_object_type, new_listening_object);
-                }
+                MSEM.ProvideObjectForMethodsToBeInvokedUpon(new_listening_object);
+                selection_labels = MSEM.SelectionNames;
                 EditorUtility.SetDirty(this);
             }
-            
+
             EditorGUILayout.EndHorizontal();
         }
 
         private void displayBreakpointList
             (ScreenBreakpointClient sb_client, List<string> method_names)
         {
-
-            int num_breakpoints = 0;
-            if (sb_client.BreakpointEntries != null)
+            if (KeyLabels == null)
             {
-                num_breakpoints = sb_client.BreakpointEntries.Count;
+                GUIContent[] Labels =
+                {
+                    dimension_text, breakpoint_text, callback_text
+                };
+                KeyLabels = new List<GUIContent>(Labels);
             }
-
-            // pre-list setup
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField(header_text);
-
-            EditorGUI.indentLevel++;
-            // key as in the key to the table,
-            // as in the name of each of the columns
-            Rect key_rect = EditorGUILayout.BeginHorizontal();
-            float max_width = key_rect.width / 4.0f;
-            GUILayoutOption max_width_opt = GUILayout.MaxWidth(max_width);
-            GUILayoutOption[] options = {
-                max_width_opt, min_width_opt, expand_width_opt
-            };
-            //Debug.Log("max width recorded as " + max_width);
-            EditorGUILayout.LabelField(dimension_text, italic_style, options);
-            EditorGUILayout.LabelField(breakpoint_text, italic_style, options);
-            EditorGUILayout.LabelField(callback_text, italic_style, options);
-            EditorGUILayout.EndHorizontal();
+            MyStandardEditorUI.RenderPreListHeaders(header_text, KeyLabels);
 
             GUILayoutOption max_button_width_opt = GUILayout.MaxWidth(50.0f);
             if (sb_client.BreakpointEntries != null)
@@ -192,15 +163,11 @@ namespace SpaceBattles
             {
                 BreakpointEntry item_to_delete = items_to_delete.Pop();
                 sb_client.BreakpointEntries.Remove(item_to_delete);
-                if (selected_method_index.ContainsKey(item_to_delete))
-                {
-                    selected_method_index.Remove(item_to_delete);
-                }
+                MSEM.RemoveEntry(item_to_delete);
             }
             EditorGUI.indentLevel--;
 
-            bool should_add_element
-                = renderListButtons();
+            bool should_add_element = MSEM.RenderListButtons();
             if (should_add_element)
             {
                 BreakpointEntry new_entry = new BreakpointEntry();
@@ -210,79 +177,9 @@ namespace SpaceBattles
                     sb_client.Start();
                 }
                 sb_client.BreakpointEntries.Add(new_entry);
-                setMethodSelection(new_entry, DEFAULT_METHOD_INDEX);
+                MSEM.SetMemberSelection(new_entry, DEFAULT_METHOD_INDEX);
                 EditorUtility.SetDirty(this);
             }
-        }
-
-        /// <summary>
-        /// Side-effects: sets listener_methods and selection_labels,
-        /// resets all method selections to 0.
-        /// </summary>
-        /// <precondition>
-        /// not called unless the listening_object has actually changed
-        /// </precondition>
-        /// <param name="listener_type"></param>
-        /// <param name="listening_object"></param>
-        /// <returns></returns>
-        private List<string> retrieveMethodsAndGenerateGUILabels
-            (Type listener_type, MonoBehaviour listening_object)
-        {
-            List<string> selection_labels = new List<string>();
-            if (listening_object == null && listener_type != null)
-            {
-                throw new ArgumentNullException("listening_object");
-            }
-            else if (listening_object != null && listener_type == null)
-            {
-                throw new ArgumentNullException("listener_type");
-            }
-            else if (listening_object != null && listener_type != null)
-            {
-                //Debug.Log("Got most derived type as " + listening_object_type.ToString());
-                listener_methods
-                    = new List<MethodInfo>
-                        (listener_type.GetMethods(METHODS_TO_SHOW_FLAGS));
-                // Select guarantees the same ordering as the source
-                // enumeration, so it's fine to use the index from
-                // the selection_labels to index into the
-                // listener_methods
-                selection_labels
-                    = listener_methods
-                    .Select(x => x.Name)
-                    .ToList();
-            }
-            
-            // avoid desync
-            // if you just iterate over the keys,
-            // it still counts as a desync if you change the values
-            // so you have to pull the keys out into a separate list
-            List<BreakpointEntry> breakpoints
-                = selected_method_index.Keys.ToList();
-            // for any case, make sure that methods are set back to null
-            foreach (BreakpointEntry selection in breakpoints)
-            {
-                Debug.Log("Trying to set the method selection for" + selection);
-                BreakpointEntry old_selection = selection;
-                setMethodSelection(selection, DEFAULT_METHOD_INDEX);
-                Debug.Log("New value of selection: " + selection);
-                Debug.Log("Selection is "
-                         + (old_selection.Equals(selection) ? "" : "not ")
-                         + "the same");
-            }
-            
-            return selection_labels;
-        }
-        
-        private bool renderListButtons ()
-        {
-            bool add_element_button_pressed = false;
-            GUILayoutOption max_button_width_opt = GUILayout.MaxWidth(50.0f);
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            add_element_button_pressed = GUILayout.Button(plus_text, max_button_width_opt);
-            EditorGUILayout.EndHorizontal();
-            return add_element_button_pressed;
         }
 
         /// <summary>
@@ -303,90 +200,36 @@ namespace SpaceBattles
             entry.breakpoint = EditorGUILayout.FloatField(entry.breakpoint);
             // this happens when we are rendering a prefab element
             // i.e. the list has elements already but the viewer isn't set up
-            if (!selected_method_index.ContainsKey(entry))
-            {
-                if (method_names.Contains(entry.handler_function_name))
-                {
-                    Debug.Log("Setting breakpoint entry "
-                            + "using existing function string: "
-                            + entry.handler_function_name);
-                    int method_index
-                        = method_names.IndexOf(entry.handler_function_name);
-                    Debug.Log("Function string "
-                            + entry.handler_function_name
-                            + " gave function index "
-                            + method_index.ToString());
-                    setMethodSelection(entry, method_index);
-                }
-                else
-                {
-                    Debug.Log("Setting breakpoint entry to default");
-                    setMethodSelection(entry, DEFAULT_METHOD_INDEX);
-                }
-            }
+            int CurrentMethodIndex =
+                MSEM.RetrieveEntrysFunctionSelection(
+                    entry,
+                    entry.handler_function_name
+                );
+
             int new_method_index
-                = EditorGUILayout.Popup(selected_method_index[entry], method_names.ToArray());
-            setMethodSelection(entry, new_method_index);
+                = EditorGUILayout.Popup(
+                    CurrentMethodIndex,
+                    MSEM.SelectionNames.ToArray()
+                  );
+            MSEM.SetMemberSelection(entry, new_method_index);
             bool element_deleted = GUILayout.Button(minus_text, max_button_width_opt);
             EditorGUILayout.EndHorizontal();
             return element_deleted;
         }
 
         private ScreenSizeChangeLogic.ScreenBreakpointHandler
-            generateMethodCallback(MethodInfo method_info)
+            generateMethodCallback(MemberInfo memberInfo)
         {
+            MyContract.RequireArgument(
+                memberInfo.MemberType == MemberTypes.Method,
+                "is an instance of type MethodInfo",
+                "memberInfo");
+            MethodInfo MethodInfo
+                = (MethodInfo)memberInfo;
             return delegate ()
             {
-                method_info.Invoke(listening_object, null);
+                MethodInfo.Invoke(listening_object, null);
             };
-        }
-
-        /// <summary>
-        /// Warning: changes the selected_method_index dict
-        /// by adding new values if the entry is not found in the dict
-        /// </summary>
-        /// <param name="entry"></param>
-        /// <param name="method_index"></param>
-        /// <returns>
-        /// true if succesful, false if the given breakpoint does not have
-        /// an entry in the selected_method_index structure
-        /// </returns>
-        private void setMethodSelection (BreakpointEntry entry, int method_index)
-        {
-            bool set_handler = false;
-            if (!selected_method_index.ContainsKey(entry))
-            {
-                Debug.Log("Entry: " + entry + " not found in dict - adding");
-                selected_method_index.Add(entry, method_index);
-                set_handler = true;
-            }
-            // else if method has changed value
-            else if (method_index != selected_method_index[entry])
-            {
-                Debug.Log("Changing method index");
-                selected_method_index[entry] = method_index;
-                set_handler = true;
-            }
-
-            if (set_handler)
-            {
-                Debug.Log("Changing entry handler");
-                if (listening_object != null
-                &&  listener_methods.Count > 0)
-                {
-                    Debug.Log("Using method index " + method_index + " to set new handler.");
-                    var new_handler = generateMethodCallback(listener_methods[method_index]);
-                    Debug.Log("new handler generated");
-                    entry.handler = new_handler;
-                    entry.handler_function_name = selection_labels[method_index];
-                    entry.callback_instance = listening_object;
-                    Debug.Log("new handler set");
-                }
-                else
-                {
-                    entry.handler = null;
-                }
-            }
         }
     }
 }
