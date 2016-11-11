@@ -201,7 +201,7 @@ namespace SpaceBattles
             // this happens when we are rendering a prefab element
             // i.e. the list has elements already but the viewer isn't set up
             int CurrentMethodIndex =
-                MSEM.RetrieveEntrysFunctionSelection(
+                MSEM.RetrieveEntrysMemberSelection(
                     entry,
                     entry.handler_function_name
                 );

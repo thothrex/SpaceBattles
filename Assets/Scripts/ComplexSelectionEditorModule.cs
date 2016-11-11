@@ -21,11 +21,12 @@ namespace SpaceBattles
         // -- Fields
         public bool IsInitialised = false;
         public UnityEngine.Object ObjectForMethodsToBeInvokedUpon = null;
+        public Type TypeForMethodsToBeInvokedUpon = null;
 
         protected Type MemberSourceType = null;
         protected List<MemberInfo> Members = null;
         private Dictionary<ListEntry, int>
-            SelectedMethodIndex = new Dictionary<ListEntry, int>();
+            SelectedMemberIndex = new Dictionary<ListEntry, int>();
 
         private EntryUpdateHandler OnEntryUpdate = null;
         private GUIContent PlusText = new GUIContent("+");
@@ -89,6 +90,24 @@ namespace SpaceBattles
             }
         }
 
+        public void
+        ProvideTypeForMethodsToBeInvokedUpon
+        (Type newType)
+        {
+            TypeForMethodsToBeInvokedUpon = newType;
+            if (newType != null
+            &&  newType != MemberSourceType)
+            {
+                MemberSourceType = newType;
+                GenerateSelectionLabels();
+                RevertMethodSelectionsToDefault();
+            }
+            else
+            {
+                MemberSourceType = newType;
+            }
+        }
+
 
         /// <summary>
         /// Renders the after-list buttons,
@@ -117,7 +136,7 @@ namespace SpaceBattles
         /// <param name="max_button_width_opt"></param>
         /// <returns></returns>
         public int
-        RetrieveEntrysFunctionSelection
+        RetrieveEntrysMemberSelection
         (ListEntry entry, string previousSelectionName)
         {
             if (SelectionNames == null
@@ -128,7 +147,7 @@ namespace SpaceBattles
             }
             // this happens when we are rendering a prefab element
             // i.e. the list has elements already but the viewer isn't set up
-            if (!SelectedMethodIndex.ContainsKey(entry))
+            if (!SelectedMemberIndex.ContainsKey(entry))
             {
                 //Debug.Log("Could not find "
                 //         + entry.ToString()
@@ -159,7 +178,7 @@ namespace SpaceBattles
                     SetMemberSelection(entry, DefaultMethodIndex);
                 }
             }
-            return SelectedMethodIndex[entry];
+            return SelectedMemberIndex[entry];
         }
 
         /// <summary>
@@ -171,17 +190,17 @@ namespace SpaceBattles
         public void SetMemberSelection(ListEntry entry, int methodIndex)
         {
             bool SetHandler = false;
-            if (!SelectedMethodIndex.ContainsKey(entry))
+            if (!SelectedMemberIndex.ContainsKey(entry))
             {
                 //Debug.Log("Entry: " + entry + " not found in dict - adding");
-                SelectedMethodIndex.Add(entry, methodIndex);
+                SelectedMemberIndex.Add(entry, methodIndex);
                 SetHandler = true;
             }
             // else if method has changed value
-            else if (methodIndex != SelectedMethodIndex[entry])
+            else if (methodIndex != SelectedMemberIndex[entry])
             {
                 //Debug.Log("Changing method index");
-                SelectedMethodIndex[entry] = methodIndex;
+                SelectedMemberIndex[entry] = methodIndex;
                 SetHandler = true;
             }
 
@@ -193,7 +212,8 @@ namespace SpaceBattles
                    "Module initialisation state"
                 );
                 //Debug.Log("Changing entry handler");
-                if (ObjectForMethodsToBeInvokedUpon != null
+                if ((   ObjectForMethodsToBeInvokedUpon != null
+                     || TypeForMethodsToBeInvokedUpon   != null)
                 && Members.Count > 0)
                 {
                     //Debug.Log("Using method index " + methodIndex + " to set new handler.");
@@ -209,9 +229,9 @@ namespace SpaceBattles
 
         public void RemoveEntry(ListEntry itemToDelete)
         {
-            if (SelectedMethodIndex.ContainsKey(itemToDelete))
+            if (SelectedMemberIndex.ContainsKey(itemToDelete))
             {
-                SelectedMethodIndex.Remove(itemToDelete);
+                SelectedMemberIndex.Remove(itemToDelete);
             }
         }
 
@@ -235,7 +255,7 @@ namespace SpaceBattles
             // it still counts as a desync if you change the values
             // so you have to pull the keys out into a separate list
             List<ListEntry> Entries
-                = SelectedMethodIndex.Keys.ToList();
+                = SelectedMemberIndex.Keys.ToList();
             // for any case, make sure that methods are set back to null
             foreach (ListEntry Entry in Entries)
             {

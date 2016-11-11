@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace SpaceBattles
 {
@@ -22,16 +23,25 @@ namespace SpaceBattles
         protected override void GenerateSelectionLabels()
         {
             SelectionNames = new List<string>();
-            if (ObjectForMethodsToBeInvokedUpon != null)
+            if (ObjectForMethodsToBeInvokedUpon != null
+            ||  TypeForMethodsToBeInvokedUpon   != null)
             {
                 MyContract.RequireFieldNotNull(MemberSourceType, "MemberSourceType");
                 //Debug.Log("Got most derived type as " + MethodSourceType.ToString());
-                Members
-                    = new List<MemberInfo>
-                        (MemberSourceType
-                            .GetEvents(SelectionToShowFlags)
-                        );
+                var MemberSelection
+                    = MemberSourceType
+                    .GetFields(SelectionToShowFlags)
+                    .Where(fi => fi.FieldType == typeof(UnityEvent))
+                    .Select(fi => (MemberInfo)fi);
+                Members = new List<MemberInfo>(MemberSelection);
                 ClassHasNoRelevantMembersToShow = Members.Count == 0;
+                if (ClassHasNoRelevantMembersToShow)
+                {
+                    Debug.Log("Class \""
+                             + TypeForMethodsToBeInvokedUpon.ToString()
+                             + "\" apparently has no UnityEvents.");
+                }
+                
 
                 // Select guarantees the same ordering as the source
                 // enumeration, so it's fine to use the index from

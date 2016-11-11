@@ -21,7 +21,8 @@ namespace SpaceBattles
         // This monobehaviour is expected to be mounted directly
         // to the same gameobject as the target
         public MonoBehaviour Target;
-        public List<CordCircuit> CordCircuits;
+        public List<CordCircuit> CordCircuits
+            = new List<CordCircuit>();
         public Type RegistryKeyType;
 
         // -- Delegates --
@@ -64,24 +65,47 @@ namespace SpaceBattles
                     .GetComponent(CordCircuit.SourceMonoBehaviourTypeName);
                 MyContract.RequireFieldNotNull(SourceScript, "Source Script");
 
-                Type SourceScriptType
-                    = SourceScript.GetType();
-                EventInfo SourceUnityEventInfo
-                    = SourceScriptType.GetEvent(CordCircuit.SourceEventName);
-                Debug.Assert(SourceUnityEventInfo != null,
-                             "Source script "
-                             + CordCircuit.SourceMonoBehaviourTypeName
-                             + " must contain an event named "
-                             + CordCircuit.SourceEventName);
-                Debug.Log("Fields available on the target object: "
-                        + PrintEvents(SourceScriptType));
+                UnityEvent SourceEvent
+                    = RetrieveUnityEvent(
+                        CordCircuit.SourceUnityEventName,
+                        SourceScript
+                      );
 
                 UnityAction OnSwitchTriggered
                     = CreateRearCord(CordCircuit.RearJackType,
                                      CordCircuit.RearJackName);
 
-                SourceUnityEventInfo.AddEventHandler(SourceScript, OnSwitchTriggered);
+                SourceEvent.AddListener(OnSwitchTriggered);
+
+                Debug.Log("Connecting Source "
+                         + CordCircuit.SourceObjectRegistryKey
+                         + "\t" + CordCircuit.SourceMonoBehaviourTypeName
+                         + "\t" + CordCircuit.SourceUnityEventName
+                         + "\nTo target: "
+                         + CordCircuit.RearJackName);
             }
+        }
+
+        private static UnityEvent RetrieveUnityEvent(string eventName, Component eventHostScript)
+        {
+            Type HostScriptType = eventHostScript.GetType();
+            FieldInfo UnityEventInfo
+                = HostScriptType.GetField(eventName);
+            Debug.Assert(UnityEventInfo != null,
+                         "Source script "
+                         + HostScriptType.ToString()
+                         + " must contain a Unity event named "
+                         + eventName);
+            //Debug.Log("Fields available on the target object: "
+            //        + PrintEvents(SourceScriptType));
+            System.Object UnityEventUncasted
+                = UnityEventInfo.GetValue(eventHostScript);
+            
+            Debug.Assert(UnityEventUncasted != null);
+            Debug.Assert(UnityEventUncasted.GetType()
+                          == typeof(UnityEvent));
+
+            return (UnityEvent)UnityEventUncasted;
         }
 
         private UnityAction
@@ -91,7 +115,7 @@ namespace SpaceBattles
             switch (rearJackType)
             {
                 case JackType.Event:
-                    return CreateEventDelegate(rearJackName);
+                    return CreateUnityEventDelegate(rearJackName);
                 case JackType.Method:
                     return CreateMethodDelegate(rearJackName);
                 default:
@@ -100,26 +124,16 @@ namespace SpaceBattles
         }
 
         private UnityAction
-        CreateEventDelegate
+        CreateUnityEventDelegate
         (string eventName)
         {
-            Type TargetType = Target.GetType();
-            MyContract.RequireArgumentNotNull(TargetType, "targetType");
             MyContract.RequireFieldNotNull(Target, "Target");
-            EventInfo TargetEventInfo
-                    = TargetType.GetEvent(eventName);
-            MyContract.RequireArgument(
-                TargetEventInfo != null,
-                 "Is a member of the Target object",
-                 "Unity event " + eventName
-            );
-            MethodInfo RaiseEventMethod = TargetEventInfo.GetRaiseMethod();
-            //Target.
-
+            UnityEvent EventToTrigger
+                = RetrieveUnityEvent(eventName, Target);
+            
             return delegate ()
             {
-                Debug.Assert(Target != null, "Target is null");
-                RaiseEventMethod.Invoke(Target, null);
+                EventToTrigger.Invoke();
             };
         }
 
@@ -190,11 +204,14 @@ namespace SpaceBattles
         // -- Classes --
 
         [Serializable]
+        /// I use UnityEvents for both source and destination events
+        /// because fields are much easier to manage through reflection
+        /// than pure c# events
         public class CordCircuit
         {
             public int SourceObjectRegistryKey;
             public string SourceMonoBehaviourTypeName;
-            public string SourceEventName;
+            public string SourceUnityEventName;
             public JackType RearJackType;
             public string RearJackName;
         }
