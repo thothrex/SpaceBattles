@@ -37,7 +37,7 @@ namespace SpaceBattles
             if (UsingPresetScale)
             {
                 CameraScale
-                    = Convert.ToSingle(PresetScale.MetresMultiplier());
+                    = Convert.ToSingle(PresetScale.ConvertMeasurementToMetres(1.0));
             }
         }
 

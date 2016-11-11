@@ -155,7 +155,7 @@ namespace SpaceBattles
         /// <param name="relativeScale"></param>
         public void SetRelativeScaleExplicitly (double relativeScale)
         {
-            Debug.Log("Setting relative scale explicitly to " + relativeScale);
+            //Debug.Log("Setting relative scale explicitly to " + relativeScale);
             double NewScale = relativeScale * Radius;
             SetScale(NewScale);
             ExplicitScale = NewScale;
@@ -169,7 +169,7 @@ namespace SpaceBattles
         /// <param name="targetScale"></param>
         public void SetScaleToPredefinedScale(Scale targetScale)
         {
-            Debug.Log("Setting scale to " + targetScale);
+            //Debug.Log("Setting scale to " + targetScale);
             double ScaledRadius
                 = Scale.NearestPlanet
                 .ConvertMeasurementTo(targetScale, Radius);
@@ -190,7 +190,7 @@ namespace SpaceBattles
         /// <param name="scaledRadius"></param>
         private void SetScale(double scaledRadius)
         {
-            Debug.Log("Setting scale internally to " + scaledRadius);
+            //Debug.Log("Setting scale internally to " + scaledRadius);
             float fScaledRadius
                 = Convert.ToSingle(scaledRadius);
             transform.localScale

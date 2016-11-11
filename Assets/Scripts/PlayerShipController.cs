@@ -250,12 +250,6 @@ namespace SpaceBattles
         private void killThisUnit()
         {
             Debug.Log("Player is dead!");
-            if (transform.position == null)
-            {
-                throw new InvalidOperationException(
-                    "For some reason the player's position is null"
-                );
-            }
             DeathHandler handler = EventDeath;
             if (oem.shouldTriggerEvent(handler))
             {

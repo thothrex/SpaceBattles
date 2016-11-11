@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 
 namespace SpaceBattles
 {
@@ -9,7 +10,7 @@ namespace SpaceBattles
 
     public enum Scale
     {
-        Metres, NearestPlanet, SolarSystem
+        Metres, NearestPlanet, SolarSystem, Logarithmic
     }
 
     public static class ScaleExtensions
@@ -22,17 +23,37 @@ namespace SpaceBattles
         /// </summary>
         public static readonly double
             NearestPlanetsMetresMultiplier = 1000.0;
+        public static readonly double LogBase = 10.0;
 
-        public static double MetresMultiplier(this Scale scale)
+        public static double ConvertMeasurementToMetres (this Scale scale, double measurement)
         {
-            switch(scale)
+            switch (scale)
             {
                 case Scale.Metres:
-                    return 1.0;
+                    return measurement;
                 case Scale.NearestPlanet:
-                    return NearestPlanetsMetresMultiplier;
+                    return measurement * NearestPlanetsMetresMultiplier;
                 case Scale.SolarSystem:
-                    return OrbitingBodyMathematics.DISTANCE_SCALE_TO_METRES;
+                    return measurement * OrbitingBodyMathematics.DISTANCE_SCALE_TO_METRES;
+                case Scale.Logarithmic:
+                    return Math.Pow(LogBase, measurement);
+                default:
+                    throw new UnexpectedEnumValueException<Scale>(scale);
+            }
+        }
+
+        public static double ConvertMeasurementFromMetres(this Scale scale, double measurement)
+        {
+            switch (scale)
+            {
+                case Scale.Metres:
+                    return measurement;
+                case Scale.NearestPlanet:
+                    return measurement / NearestPlanetsMetresMultiplier;
+                case Scale.SolarSystem:
+                    return measurement / OrbitingBodyMathematics.DISTANCE_SCALE_TO_METRES;
+                case Scale.Logarithmic:
+                    return Math.Log(measurement, LogBase);
                 default:
                     throw new UnexpectedEnumValueException<Scale>(scale);
             }
@@ -56,9 +77,9 @@ namespace SpaceBattles
              Scale targetScale,
              double valueToScale)
         {
-            double ScaleRatio = initialScale.MetresMultiplier()
-                              / targetScale.MetresMultiplier();
-            return valueToScale * ScaleRatio;
+            double MetreValues
+                = initialScale.ConvertMeasurementToMetres(valueToScale);
+            return targetScale.ConvertMeasurementFromMetres(MetreValues);
         }
     }
 }

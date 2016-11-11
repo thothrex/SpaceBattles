@@ -22,7 +22,8 @@ namespace SpaceBattles
         protected override void GenerateSelectionLabels()
         {
             SelectionNames = new List<string>();
-            if (ObjectForMethodsToBeInvokedUpon != null)
+            if (ObjectForMethodsToBeInvokedUpon != null
+            ||  TypeForMethodsToBeInvokedUpon   != null)
             {
                 MyContract.RequireFieldNotNull(MemberSourceType, "MethodSourceType");
                 //Debug.Log("Got most derived type as " + MethodSourceType.ToString());

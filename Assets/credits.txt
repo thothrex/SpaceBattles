@@ -1,8 +1,11 @@
-Icon made by Freepik [http://www.flaticon.com/authors/freepik] from www.flaticon.com
-Font by Iconian Fonts [http://iconian.com]
-Smoke texture by cyborgsuzystock [http://cyborgsuzystock.deviantart.com/art/smoke-01-24423042]
-Unity Editor Tweaks (different list mainly) by t0chas [https://gist.github.com/t0chas]
-	(with a tweak by abduelhamit [https://gist.github.com/abduelhamit])
+Icon 						made by Freepik 	[http://www.flaticon.com/authors/freepik] from www.flaticon.com
+Font 						by Iconian Fonts 	[http://iconian.com]
+Smoke texture 					by cyborgsuzystock 	[http://cyborgsuzystock.deviantart.com/art/smoke-01-24423042]
+Unity Editor Tweaks (different list mainly) 	by t0chas 		[https://gist.github.com/t0chas]
+					(with a tweak by abduelhamit [https://gist.github.com/abduelhamit])
+Octahedron Sphere 				by Jasper Flick 	[http://catlikecoding.com/unity/tutorials/octahedron-sphere/]
+Saturn Texture 					by HellcatF6F		[http://hellcatf6f.deviantart.com/art/Saturn-Texture-3-2k-491970229]
+Neptune Texture 							[http://planetpixelemporium.com/neptune.html]
 
 Unity Packages
 --------------

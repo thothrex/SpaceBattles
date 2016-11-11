@@ -26,23 +26,25 @@ namespace SpaceBattles
         // -- Methods --
         public void Update ()
         {
-            if (moving)
-            {
-                TimeElapsedMoving += Time.deltaTime;
-                if (TimeElapsedMoving >= TotalMovementDuration)
-                {
-                    moving = false;
-                }
-                else
-                {
-                    float Progress = TimeElapsedMoving
-                                   / TotalMovementDuration;
-                    CameraToMove.transform.position
-                        = Vector3.Lerp(InitialLocation,
-                                       CurrentTarget,
-                                       Progress);
-                }
-            }
+            /// Deprecated as we currently use InertialCameraController
+            /// to do smooth movement so no need to do that manually here
+            //if (moving)
+            //{
+            //    TimeElapsedMoving += Time.deltaTime;
+            //    if (TimeElapsedMoving >= TotalMovementDuration)
+            //    {
+            //        moving = false;
+            //    }
+            //    else
+            //    {
+            //        float Progress = TimeElapsedMoving
+            //                       / TotalMovementDuration;
+            //        CameraToMove.transform.position
+            //            = Vector3.Lerp(InitialLocation,
+            //                           CurrentTarget,
+            //                           Progress);
+            //    }
+            //}
         }
 
         public void ReturnToStart ()

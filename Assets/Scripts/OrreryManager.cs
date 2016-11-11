@@ -31,11 +31,11 @@ namespace SpaceBattles
 
             MapViewCameraWaypoint.position
                 = GenerateMainOrreryCameraPosition();
-            ChangePlanetsScale(Planets, PlanetStartingScale);
-            PlanetRegistry
-                .RetrieveGameObject((int)OrbitingBody.SUN)
-                .GetComponent<OrbitingBodyBackgroundGameObject>()
-                .SetRelativeScaleExplicitly(PlanetStartingScale / 100.0);
+            ChangePlanetsScale(Planets, Scale.Logarithmic);
+            //PlanetRegistry
+            //    .RetrieveGameObject((int)OrbitingBody.SUN)
+            //    .GetComponent<OrbitingBodyBackgroundGameObject>()
+            //    .SetRelativeScaleExplicitly(PlanetStartingScale / 100.0);
         }
 
         public void UseProvidedCameraAsMainCamera (Camera providedCamera)
@@ -116,6 +116,19 @@ namespace SpaceBattles
                     = Planet.GetComponent<OrbitingBodyBackgroundGameObject>();
                 MyContract.RequireArgumentNotNull(PlanetManager, PLANET_MANAGER_NAME);
                 PlanetManager.SetRelativeScaleExplicitly(targetScale);
+            }
+        }
+
+        private void
+        ChangePlanetsScale
+            (List<GameObject> planets, Scale targetScale)
+        {
+            foreach (GameObject Planet in planets)
+            {
+                OrbitingBodyBackgroundGameObject PlanetManager
+                    = Planet.GetComponent<OrbitingBodyBackgroundGameObject>();
+                MyContract.RequireArgumentNotNull(PlanetManager, PLANET_MANAGER_NAME);
+                PlanetManager.SetScaleToPredefinedScale(targetScale);
             }
         }
     }
