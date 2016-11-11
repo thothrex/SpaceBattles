@@ -13,6 +13,7 @@ namespace SpaceBattles
             = " has not been initialised, but it is being accessed.";
 
         // -- Fields --
+        public Type KeyEnum = null;
 
         /// <summary>
         /// N.B. Only applies to newly registered objects
@@ -139,16 +140,40 @@ namespace SpaceBattles
             GameObject obj;
             if (RegisteredObjects.TryGetValue(elementIdentifier, out obj))
             {
-                MyContract.RequireFieldNotNull(
-                    obj,
-                    "Object registered to identifier " + elementIdentifier
-                );
-                obj.SetActive(active);
+                // Doesn't work for some reason?
+                //MyContract.RequireFieldNotNull(
+                //    obj,
+                //    "Object registered to identifier " + elementIdentifier
+                //);
+                if (obj == null)
+                {
+                    if (RegisteredObjects.ContainsKey(elementIdentifier))
+                    {
+                        throw new InvalidOperationException(
+                                "Object registered to identifier "
+                                + PrintKey(elementIdentifier)
+                                + " is null"
+                            );
+                    }
+                    else // shouldn't ever fire
+                    {
+                        throw new InvalidOperationException(
+                            "This registry does not contain an element with identifier "
+                            + PrintKey(elementIdentifier)
+                            + "\n"
+                            + PrintRegistry()
+                        );
+                    }
+                }
+                else
+                {
+                    obj.SetActive(active);
+                }
             }
             else
             {
                 string err_msg = "Target GameObject with element identifier "
-                               + elementIdentifier
+                               + PrintKey(elementIdentifier)
                                + " could not be found in this registry.";
                 throw new InvalidOperationException(err_msg);
             }
@@ -229,10 +254,12 @@ namespace SpaceBattles
                 if (objectsArePrefabs)
                 {
                     Instance = GameObject.Instantiate(OriginalObject);
+                    Debug.Assert(Instance != null, "Instantiate returned null");
                 }
                 else
                 {
                     Instance = OriginalObject;
+                    Debug.Assert(Instance != null, "Provided object was null");
                 }
 
                 if (initialisationCallback != null)
@@ -250,7 +277,7 @@ namespace SpaceBattles
                     throw new InvalidOperationException(
                         "Trying to register a second GameObject "
                         + " with element identifier "
-                        + element.ToString()
+                        + PrintKey(element)
                     );
                 }
                 else
@@ -334,8 +361,8 @@ namespace SpaceBattles
                     "currentObject"
                 );
                 UICS.RegisterBreakpoints(MyRegister);
-                Debug.Log("Registering breakpoints for element with elementid "
-                         + UICS.ElementIdentifier);
+                //Debug.Log("Registering breakpoints for element with elementid "
+                //         + UICS.ElementIdentifier);
             };
         }
 
@@ -345,7 +372,35 @@ namespace SpaceBattles
             foreach (KeyValuePair<int, GameObject> entry in RegisteredObjects)
             {
                 ReturnString += "(";
-                ReturnString += entry.Key;
+                ReturnString += PrintKey(entry.Key);
+                ReturnString += "),";
+            }
+            ReturnString += "]";
+            return ReturnString;
+        }
+
+        private string PrintKey (int key)
+        {
+            if (KeyEnum != null && KeyEnum.IsEnum)
+            {
+                return Enum.GetName(KeyEnum, key);
+            }
+            else
+            {
+                return key.ToString();
+            }
+        }
+
+        // TODO: make private after printstring debugging finished
+        public string PrintDebugDestroyedRegisteredObjectCheck ()
+        {
+            string ReturnString = "[";
+            foreach (KeyValuePair<int, GameObject> entry in RegisteredObjects)
+            {
+                ReturnString += "(";
+                ReturnString += PrintKey(entry.Key);
+                ReturnString += ", ";
+                ReturnString += (entry.Value == null ? "null" : "not null");
                 ReturnString += "),";
             }
             ReturnString += "]";

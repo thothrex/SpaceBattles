@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace SpaceBattles
@@ -21,18 +22,12 @@ namespace SpaceBattles
         private MenuLayout target_layout = MenuLayout.Desktop;
 
         // -- Delegates --
-        public delegate void enterSettingsMenuEventHandler();
-        public delegate void enterOrreryMenuEventHandler();
-        public delegate void ExitProgramEventHandler();
-
 
         // -- Events --
-        public event enterSettingsMenuEventHandler EnterSettingsMenuEvent;
-        public event enterOrreryMenuEventHandler EnterOrreryMenuEvent;
-        public event ExitProgramEventHandler ExitProgramEvent;
-        // Propagates events from child UI elements upwards to this object,
-        // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
-        public event PlayGameButtonPressEventHandler PlayGameButtonPress;
+        public UnityEvent EnterSettingsMenuEvent;
+        public UnityEvent EnterOrreryMenuEvent;
+        public UnityEvent ExitProgramEvent;
+        public UnityEvent PlayGameButtonPress;
 
         // -- Enums --
         private enum MenuLayout { Desktop, Mobile }
@@ -107,7 +102,7 @@ namespace SpaceBattles
         /// </summary>
         public void enterSettingsMenu ()
         {
-            EnterSettingsMenuEvent();
+            EnterSettingsMenuEvent.Invoke();
         }
 
         /// <summary>
@@ -116,7 +111,7 @@ namespace SpaceBattles
         /// </summary>
         public void enterOrrery ()
         {
-            EnterOrreryMenuEvent();
+            EnterOrreryMenuEvent.Invoke();
         }
 
         /// <summary>
@@ -125,7 +120,7 @@ namespace SpaceBattles
         /// </summary>
         public void ExitProgram ()
         {
-            ExitProgramEvent();
+            ExitProgramEvent.Invoke();
         }
 
         public void setLayoutToMobile ()
@@ -148,7 +143,7 @@ namespace SpaceBattles
 
         public void PlayGameButtonPressPropagator ()
         {
-            PlayGameButtonPress();
+            PlayGameButtonPress.Invoke();
         }
 
         private void doLayoutChangeToMobile ()

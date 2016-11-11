@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace SpaceBattles
 {
@@ -78,18 +79,16 @@ namespace SpaceBattles
         public delegate void pitchInputEventHandler (float pitch_input);
 
         // -- events --
-        public event enterOrreryEventHandler EnterOrreryInputEvent;
-        public event exitNetworkGameInputEventHandler ExitNetGameInputEvent;
-        public event exitProgramInputEventHandler ExitProgramInputEvent;
+        [HideInInspector]
+        public UnityEvent EnterOrreryInputEvent;
+        [HideInInspector]
+        public UnityEvent ExitNetGameInputEvent;
+        [HideInInspector]
+        public UnityEvent ExitProgramInputEvent;
+        [HideInInspector]
+        public UnityEvent PlayGameButtonPress;
         public event rollInputEventHandler RollInputEvent;
         public event pitchInputEventHandler PitchInputEvent;
-        // Propagates events from child UI elements upwards to this object,
-        // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
-        public event PlayGameButtonPressEventHandler PlayGameButtonPress
-        {
-            add { MainMenuUIManager.PlayGameButtonPress += value; }
-            remove { MainMenuUIManager.PlayGameButtonPress -= value; }
-        }
 
         // -- enums --
         public enum PlayerConnectState { IDLE, SEARCHING_FOR_SERVER, JOINING_SERVER, CREATING_SERVER };
@@ -116,28 +115,23 @@ namespace SpaceBattles
                 InstantiateUIObjects();
 
                 MainMenuUIManager
-                    = ComponentRegistry
-                    .RetrieveGameObject((int)UIElements.MainMenu)
+                    = ComponentRegistry[(int)UIElements.MainMenu]
                     .GetComponent<MainMenuUIManager>();
 
                 SettingsMenuManager
-                    = ComponentRegistry
-                    .RetrieveGameObject((int)UIElements.SettingsMenu)
+                    = ComponentRegistry[(int)UIElements.SettingsMenu]
                     .GetComponent<SettingsMenuUIManager>();
 
                 InGameMenuManager
-                    = ComponentRegistry
-                    .RetrieveGameObject((int)UIElements.InGameMenu)
+                    = ComponentRegistry[(int)UIElements.InGameMenu]
                     .GetComponent<InGameMenuManager>();
                 
                 GameplayUiManager
-                    = ComponentRegistry
-                    .RetrieveGameObject((int)UIElements.GameplayUI)
+                    = ComponentRegistry[(int)UIElements.GameplayUI]
                     .GetComponent<GameplayUIManager>();
 
                 OrreryUiManager
-                    = ComponentRegistry
-                    .RetrieveGameObject((int)UIElements.OrreryUI)
+                    = ComponentRegistry[(int)UIElements.OrreryUI]
                     .GetComponent<OrreryUIManager>();
 
                 GameplayUiManager.InitialiseSubComponents(SSCManager);
@@ -150,15 +144,22 @@ namespace SpaceBattles
                 //player_centred_canvas        = player_centred_canvas_object.GetComponent<Canvas>();
 
                 // Initialise UI events structure
-                InGameMenuManager.ExitNetGameButtonPress += exitNetGameButtonPress;
-                InGameMenuManager.ExitInGameMenuEvent += ToggleInGameMenu;
-                InGameMenuManager.EnterSettingsMenuEvent += EnterSettingsMenu;
-                MainMenuUIManager.EnterSettingsMenuEvent += EnterSettingsMenu;
-                MainMenuUIManager.EnterOrreryMenuEvent += EnterOrreryTrigger;
-                MainMenuUIManager.ExitProgramEvent += exitProgram;
-                SettingsMenuManager.ExitSettingsMenuEvent += ExitSettingsMenu;
+                //InGameMenuManager.ExitNetGameButtonPress += exitNetGameButtonPress;
+                Debug.Log("ExitNetGameInputEvent "
+                    + (ExitNetGameInputEvent == null ? "does not have" : "has")
+                    + " listeners");
+                //InGameMenuManager.ExitInGameMenuEvent += ToggleInGameMenu;
+                //InGameMenuManager.EnterSettingsMenuEvent += EnterSettingsMenu;
+                //MainMenuUIManager.EnterSettingsMenuEvent += EnterSettingsMenu;
+                //MainMenuUIManager.EnterOrreryMenuEvent += EnterOrreryTrigger;
+                //MainMenuUIManager.ExitProgramEvent += exitProgram;
+                //SettingsMenuManager.ExitSettingsMenuEvent += ExitSettingsMenu;
                 SettingsMenuManager.VirtualJoystickSetEvent += OnVirtualJoystickEnabled;
                 OrreryUiManager.DateTimeSet += SetOrreryDateTimeTrigger;
+                
+                EventSwitchboard Switchboard
+                    = GetComponent<EventSwitchboard>();
+                Switchboard.ConnectCords(ComponentRegistry);
 
                 // TODO: Move to InstantiateUIObjects
                 ITransitionRequestBroadcaster TransitionBroadcaster
@@ -202,8 +203,7 @@ namespace SpaceBattles
         public void Start ()
         {
             InertialCameraController MainMenuBackgroundCamera
-                = CameraRegistry
-                .RetrieveGameObject((int)CameraRoles.MainMenuAndOrrery)
+                = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery]
                 .GetComponent<InertialCameraController>();
             MyContract.RequireFieldNotNull(MainMenuBackgroundCamera,
                                            "MainMenuBackgroundCamera");
@@ -222,7 +222,7 @@ namespace SpaceBattles
             {
                 if (InputAdapter.ExitNetGameInput())
                 {
-                    ExitNetGameInputEvent();
+                    ExitNetGameInputEvent.Invoke();
                 }
 
                 if (InputAdapter.InGameMenuOpenInput())
@@ -430,16 +430,6 @@ namespace SpaceBattles
             CameraTransition(CameraRoles.FixedUi);
         }
 
-        public void EnterOrreryTrigger ()
-        {
-            EnterOrreryInputEvent();
-        }
-
-        public void exitProgram()
-        {
-            ExitProgramInputEvent();
-        }
-
         public void playerShipCreated ()
         {
             //TODO: implement
@@ -502,8 +492,10 @@ namespace SpaceBattles
         /// </summary>
         public void InitialiseUICameras()
         {
-            CameraRegistry.InitialiseAndRegisterGenericPrefabs(CameraPrefabs);
             MyContract.RequireFieldNotNull(SSCManager, "Screen Size Change Manager");
+            CameraRegistry.PersistThroughScenes = true;
+            CameraRegistry.KeyEnum = typeof(CameraRoles);
+            CameraRegistry.InitialiseAndRegisterGenericPrefabs(CameraPrefabs);
             SSCManager.FixedUICamera
                 = CameraRegistry
                 .RetrieveGameObject((int)CameraRoles.FixedUi)
@@ -541,6 +533,14 @@ namespace SpaceBattles
             OrreryManager.SetExplicitDateTime(newTime);
         }
 
+        // TODO: remove once my print debugging is complete
+        // need to do it this way because only occurs in standalone
+        public void DebugLogRegistryStatus ()
+        {
+            Debug.Log(CameraRegistry.PrintDebugDestroyedRegisteredObjectCheck()
+                + "\n" + ComponentRegistry.PrintDebugDestroyedRegisteredObjectCheck());
+        }
+
         /// <summary>
         /// Allows us to use the UIElement "all" as necessary
         /// (we already have none included but all seems to cause problems
@@ -575,6 +575,7 @@ namespace SpaceBattles
                 .ScreenResized
                 .AddListener(SSCManager.OnScreenSizeChange);
 
+            ComponentRegistry.KeyEnum = typeof(UIElements);
             ComponentRegistry.InitialiseAndRegisterUiPrefabs(
                 UiComponentObjectPrefabs, SSCManager, PlayerScreenCanvas
             );
@@ -636,10 +637,10 @@ namespace SpaceBattles
                 if (ComponentRegistry.TryGetValue((int)Element, out obj))
                 {
                     obj.SetActive(show);
-                    Debug.Log(
-                          (show ? "Showing" : "Hiding")
-                        + " element "
-                        + Element);
+                    //Debug.Log(
+                    //      (show ? "Showing" : "Hiding")
+                    //    + " element "
+                    //    + Element);
                 }
                 else
                 {
@@ -663,12 +664,6 @@ namespace SpaceBattles
                 }
             }
             showUIElement(show, args.ToArray());
-        }
-
-        // event handler for in_game_menu_UI button press
-        private void exitNetGameButtonPress ()
-        {
-            ExitNetGameInputEvent();
         }
 
         private string button_name_errmsg (UIElements button_element, 

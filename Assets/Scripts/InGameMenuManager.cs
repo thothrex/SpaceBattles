@@ -1,21 +1,18 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace SpaceBattles
 {
     public class InGameMenuManager : MonoBehaviour
     {
         // -- delegates --
-        public delegate void enterSettingsMenuEventHandler();
-        public delegate void exitInGameMenuEventHandler();
 
         // -- events --
 
-        public event exitInGameMenuEventHandler ExitInGameMenuEvent;
-        public event enterSettingsMenuEventHandler EnterSettingsMenuEvent;
-        // Propagates events from child UI elements upwards to this object,
-        // hopefully making hookup simpler (sorry if this is horrible! I'm new to this & experimenting)
-        public event ButtonExitNetworkGame.exitNetworkGameButtonPressEventHandler ExitNetGameButtonPress;
+        public UnityEvent ExitInGameMenuEvent;
+        public UnityEvent EnterSettingsMenuEvent;
+        public UnityEvent ExitNetGameButtonPress;
 
         public GameObject exit_game_button_object;
         private ButtonExitNetworkGame ExitGameButtonManager;
@@ -29,17 +26,17 @@ namespace SpaceBattles
 
         public void enterSettingsMenu()
         {
-            EnterSettingsMenuEvent();
+            EnterSettingsMenuEvent.Invoke();
         }
 
         public void exitInGameMenu()
         {
-            ExitInGameMenuEvent();
+            ExitInGameMenuEvent.Invoke();
         }
 
         public void ExitNetGameButtonPressPropagator ()
         {
-            ExitNetGameButtonPress();
+            ExitNetGameButtonPress.Invoke();
         }
     }
 }

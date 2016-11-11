@@ -108,6 +108,7 @@ namespace SpaceBattles
                 // The UIManager is dependant on these before it starts AFAIK
                 //Debug.Log("Instantiating cameras");
                 CameraRegistry.PersistThroughScenes = true;
+                CameraRegistry.KeyEnum = typeof(CameraRoles);
                 CameraRegistry.InitialiseAndRegisterGenericPrefabs(CameraPrefabs);
                 CameraRegistry.ActivateAllGameObjects(false);
             }
@@ -121,10 +122,10 @@ namespace SpaceBattles
         public void Start ()
         {
             // Register event handlers
-            UIManager.EnterOrreryInputEvent += EnterOrrery;
-            UIManager.ExitProgramInputEvent += ExitProgram;
-            UIManager.ExitNetGameInputEvent += ExitNetworkGame;
-            UIManager.PlayGameButtonPress += startPlayingGame;
+            UIManager.EnterOrreryInputEvent.AddListener(EnterOrrery);
+            UIManager.ExitProgramInputEvent.AddListener(ExitProgram);
+            UIManager.ExitNetGameInputEvent.AddListener(ExitNetworkGame);
+            UIManager.PlayGameButtonPress.AddListener(startPlayingGame);
             UIManager.PitchInputEvent += handlePitchInput;
             UIManager.RollInputEvent += handleRollInput;
             
@@ -239,6 +240,11 @@ namespace SpaceBattles
             if (!OrreryLoaded)
             {
                 Debug.Log("Loading Orrery");
+                // Debug
+                GameObject DebugCheckObject
+                    = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery];
+                Debug.Log("MainMenuAndOrreryCamera is "
+                        + (DebugCheckObject == null ? "null" : "not null"));
                 StartCoroutine(
                     SceneLoadedCallbackCoroutine(
                         SceneIndex.Orrery,
@@ -308,7 +314,8 @@ namespace SpaceBattles
             Vector3 SolarScaleOrbitCoordinates = normalised_target_vector * sdistance;
 
             double orbit_distance_in_nearest_planet_scale
-                = ORBIT_DISTANCE_IN_METRES / Scale.NearestPlanet.MetresMultiplier();
+                = Scale.NearestPlanet
+                .ConvertMeasurementFromMetres(ORBIT_DISTANCE_IN_METRES);
             // var name is in capitals - Nearest planet scale DISTANCE
             float ndistance = System.Convert.ToSingle(orbit_distance_in_nearest_planet_scale);
             // need to go backwards i.e. towards the sun to be on the sunny side
@@ -438,6 +445,19 @@ namespace SpaceBattles
         private void SwapToOrreryScene ()
         {
             Debug.Log("Orrery Scene Loaded");
+            // Debug
+            GameObject DebugCheckObject
+                = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery];
+            Debug.Log("MainMenuAndOrreryCamera is "
+                    + (DebugCheckObject == null ? "null" : "not null")
+                    + "\nCamera Registry: "
+                    + CameraRegistry.PrintDebugDestroyedRegisteredObjectCheck()
+                    + "\nPlanet Registry: "
+                    + PlanetRegistry.PrintDebugDestroyedRegisteredObjectCheck()
+                    + "\nUIManager is "
+                    + (UIManager == null ? "null" : "not null"));
+            UIManager.DebugLogRegistryStatus();
+            // end debug
             Scene SceneSwappingFrom = SceneManager.GetActiveScene();
             Scene OrreryScene
                 = SceneManager.GetSceneByName(SceneIndex.Orrery.SceneName());
@@ -447,6 +467,19 @@ namespace SpaceBattles
                 UiElementTransitionType.Tracked,
                 UIElements.OrreryUI
             );
+            // Debug
+            DebugCheckObject
+                = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery];
+            Debug.Log("MainMenuAndOrreryCamera is "
+                    + (DebugCheckObject == null ? "null" : "not null")
+                    + "\nCamera Registry: "
+                    + CameraRegistry.PrintDebugDestroyedRegisteredObjectCheck()
+                    + "\nPlanet Registry: "
+                    + PlanetRegistry.PrintDebugDestroyedRegisteredObjectCheck()
+                    + "\nUIManager is "
+                    + (UIManager == null ? "null" : "not null"));
+            UIManager.DebugLogRegistryStatus();
+            // end debug
             UIManager.CameraTransition(CameraRoles.FixedUi
                                      | CameraRoles.MainMenuAndOrrery);
             GameObject OrreryManagerHost = GameObject.Find("OrreryManager");

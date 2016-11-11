@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace SpaceBattles
 {
@@ -16,11 +17,10 @@ namespace SpaceBattles
         private OptionalEventModule oem = new OptionalEventModule();
         
         // -- delegates --
-        public delegate void exitSettingsMenuEventHandler();
         public delegate void virtualJoystickSettingHandler(bool enabled);
 
         // -- events --
-        public event exitSettingsMenuEventHandler ExitSettingsMenuEvent;
+        public UnityEvent ExitSettingsMenuEvent;
         public event virtualJoystickSettingHandler VirtualJoystickSetEvent;
 
         public void Start ()
@@ -30,7 +30,7 @@ namespace SpaceBattles
 
         public void exitSettingsMenu ()
         {
-            ExitSettingsMenuEvent();
+            ExitSettingsMenuEvent.Invoke();
         }
 
         public void toggleVirtualJoystick ()
