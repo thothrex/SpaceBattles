@@ -33,6 +33,7 @@ namespace SpaceBattles
         public SpaceShipClassManager SpaceshipClassManager;
         public GameObject UI_manager_obj;
         public bool dont_destroy_on_load;
+        public float GameFinderSearchDuration = 1.5f;
 
         // Code-defined components
         public OrbitingBodyBackgroundGameObject CurrentNearestOrbitingBody;
@@ -41,8 +42,20 @@ namespace SpaceBattles
         private static ProgramInstanceManager instance = null;
 
         private bool warping = false;
-        private bool looking_for_game = false;
-        private bool found_game = false;
+        /// <summary>
+        /// Might need to change this to an int or timestamp
+        /// so that I can compare whether or not the game that was found
+        /// was the same as the one I was looking for
+        /// 
+        /// e.g. A super-delayed OnServerDetected thread could detect that 
+        /// FoundGame was false, yet this was because the 7th game I've played
+        /// today has finished, and I started that thread after the 3rd game.
+        /// Maybe I didn't want to start another game after that 7th game but
+        /// the thread would detect FoundGame as false and try to connect
+        /// to a server with the information it received, which is probably
+        /// out-of-date by then.
+        /// </summary>
+        private bool FoundGame = false;
         private bool OrreryLoaded = false;
         // Hopefully protected by the SceneLoadLock
         private bool SceneLoadInProgress = false;
@@ -51,6 +64,8 @@ namespace SpaceBattles
         private IncorporealPlayerController PlayerController;
         private ClientState client_state = ClientState.MAIN_MENU;
         private System.Object SceneLoadLock = new System.Object();
+        private System.Object LookingForGameLock = new System.Object();
+        private System.Object FoundGameLock = new System.Object();
         // TODO: Actually let the player choose their ship class
         private SpaceShipClass PlayerShipClassChoiceBackingValue;
         // might need this to avoid garbage collection (maybe I'm just dumb)
@@ -269,18 +284,27 @@ namespace SpaceBattles
             Debug.Log("Server detected at address " + fromAddress);
             // I don't even know if this will do anything
             if (net_client != null) return;
-            found_game = true;
-            // TODO: implement properly
-            // wait 1 second for more games
-            UIManager.SetPlayerConnectState(
-                UIManager.PlayerConnectState.JOINING_SERVER
-            );
-            NetworkDiscoverer.StopBroadcast();
-            NetworkManager.networkAddress = fromAddress;
-            net_client = NetworkManager.StartClient();
-            ClientScene.AddPlayer(0); // this number is scoped to the connection
-                                      // i.e. if I only ever want one player
-                                      // per connection, this is fine
+            lock (FoundGameLock)
+            {
+                Debug.Log("Acquired FoundGameLock");
+                // If we are the first responder
+                if (!FoundGame)
+                {
+                    FoundGame = true;
+                    // TODO: implement properly
+                    // wait 1 second for more games
+                    UIManager.SetPlayerConnectState(
+                        UIManager.PlayerConnectState.JOINING_SERVER
+                    );
+                    NetworkDiscoverer.StopBroadcast();
+                    NetworkManager.networkAddress = fromAddress;
+                    net_client = NetworkManager.StartClient();
+                    ClientScene.AddPlayer(0); // this number is scoped to the connection
+                                              // i.e. if I only ever want one player
+                                              // per connection, this is fine
+                }
+            }
+            Debug.Log("Released FoundGameLock");
         }
 
         public void warpTo (OrbitingBody orbiting_body)
@@ -418,12 +442,10 @@ namespace SpaceBattles
         private void startPlayingGame ()
         {
             Debug.Log("Play game button pressed");
-            // shitty lock DO NOT TRUST
-            if (!looking_for_game)
-            {
-                StartCoroutine(PlayGameCoroutine());
-                NetworkDiscoverer.StartAsClient();
-            }
+            // Relies on the below coroutine
+            // checking the lock states appropriately
+            StartCoroutine(PlayGameCoroutine());
+            NetworkDiscoverer.StartAsClient();
         }
 
         private IEnumerator
@@ -437,9 +459,9 @@ namespace SpaceBattles
                     = SceneManager.LoadSceneAsync((int)sceneIndex, LoadSceneMode.Additive);
                 ConfirmSceneLoadNotNull(sceneIndex, SceneLoad);
                 yield return new WaitUntil(() => SceneLoad.isDone);
+                SceneLoadInProgress = false;
+                callback();
             }
-            
-            callback();
         }
 
         private void SwapToOrreryScene ()
@@ -522,24 +544,47 @@ namespace SpaceBattles
             }
         }
 
+        /// <summary>
+        /// This method needs to check locks
+        /// as it could be called many times erroneously
+        /// </summary>
+        /// <returns></returns>
         private IEnumerator PlayGameCoroutine ()
         {
-            // shitty lock DO NOT TRUST
-            looking_for_game = true;
-            found_game = false;
-            yield return new WaitForSeconds(1.0f);
-            if (found_game) { yield break; }
-            else
+            // Lock probably not necessary
+            // but hopefully guarantees sensible behaviour of LookingForGame
+            lock (LookingForGameLock)
             {
-                NetworkDiscoverer.StopBroadcast();
-                Debug.Log("Game not found - starting server");
-                UIManager.SetPlayerConnectState(
-                    UIManager.PlayerConnectState.CREATING_SERVER
-                );
-                net_client = NetworkManager.StartHost();
-                NetworkDiscoverer.StartAsServer();
+                Debug.Log("Acquired LookingForGameLock");
+                bool FoundGameEarly = false;
+                lock (FoundGameLock)
+                {
+                    Debug.Log("Acquired FoundGameLock");
+                    FoundGameEarly = FoundGame;
+                }
+                Debug.Log("Released FoundGameLock");
+                if (!FoundGameEarly)
+                {
+                    yield return new WaitForSeconds(GameFinderSearchDuration);
+                    lock (FoundGameLock)
+                    {
+                        Debug.Log("Acquired FoundGameLock");
+                        if (!FoundGame)
+                        {
+                            NetworkDiscoverer.StopBroadcast();
+                            Debug.Log("Game not found - starting server");
+                            UIManager.SetPlayerConnectState(
+                                UIManager.PlayerConnectState.CREATING_SERVER
+                            );
+                            net_client = NetworkManager.StartHost();
+                            NetworkDiscoverer.StartAsServer();
+                            FoundGame = true;
+                        }
+                    }
+                    Debug.Log("Released FoundGameLock");
+                }
             }
-            looking_for_game = false;
+            Debug.Log("Released LookingForGameLock");
         }
 
         private IEnumerator ExitProgramAfterSceneLoadCoroutine ()
@@ -550,19 +595,23 @@ namespace SpaceBattles
 
         private void ExitNetworkGame ()
         {
-            // I'm not sure if this is always safe to use,
-            // as the documentation is very slim
-            Debug.Log("Stopping game");
-            SetPlayerCamerasActive(false);
-            NetworkManager.StopHost();
-            if (NetworkDiscoverer.running)
+            lock (FoundGameLock)
             {
-                NetworkDiscoverer.StopBroadcast();
+                FoundGame = false;
+                // I'm not sure if this is always safe to use,
+                // as the documentation is very slim
+                Debug.Log("Stopping game");
+                SetPlayerCamerasActive(false);
+                NetworkManager.StopHost();
+                if (NetworkDiscoverer.running)
+                {
+                    NetworkDiscoverer.StopBroadcast();
+                }
+                UIManager.SetPlayerConnectState(
+                    UIManager.PlayerConnectState.IDLE
+                );
+                UIManager.EnterMainMenuRoot();
             }
-            UIManager.SetPlayerConnectState(
-                UIManager.PlayerConnectState.IDLE
-            );
-            UIManager.EnterMainMenuRoot();
         }
 
         private void SetCamerasFollowTransform (Transform followTransform)
