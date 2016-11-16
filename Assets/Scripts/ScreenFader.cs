@@ -16,6 +16,7 @@ namespace SpaceBattles
         private float FadeCurrentElapsedTime = 0f;
         private float InitialAlpha = 1f;
         private float AlphaDifference = 1f;
+        private bool fading = false;
 
         public void Awake()
         {
@@ -25,21 +26,29 @@ namespace SpaceBattles
 
         public void Update ()
         {
-            if (TargetColour != null
-            &&  FadeImg      != null
-            &&  (Math.Abs(FadeImg.color.a - TargetColour.a)
-                    > AcceptableAlphaDifference))
+            if (fading)
             {
-                // Do fade
-                Color FadeImgColor = FadeImg.color;
-                FadeCurrentElapsedTime += Time.deltaTime;
-                float FadeProgress = FadeCurrentElapsedTime
-                                    / FadeTotalDuration;
-                float CurrentAlpha
-                    = InitialAlpha
-                    + FadeProgress * AlphaDifference;
-                FadeImgColor.a = CurrentAlpha;
-                FadeImg.color = FadeImgColor;
+                if (FadeCurrentElapsedTime > FadeTotalDuration)
+                {
+                    FadeImg.color = TargetColour;
+                    fading = false;
+                }
+                else if (TargetColour != null
+                && FadeImg != null
+                && (Math.Abs(FadeImg.color.a - TargetColour.a)
+                        > AcceptableAlphaDifference))
+                {
+                    // Do fade
+                    Color FadeImgColor = FadeImg.color;
+                    FadeCurrentElapsedTime += Time.deltaTime;
+                    float FadeProgress = FadeCurrentElapsedTime
+                                        / FadeTotalDuration;
+                    float CurrentAlpha
+                        = InitialAlpha
+                        + FadeProgress * AlphaDifference;
+                    FadeImgColor.a = CurrentAlpha;
+                    FadeImg.color = FadeImgColor;
+                }
             }
         }
 
@@ -65,6 +74,7 @@ namespace SpaceBattles
             InitialAlpha = FadeImg.color.a;
             AlphaDifference = targetColour.a - InitialAlpha;
             FadeCurrentElapsedTime = 0f;
+            fading = true;
         }
     }
 }
