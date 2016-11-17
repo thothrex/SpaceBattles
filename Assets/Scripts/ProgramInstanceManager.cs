@@ -207,7 +207,7 @@ namespace SpaceBattles
             UIManager.setCurrentPlayerMaxHealth(PlayerShipController.MAX_HEALTH);
             UIManager.setCurrentPlayerHealth(PlayerShipController.MAX_HEALTH);
 
-            SetCamerasFollowTransform(ship_controller.transform);
+            CameraRegistry.SetAllFollowTransforms(ship_controller.transform);
         }
 
         public void OnDisconnectedFromServer (NetworkDisconnection info)
@@ -416,7 +416,7 @@ namespace SpaceBattles
                 .offset
                     = SpaceshipClassManager
                     .getCameraOffset(PlayerShipClassChoice);
-            SetCamerasFollowTransform(initialFollowTransform);
+            CameraRegistry.SetAllFollowTransforms(initialFollowTransform);
 
             //TODO: move this activation somewhere else(?)
             SetPlayerCamerasActive(true);
@@ -609,26 +609,11 @@ namespace SpaceBattles
             }
         }
 
-        private void SetCamerasFollowTransform (Transform followTransform)
-        {
-            MyContract.RequireArgumentNotNull(followTransform,
-                                             "followTransform");
-            CameraRegistry[(int)CameraRoles.Player]
-                .GetComponent<InertialCameraController>()
-                .FollowTransform = followTransform;
-            CameraRegistry[(int)CameraRoles.NearestPlanet]
-                .GetComponent<LargeScaleCamera>()
-                .FollowTransform = followTransform;
-            CameraRegistry[(int)CameraRoles.SolarSystem]
-                .GetComponent<LargeScaleCamera>()
-                .FollowTransform = followTransform;
-        }
-
         private void localPlayerShipDestroyedHandler ()
         {
             if (PlayerController != null)
             {
-                SetCamerasFollowTransform(PlayerController.transform);
+                CameraRegistry.SetAllFollowTransforms(PlayerController.transform);
             }
         }
 

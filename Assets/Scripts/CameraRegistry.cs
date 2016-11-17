@@ -5,7 +5,38 @@ namespace SpaceBattles
 {
     public class CameraRegistry : RegistryModule<Camera>
     {
-        //SetCamerasFollowTransform
+        //SetCamerasFollowTransform for ProgramInstanceManager
+
+        public void SetAllFollowTransforms (Transform followTransform)
+        {
+            foreach (Camera Cam in RegisteredObjects.Values)
+            {
+                InertialCameraController ICC
+                    = Cam.GetComponent<InertialCameraController>();
+                if (ICC != null)
+                {
+                    ICC.FollowTransform = followTransform;
+                }
+                else
+                {
+                    LargeScaleCamera LSC
+                        = Cam.GetComponent<LargeScaleCamera>();
+                    if (LSC != null)
+                    {
+                        LSC.FollowTransform = followTransform;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException(
+                            "Camera "
+                            + Cam.ToString()
+                            + " does not have an InertialCameraController "
+                            + "or LargeScaleCamera component"
+                        );
+                    }
+                }
+            }
+        }
 
         public override void EnsureObjectsStayAlive()
         {
