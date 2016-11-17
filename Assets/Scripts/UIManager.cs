@@ -37,7 +37,7 @@ namespace SpaceBattles
         public Camera ship_select_camera_prefab;
         
         public List<GameObject> UiComponentObjectPrefabs;
-        public List<GameObject> CameraPrefabs;
+        public List<Camera> CameraPrefabs;
         public bool PrintScreenSizeDebugText;
 
         //public Vector3 player_centred_UI_offset;
@@ -68,8 +68,8 @@ namespace SpaceBattles
             = new Stack<UIElements>();
         private UIRegistry ComponentRegistry
             = new UIRegistry();
-        private GameObjectRegistry CameraRegistry
-            = new GameObjectRegistry();
+        private CameraRegistry CameraRegistry
+            = new CameraRegistry();
 
         // -- delegates --
         public delegate void enterOrreryEventHandler();
@@ -495,15 +495,13 @@ namespace SpaceBattles
             CameraRegistry.KeyEnum = typeof(CameraRoles);
             CameraRegistry.InitialiseAndRegisterGenericPrefabs(CameraPrefabs);
             SSCManager.FixedUICamera
-                = CameraRegistry[(int)CameraRoles.FixedUi]
-                .GetComponent<Camera>();
+                = CameraRegistry[(int)CameraRoles.FixedUi];
             Debug.Log("Fixed UI Camera for the SSCManager has been set");
         }
-
-        public void ProvideCamera (GameObject camera)
+        public void ProvideCamera (Camera camera)
         {
-            List<GameObject> NewCameraList
-                = new List<GameObject>();
+            List<Camera> NewCameraList
+                = new List<Camera>();
             NewCameraList.Add(camera);
             CameraRegistry.RegisterObjects(NewCameraList);
             //Debug.Log("Camera provided to UIManager with key "

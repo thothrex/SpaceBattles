@@ -21,7 +21,7 @@ namespace SpaceBattles
         // -- Fields --
         // Editor-definable components
         // Prefabs
-        public List<GameObject> CameraPrefabs;
+        public List<Camera> CameraPrefabs;
         public Light nearest_planet_sunlight_prefab;
         public GameObject basic_phaser_bolt_prefab;
         public List<GameObject> PlanetPrefabs;
@@ -72,8 +72,8 @@ namespace SpaceBattles
         private NetworkClient net_client = null;
         private GameObjectRegistry PlanetRegistry
             = new GameObjectRegistry();
-        private GameObjectRegistry CameraRegistry
-            = new GameObjectRegistry();
+        private CameraRegistry CameraRegistry
+            = new CameraRegistry();
 
         // -- Delegates --
         public delegate void SceneLoadedCallback();
@@ -144,7 +144,7 @@ namespace SpaceBattles
             UIManager.PitchInputEvent += handlePitchInput;
             UIManager.RollInputEvent += handleRollInput;
 
-            GameObject MainMenuAndOrreryCamera
+            Camera MainMenuAndOrreryCamera
                 = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery];
             UIManager.ProvideCamera(MainMenuAndOrreryCamera);
 
@@ -256,7 +256,7 @@ namespace SpaceBattles
                 Debug.Log("Loading Orrery");
                 // Debug
                 GameObject DebugCheckObject
-                    = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery];
+                    = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery].gameObject;
                 Debug.Log("MainMenuAndOrreryCamera is "
                         + (DebugCheckObject == null ? "null" : "not null"));
                 StartCoroutine(
@@ -464,7 +464,8 @@ namespace SpaceBattles
             Debug.Log("Orrery Scene Loaded");
             // Debug
             GameObject DebugCheckObject
-                = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery];
+                = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery].gameObject;
+            //DontDestroyOnLoad(DebugCheckObject);
             Debug.Log("MainMenuAndOrreryCamera is "
                     + (DebugCheckObject == null ? "null" : "not null")
                     + "\nCamera Registry: "
@@ -486,7 +487,7 @@ namespace SpaceBattles
             );
             // Debug
             DebugCheckObject
-                = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery];
+                = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery].gameObject;
             Debug.Log("MainMenuAndOrreryCamera is "
                     + (DebugCheckObject == null ? "null" : "not null")
                     + "\nCamera Registry: "
