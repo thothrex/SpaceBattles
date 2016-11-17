@@ -70,10 +70,10 @@ namespace SpaceBattles
         private SpaceShipClass PlayerShipClassChoiceBackingValue;
         // might need this to avoid garbage collection (maybe I'm just dumb)
         private NetworkClient net_client = null;
-        private GameObjectRegistryModule PlanetRegistry
-            = new GameObjectRegistryModule();
-        private GameObjectRegistryModule CameraRegistry
-            = new GameObjectRegistryModule();
+        private GameObjectRegistry PlanetRegistry
+            = new GameObjectRegistry();
+        private GameObjectRegistry CameraRegistry
+            = new GameObjectRegistry();
 
         // -- Delegates --
         public delegate void SceneLoadedCallback();
@@ -143,10 +143,9 @@ namespace SpaceBattles
             UIManager.PlayGameButtonPress.AddListener(startPlayingGame);
             UIManager.PitchInputEvent += handlePitchInput;
             UIManager.RollInputEvent += handleRollInput;
-            
+
             GameObject MainMenuAndOrreryCamera
-                = CameraRegistry
-                .RetrieveGameObject((int)CameraRoles.MainMenuAndOrrery);
+                = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery];
             UIManager.ProvideCamera(MainMenuAndOrreryCamera);
 
             NetworkDiscoverer.ServerDetected
@@ -348,16 +347,14 @@ namespace SpaceBattles
 
             // Solar System Warps
             CurrentNearestOrbitingBody.ChangeToSolarSystemReferenceFrame();
-            CameraRegistry
-                .RetrieveGameObject((int)CameraRoles.SolarSystem)
+            CameraRegistry[(int)CameraRoles.SolarSystem]
                 .GetComponent<LargeScaleCamera>()
                 .WarpTo(SolarScaleOrbitCoordinates);
 
             // Orbital Warps
             warpTarget.ChangeToOrbitalReferenceFrame();
             warpTarget.UpdateSunDirection(nearest_planet_sunlight);
-            CameraRegistry
-                .RetrieveGameObject((int)CameraRoles.NearestPlanet)
+            CameraRegistry[(int)CameraRoles.NearestPlanet]
                 .GetComponent<LargeScaleCamera>()
                 .WarpTo(NearestPlanetScaleOrbitCoordinates);
 
@@ -373,8 +370,7 @@ namespace SpaceBattles
         private OrbitingBodyBackgroundGameObject
         getPlanet(OrbitingBody orbitingBody)
         {
-            GameObject BodyObj
-                = PlanetRegistry.RetrieveGameObject((int)orbitingBody);
+            GameObject BodyObj = PlanetRegistry[(int)orbitingBody];
             var BodyBackgroundObj
                 = BodyObj.GetComponent<OrbitingBodyBackgroundGameObject>();
             return BodyBackgroundObj;
@@ -415,8 +411,7 @@ namespace SpaceBattles
             
 
             // instantiate with default values (arbitrary)
-            CameraRegistry
-                .RetrieveGameObject((int)CameraRoles.Player)
+            CameraRegistry[(int)CameraRoles.Player]
                 .GetComponent<InertialCameraController>()
                 .offset
                     = SpaceshipClassManager
@@ -509,8 +504,7 @@ namespace SpaceBattles
                 = OrreryManagerHost.GetComponent<OrreryManager>();
             UIManager.OrreryManager = OrreryManager;
             Camera MainMenuBackgroundCamera
-                = CameraRegistry
-                .RetrieveGameObject((int)CameraRoles.MainMenuAndOrrery)
+                = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery]
                 .GetComponent<Camera>();
             MyContract.RequireFieldNotNull(MainMenuBackgroundCamera,
                                            "MainMenuBackgroundCamera");
@@ -618,16 +612,13 @@ namespace SpaceBattles
         {
             MyContract.RequireArgumentNotNull(followTransform,
                                              "followTransform");
-            CameraRegistry
-                .RetrieveGameObject((int)CameraRoles.Player)
+            CameraRegistry[(int)CameraRoles.Player]
                 .GetComponent<InertialCameraController>()
                 .FollowTransform = followTransform;
-            CameraRegistry
-                .RetrieveGameObject((int)CameraRoles.NearestPlanet)
+            CameraRegistry[(int)CameraRoles.NearestPlanet]
                 .GetComponent<LargeScaleCamera>()
                 .FollowTransform = followTransform;
-            CameraRegistry
-                .RetrieveGameObject((int)CameraRoles.SolarSystem)
+            CameraRegistry[(int)CameraRoles.SolarSystem]
                 .GetComponent<LargeScaleCamera>()
                 .FollowTransform = followTransform;
         }

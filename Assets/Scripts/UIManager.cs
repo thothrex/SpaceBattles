@@ -66,10 +66,10 @@ namespace SpaceBattles
         private CameraRoles ActiveCameras = CameraRoles.None;
         private Stack<UIElements> UITransitionHistory
             = new Stack<UIElements>();
-        private GameObjectRegistryModule ComponentRegistry
-            = new GameObjectRegistryModule();
-        private GameObjectRegistryModule CameraRegistry
-            = new GameObjectRegistryModule();
+        private UIRegistry ComponentRegistry
+            = new UIRegistry();
+        private GameObjectRegistry CameraRegistry
+            = new GameObjectRegistry();
 
         // -- delegates --
         public delegate void enterOrreryEventHandler();
@@ -163,8 +163,7 @@ namespace SpaceBattles
 
                 // TODO: Move to InstantiateUIObjects
                 ITransitionRequestBroadcaster TransitionBroadcaster
-                    = ComponentRegistry
-                    .RetrieveGameObject((int)UIElements.OrreryUI)
+                    = ComponentRegistry[(int)UIElements.OrreryUI]
                     .GetComponent<UIComponentStem>();
                 RegisterTransitionHandlers(TransitionBroadcaster);
                 
@@ -185,8 +184,7 @@ namespace SpaceBattles
                 if (PrintScreenSizeDebugText)
                 {
                     DebugTextbox
-                        = ComponentRegistry
-                        .RetrieveGameObject((int)UIElements.DebugOutput);
+                        = ComponentRegistry[(int)UIElements.DebugOutput];
                     DebugTextbox.SetActive(true);
                     VariableTextboxPrinter Printer
                         = DebugTextbox.GetComponent<VariableTextboxPrinter>();
@@ -497,31 +495,17 @@ namespace SpaceBattles
             CameraRegistry.KeyEnum = typeof(CameraRoles);
             CameraRegistry.InitialiseAndRegisterGenericPrefabs(CameraPrefabs);
             SSCManager.FixedUICamera
-                = CameraRegistry
-                .RetrieveGameObject((int)CameraRoles.FixedUi)
+                = CameraRegistry[(int)CameraRoles.FixedUi]
                 .GetComponent<Camera>();
             Debug.Log("Fixed UI Camera for the SSCManager has been set");
-
-            setInGameUICamerasActive(false);
         }
 
-        /// <summary>
-        /// Utility method to enable/disable in-game UI cameras
-        /// </summary>
-        /// <param name="active">cameras active/true or inactive/false</param>
-        public void setInGameUICamerasActive(bool active)
-        {
-            CameraRegistry.ActivateGameObject(
-                (int)CameraRoles.ShipSelection, active
-            );
-        }
-
-        public void ProvideCamera (GameObject cameraHostObject)
+        public void ProvideCamera (GameObject camera)
         {
             List<GameObject> NewCameraList
                 = new List<GameObject>();
-            NewCameraList.Add(cameraHostObject);
-            CameraRegistry.RegisterGameObjects(NewCameraList);
+            NewCameraList.Add(camera);
+            CameraRegistry.RegisterObjects(NewCameraList);
             //Debug.Log("Camera provided to UIManager with key "
             //        + cameraHostObject
             //         .GetComponent<IGameObjectRegistryKeyComponent>()
