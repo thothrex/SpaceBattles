@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 namespace SpaceBattles
 {
@@ -39,6 +40,7 @@ namespace SpaceBattles
         public List<GameObject> UiComponentObjectPrefabs;
         public List<Camera> CameraPrefabs;
         public bool PrintScreenSizeDebugText;
+        public GameObject ScreenFadeImageHost;
 
         //public Vector3 player_centred_UI_offset;
         
@@ -166,11 +168,28 @@ namespace SpaceBattles
                     = ComponentRegistry[(int)UIElements.OrreryUI]
                     .GetComponent<UIComponentStem>();
                 RegisterTransitionHandlers(TransitionBroadcaster);
-                
 
                 // Initialise cameras
                 InitialiseUICameras();
                 //hideShipSelectionUI();
+
+                // Setup hacky screen fading
+                ScreenFadeImageHost.transform.SetParent(PlayerScreenCanvas.transform, false);
+                CameraFader Fader =
+                    CameraRegistry[(int)CameraRoles.FixedUi]
+                    .GetComponent<CameraFader>();
+                MyContract.RequireFieldNotNull(
+                    Fader, "Fixed UI CameraFader component"
+                );
+                Fader.FadeImg = ScreenFadeImageHost.GetComponent<Image>();
+                MyContract.RequireFieldNotNull(
+                    Fader.FadeImg, "ScreenFadeImageHost Image component"
+                );
+                PlayerScreenCanvas
+                    .GetComponent<ScreenSizeChangeTrigger>()
+                    .ScreenResizedInternal
+                    .AddListener(Fader.OnScreenSizeChange);
+                Fader.OnScreenSizeChange(PlayerScreenCanvas.GetComponent<RectTransform>().rect);
 
                 if (dont_destroy_on_load)
                 {
@@ -515,12 +534,16 @@ namespace SpaceBattles
             OrreryManager.SetExplicitDateTime(newTime);
         }
 
-        // TODO: remove once my print debugging is complete
-        // need to do it this way because only occurs in standalone
-        public void DebugLogRegistryStatus ()
+        public void FadeCamera (bool fadeOut)
         {
-            Debug.Log(CameraRegistry.PrintDebugDestroyedRegisteredObjectCheck()
-                + "\n" + ComponentRegistry.PrintDebugDestroyedRegisteredObjectCheck());
+            if (fadeOut)
+            {
+                CameraRegistry.FadeAllToBlack();
+            }
+            else
+            {
+                CameraRegistry.FadeAllToClear();
+            }
         }
 
         /// <summary>

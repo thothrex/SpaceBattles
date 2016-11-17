@@ -6,13 +6,13 @@ using UnityEngine.SceneManagement;
 
 namespace SpaceBattles
 {
-    public class ScreenFader : MonoBehaviour
+    public class CameraFader : MonoBehaviour
     {
         public Image FadeImg;
         public float FadeTotalDuration = 1.5f;
 
         private readonly float AcceptableAlphaDifference = 0.0001f;
-        private Color TargetColour;
+        private Color TargetColor;
         private float FadeCurrentElapsedTime = 0f;
         private float InitialAlpha = 1f;
         private float AlphaDifference = 1f;
@@ -28,19 +28,20 @@ namespace SpaceBattles
         {
             if (fading)
             {
+                FadeCurrentElapsedTime += Time.deltaTime;
                 if (FadeCurrentElapsedTime > FadeTotalDuration)
                 {
-                    FadeImg.color = TargetColour;
+                    FadeImg.color = TargetColor;
                     fading = false;
+                    Debug.Log("Ending fade");
                 }
-                else if (TargetColour != null
+                else if (TargetColor != null
                 && FadeImg != null
-                && (Math.Abs(FadeImg.color.a - TargetColour.a)
+                && (Math.Abs(FadeImg.color.a - TargetColor.a)
                         > AcceptableAlphaDifference))
                 {
                     // Do fade
                     Color FadeImgColor = FadeImg.color;
-                    FadeCurrentElapsedTime += Time.deltaTime;
                     float FadeProgress = FadeCurrentElapsedTime
                                         / FadeTotalDuration;
                     float CurrentAlpha
@@ -54,8 +55,23 @@ namespace SpaceBattles
 
         public void OnScreenSizeChange (Rect ScreenSize)
         {
-            FadeImg.rectTransform.localScale
-                = new Vector2(ScreenSize.width, ScreenSize.height);
+            // no null-propagating operator in c# 4 :(
+            if (FadeImg != null)
+            {
+                FadeImg
+                    .rectTransform
+                    .SetSizeWithCurrentAnchors(
+                        RectTransform.Axis.Horizontal,
+                        ScreenSize.width
+                     );
+
+                FadeImg
+                    .rectTransform
+                    .SetSizeWithCurrentAnchors(
+                        RectTransform.Axis.Vertical,
+                        ScreenSize.height
+                     );
+            }
         }
 
         public void FadeToClear()
@@ -70,7 +86,8 @@ namespace SpaceBattles
 
         private void StartFade (Color targetColour)
         {
-            TargetColour = targetColour;
+            Debug.Log("Starting Fade");
+            TargetColor = targetColour;
             InitialAlpha = FadeImg.color.a;
             AlphaDifference = targetColour.a - InitialAlpha;
             FadeCurrentElapsedTime = 0f;

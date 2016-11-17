@@ -571,6 +571,7 @@ namespace SpaceBattles
                             UIManager.SetPlayerConnectState(
                                 UIManager.PlayerConnectState.CREATING_SERVER
                             );
+                            UIManager.FadeCamera(true);
                             net_client = NetworkManager.StartHost();
                             NetworkDiscoverer.StartAsServer();
                             FoundGame = true;
