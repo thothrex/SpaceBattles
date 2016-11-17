@@ -5,7 +5,17 @@ namespace SpaceBattles
 {
     public class CameraRegistry : RegistryModule<Camera>
     {
-        //SetCamerasFollowTransform for ProgramInstanceManager
+        private delegate void FadeFunction (CameraFader fader);
+
+        public void FadeAllToBlack ()
+        {
+            FadeAll(c => c.FadeToBlack());
+        }
+
+        public void FadeAllToClear()
+        {
+            FadeAll(c => c.FadeToClear());
+        }
 
         public void SetAllFollowTransforms (Transform followTransform)
         {
@@ -106,6 +116,25 @@ namespace SpaceBattles
             {
                 GameObject.DontDestroyOnLoad(Instance);
                 GameObject.DontDestroyOnLoad(Instance.gameObject);
+            }
+        }
+
+        private void FadeAll (FadeFunction fadeFunction)
+        {
+            foreach (Camera Cam in RegisteredObjects.Values)
+            {
+                CameraFader FadeComponent
+                    = Cam.gameObject.GetComponent<CameraFader>();
+                if (FadeComponent != null)
+                {
+                    fadeFunction(FadeComponent);
+                }
+                else
+                {
+                    Debug.Log("Camera "
+                            + Cam.gameObject.name
+                            + " has no Camera Fader - Skipping");
+                }
             }
         }
     }
