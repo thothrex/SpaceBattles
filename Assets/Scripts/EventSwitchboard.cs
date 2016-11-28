@@ -44,7 +44,7 @@ namespace SpaceBattles
         /// <summary>
         /// Actually links up the events and/or methods with one another
         /// </summary>
-        public void ConnectCords(GameObjectRegistryModule registry)
+        public void ConnectCords(RegistryModule<GameObject> registry)
         {
             MyContract.RequireFieldNotNull(Target, "Target");
             Type TargetType = Target.GetType();
