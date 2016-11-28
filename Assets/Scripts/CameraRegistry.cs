@@ -1,20 +1,44 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SpaceBattles
 {
     public class CameraRegistry : RegistryModule<Camera>
     {
-        private delegate void FadeFunction (CameraFader fader);
+        public MonoBehaviour CoroutineHost;
 
-        public void FadeAllToBlack ()
+        private delegate void
+            FadeFunction
+                (CameraFader fader, Action partialFadeCallback);
+
+        public void Fade (int cameraKey, bool fadeOut, Action fadeCallback)
         {
-            FadeAll(c => c.FadeToBlack());
+            Camera Cam = RegisteredObjects[cameraKey];
+            CameraFader Fader = Cam.GetComponent<CameraFader>();
+            MyContract.RequireFieldNotNull(
+                Fader,
+                "Camera " + cameraKey + "\'s Fader"
+            );
+            if (fadeOut)
+            {
+                Fader.FadeToBlack(fadeCallback);
+            }
+            else
+            {
+                Fader.FadeToClear(fadeCallback);
+            }
         }
 
-        public void FadeAllToClear()
+        public void FadeAllToBlack (Action fadeCallback)
         {
-            FadeAll(c => c.FadeToClear());
+            FadeAll((c, a) => c.FadeToBlack(a), fadeCallback);
+        }
+
+        public void FadeAllToClear(Action fadeCallback)
+        {
+            FadeAll((c, a) => c.FadeToClear(a), fadeCallback);
         }
 
         public void SetAllFollowTransforms (Transform followTransform)
@@ -119,15 +143,27 @@ namespace SpaceBattles
             }
         }
 
-        private void FadeAll (FadeFunction fadeFunction)
+
+        private void FadeAll (FadeFunction fadeFunction, Action fadeCallback)
         {
-            foreach (Camera Cam in RegisteredObjects.Values)
+            MyContract.RequireFieldNotNull(CoroutineHost, "CoroutineHost");
+            HashSet<int> ObjectsToFade = new HashSet<int>();
+            HashSet<int> FadedObjectsFlag = new HashSet<int>();
+            foreach (var entry in RegisteredObjects)
             {
+                Camera Cam = entry.Value;
+                int Key = entry.Key;
                 CameraFader FadeComponent
                     = Cam.gameObject.GetComponent<CameraFader>();
+                
                 if (FadeComponent != null)
                 {
-                    fadeFunction(FadeComponent);
+                    ObjectsToFade.Add(Key);
+                    Action PartialFadeCallback = delegate ()
+                    {
+                        FadedObjectsFlag.Add(Key);
+                    };
+                    fadeFunction(FadeComponent, PartialFadeCallback);
                 }
                 else
                 {
@@ -136,6 +172,25 @@ namespace SpaceBattles
                             + " has no Camera Fader - Skipping");
                 }
             }
+            CoroutineHost.StartCoroutine(
+                FadeCallbackCoroutine(
+                    ObjectsToFade,
+                    FadedObjectsFlag,
+                    fadeCallback
+                )
+            );
+        }
+
+        private IEnumerator
+        FadeCallbackCoroutine
+            (HashSet<int> callbackChecklist,
+             HashSet<int> completedCallbacks,
+             Action fadeCompleteCallback)
+        {
+            yield return new WaitWhile(
+                () => !callbackChecklist.SetEquals(completedCallbacks)
+            );
+            fadeCompleteCallback();
         }
     }
 }
