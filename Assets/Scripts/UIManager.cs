@@ -146,16 +146,9 @@ namespace SpaceBattles
                 //player_centred_canvas        = player_centred_canvas_object.GetComponent<Canvas>();
 
                 // Initialise UI events structure
-                //InGameMenuManager.ExitNetGameButtonPress += exitNetGameButtonPress;
                 Debug.Log("ExitNetGameInputEvent "
                     + (ExitNetGameInputEvent == null ? "does not have" : "has")
                     + " listeners");
-                //InGameMenuManager.ExitInGameMenuEvent += ToggleInGameMenu;
-                //InGameMenuManager.EnterSettingsMenuEvent += EnterSettingsMenu;
-                //MainMenuUIManager.EnterSettingsMenuEvent += EnterSettingsMenu;
-                //MainMenuUIManager.EnterOrreryMenuEvent += EnterOrreryTrigger;
-                //MainMenuUIManager.ExitProgramEvent += exitProgram;
-                //SettingsMenuManager.ExitSettingsMenuEvent += ExitSettingsMenu;
                 SettingsMenuManager.VirtualJoystickSetEvent += OnVirtualJoystickEnabled;
                 OrreryUiManager.DateTimeSet += SetOrreryDateTimeTrigger;
                 
@@ -174,7 +167,10 @@ namespace SpaceBattles
                 //hideShipSelectionUI();
 
                 // Setup hacky screen fading
-                ScreenFadeImageHost.transform.SetParent(PlayerScreenCanvas.transform, false);
+                CameraRegistry.CoroutineHost = this;
+                ScreenFadeImageHost
+                    .transform
+                    .SetParent(PlayerScreenCanvas.transform, false);
                 CameraFader Fader =
                     CameraRegistry[(int)CameraRoles.FixedUi]
                     .GetComponent<CameraFader>();
@@ -440,11 +436,11 @@ namespace SpaceBattles
         {
             // TODO: change to start in ship selection
             ui_state = UiInputState.InGame;
-            TransitionToUIElements(
-                UiElementTransitionType.Fresh,
-                UIElements.GameplayUI
-            );
-            CameraTransition(CameraRoles.FixedUi);
+            //TransitionToUIElements(
+            //    UiElementTransitionType.Fresh,
+            //    UIElements.GameplayUI
+            //);
+            //CameraTransition(CameraRoles.FixedUi);
         }
 
         public void playerShipCreated ()
@@ -534,15 +530,15 @@ namespace SpaceBattles
             OrreryManager.SetExplicitDateTime(newTime);
         }
 
-        public void FadeCamera (bool fadeOut)
+        public void FadeCamera (bool fadeOut, Action fadeCallback)
         {
             if (fadeOut)
             {
-                CameraRegistry.FadeAllToBlack();
+                CameraRegistry.FadeAllToBlack(fadeCallback);
             }
             else
             {
-                CameraRegistry.FadeAllToClear();
+                CameraRegistry.FadeAllToClear(fadeCallback);
             }
         }
 

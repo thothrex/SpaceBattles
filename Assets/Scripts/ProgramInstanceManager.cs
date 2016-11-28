@@ -39,6 +39,8 @@ namespace SpaceBattles
         public OrbitingBodyBackgroundGameObject CurrentNearestOrbitingBody;
         public Light nearest_planet_sunlight;
 
+        private readonly float MinimumLoadScreenDisplayDuration = 3.0f;
+
         private static ProgramInstanceManager instance = null;
 
         private bool warping = false;
@@ -74,6 +76,13 @@ namespace SpaceBattles
             = new GameObjectRegistry();
         private CameraRegistry CameraRegistry
             = new CameraRegistry();
+
+        private bool FadeToBlackComplete = false;
+        private bool ServerConnectionComplete = false;
+        private bool LoadScreenComplete = false;
+
+        // DEBUG
+        //private GameObject OrreryCamera = null;
 
         // -- Delegates --
         public delegate void SceneLoadedCallback();
@@ -126,6 +135,10 @@ namespace SpaceBattles
                 CameraRegistry.KeyEnum = typeof(CameraRoles);
                 CameraRegistry.InitialiseAndRegisterGenericPrefabs(CameraPrefabs);
                 CameraRegistry.ActivateAllGameObjects(false);
+                CameraRegistry.CoroutineHost = this;
+
+                // DEBUG
+                //OrreryCamera = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery];
             }
             else if (instance != this) // If instance already exists and it's not this:
             {
@@ -189,7 +202,7 @@ namespace SpaceBattles
             PlayerController.LocalPlayerShipHealthChanged += UIManager.setCurrentPlayerHealth;
 
             // Camera setup
-            ActivateGameCameras(PlayerController.transform);
+            SetupGameCameras(PlayerController.transform);
             //SetCamerasFollowTransform(PlayerController.transform);
             WarpTo(CurrentNearestOrbitingBody);
             //UIManager.setPlayerCamera(player_camera.GetComponent<Camera>());
@@ -286,21 +299,20 @@ namespace SpaceBattles
             lock (FoundGameLock)
             {
                 Debug.Log("Acquired FoundGameLock");
-                // If we are the first responder
-                if (!FoundGame)
+                if (!FoundGame) // If we are the first responder
                 {
                     FoundGame = true;
-                    // TODO: implement properly
-                    // wait 1 second for more games
-                    UIManager.SetPlayerConnectState(
-                        UIManager.PlayerConnectState.JOINING_SERVER
-                    );
-                    NetworkDiscoverer.StopBroadcast();
                     NetworkManager.networkAddress = fromAddress;
-                    net_client = NetworkManager.StartClient();
-                    ClientScene.AddPlayer(0); // this number is scoped to the connection
-                                              // i.e. if I only ever want one player
-                                              // per connection, this is fine
+                    BeginEnterOnlineScene(delegate ()
+                    {
+                        Debug.Log("PIM: Server detected - joining as a client");
+                        net_client = NetworkManager.StartClient();
+                        // this number is scoped to the connection
+                        // i.e. if I only ever want one player
+                        // per connection, this is fine
+                        ClientScene.AddPlayer(0);
+                    });
+                    NetworkDiscoverer.StopBroadcast();
                 }
             }
             Debug.Log("Released FoundGameLock");
@@ -402,13 +414,12 @@ namespace SpaceBattles
             }
         }
 
-        private void ActivateGameCameras (Transform initialFollowTransform)
+        private void SetupGameCameras (Transform initialFollowTransform)
         {
-            Debug.Log("Activating game cameras");
+            //Debug.Log("Setting-up game cameras");
             MyContract.RequireFieldNotNull(
                SpaceshipClassManager, "SpaceshipClassManager"
             );
-            
 
             // instantiate with default values (arbitrary)
             CameraRegistry[(int)CameraRoles.Player]
@@ -417,11 +428,6 @@ namespace SpaceBattles
                     = SpaceshipClassManager
                     .getCameraOffset(PlayerShipClassChoice);
             CameraRegistry.SetAllFollowTransforms(initialFollowTransform);
-
-            //TODO: move this activation somewhere else(?)
-            SetPlayerCamerasActive(true);
-            
-            Debug.Log("Cameras created?");
         }
 
         private void SetPlayerCamerasActive (bool active)
@@ -474,11 +480,16 @@ namespace SpaceBattles
                     + PlanetRegistry.PrintDebugDestroyedRegisteredObjectCheck()
                     + "\nUIManager is "
                     + (UIManager == null ? "null" : "not null"));
+            GameObject OrreryCameraBefore
+                = GameObject.Find("Main Menu Background Camera(Clone)");
+            Debug.Log((OrreryCameraBefore == null ? "Could not find" : "Found")
+                      + " the main menu background/orrery camera");
             UIManager.DebugLogRegistryStatus();
             // end debug
-            Scene SceneSwappingFrom = SceneManager.GetActiveScene();
             Scene OrreryScene
                 = SceneManager.GetSceneByName(SceneIndex.Orrery.SceneName());
+            Scene SceneSwappingFrom = SceneManager.GetActiveScene();
+            CameraRegistry.EnsureObjectsStayAlive();
             SceneManager.SetActiveScene(OrreryScene);
             SceneManager.UnloadScene(SceneSwappingFrom);
             UIManager.TransitionToUIElements(
@@ -496,6 +507,10 @@ namespace SpaceBattles
                     + PlanetRegistry.PrintDebugDestroyedRegisteredObjectCheck()
                     + "\nUIManager is "
                     + (UIManager == null ? "null" : "not null"));
+            GameObject OrreryCameraAfter
+                = GameObject.Find("Main Menu Background Camera(Clone)");
+            Debug.Log(( OrreryCameraAfter == null ? "Could not find" : "Found")
+                      + " the main menu background/orrery camera");
             UIManager.DebugLogRegistryStatus();
             // end debug
             UIManager.CameraTransition(CameraRoles.FixedUi
@@ -550,37 +565,37 @@ namespace SpaceBattles
             // but hopefully guarantees sensible behaviour of LookingForGame
             lock (LookingForGameLock)
             {
-                Debug.Log("Acquired LookingForGameLock");
+                //Debug.Log("Acquired LookingForGameLock");
                 bool FoundGameEarly = false;
                 lock (FoundGameLock)
                 {
-                    Debug.Log("Acquired FoundGameLock");
+                    //Debug.Log("Acquired FoundGameLock");
                     FoundGameEarly = FoundGame;
                 }
-                Debug.Log("Released FoundGameLock");
+                //Debug.Log("Released FoundGameLock");
                 if (!FoundGameEarly)
                 {
                     yield return new WaitForSeconds(GameFinderSearchDuration);
                     lock (FoundGameLock)
                     {
-                        Debug.Log("Acquired FoundGameLock");
+                        //Debug.Log("Acquired FoundGameLock");
                         if (!FoundGame)
                         {
                             NetworkDiscoverer.StopBroadcast();
                             Debug.Log("Game not found - starting server");
-                            UIManager.SetPlayerConnectState(
-                                UIManager.PlayerConnectState.CREATING_SERVER
-                            );
-                            UIManager.FadeCamera(true);
-                            net_client = NetworkManager.StartHost();
-                            NetworkDiscoverer.StartAsServer();
                             FoundGame = true;
+                            BeginEnterOnlineScene(delegate ()
+                            {
+                                Debug.Log("PIM: Start server callback");
+                                net_client = NetworkManager.StartHost();
+                                NetworkDiscoverer.StartAsServer();
+                            });
                         }
                     }
-                    Debug.Log("Released FoundGameLock");
+                    //Debug.Log("Released FoundGameLock");
                 }
             }
-            Debug.Log("Released LookingForGameLock");
+            //Debug.Log("Released LookingForGameLock");
         }
 
         private IEnumerator ExitProgramAfterSceneLoadCoroutine ()
@@ -645,6 +660,91 @@ namespace SpaceBattles
                  + buildScenes.ToString()
                  + "\tAttempted Loading Scene Index: "
                  + sceneIndex.ToString();
+        }
+
+        /// <summary>
+        /// This function covers the aesthetic aspect of the change in scenes,
+        /// with the passed-in function (doConnect) representing the
+        /// actual connection logic
+        /// </summary>
+        /// <param name="doConnect"></param>
+        private void BeginEnterOnlineScene(Action doConnect)
+        {
+            UIManager.SetPlayerConnectState(
+                UIManager.PlayerConnectState.JOINING_SERVER
+            );
+            FadeToBlackComplete = false;
+            ServerConnectionComplete = false;
+            LoadScreenComplete = false;
+            FoundGame = true;
+            UIManager.FadeCamera(true, EnterOnlineSceneFadeOutComplete(doConnect));
+            Debug.Log("Fading out due to BeginEnterOnlineScene");
+            SceneManager.activeSceneChanged += EnterOnlineSceneConnectionComplete;
+        }
+
+        private Action EnterOnlineSceneFadeOutComplete (Action doConnect)
+        {
+            return delegate ()
+            {
+                FadeToBlackComplete = true;
+
+                doConnect();
+
+                UIManager.TransitionToUIElements(
+                    UiElementTransitionType.Fresh,
+                    UIElements.MultiplayerLoadingScreen
+                );
+                CameraRegistry.ActivateAllGameObjects(false);
+                UIManager.FadeCamera(false, null);
+                Debug.Log("Fading in due to EnterOnlineSceneFadeOutComplete");
+                StartCoroutine(MinimumLoadScreenDurationCoroutine());
+                Debug.Log("PIM: Fade completed");
+                FinishEnterOnlineSceneIfReady();
+            };
+        }
+
+        private IEnumerator MinimumLoadScreenDurationCoroutine ()
+        {
+            yield return new WaitForSecondsRealtime(
+                MinimumLoadScreenDisplayDuration
+            );
+            LoadScreenComplete = true;
+            Debug.Log("PIM: Load screen completed");
+            Debug.Log("Fading out due to MinimumLoadScreenDuration");
+            UIManager.FadeCamera(true, FinishEnterOnlineSceneIfReady);
+        }
+
+        private void
+        EnterOnlineSceneConnectionComplete
+            (Scene oldScene,
+             Scene newScene)
+        {
+            ServerConnectionComplete = true;
+            SceneManager.activeSceneChanged -= EnterOnlineSceneConnectionComplete;
+            Debug.Log("PIM: Online connection complete");
+            FinishEnterOnlineSceneIfReady();
+        }
+
+        private void FinishEnterOnlineSceneIfReady ()
+        {
+            if (ServerConnectionComplete
+            &&  FadeToBlackComplete
+            &&  LoadScreenComplete)
+            {
+                FinishEnterOnlineScene();
+            }
+        }
+
+        private void FinishEnterOnlineScene ()
+        {
+            Debug.Log("PIM: Finishing online scene entry");
+            CameraRegistry.ActivateAllGameObjects(true);
+            UIManager.TransitionToUIElements(
+                UiElementTransitionType.Fresh,
+                UIElements.GameplayUI
+            );
+            Debug.Log("Fading in due to FinishEnterOnlineScene");
+            UIManager.FadeCamera(false, null);
         }
     }
 }

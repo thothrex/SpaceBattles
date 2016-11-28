@@ -18,7 +18,7 @@ namespace SpaceBattles
         AccelerateButton = 64,
         FireButton = 128,
         DebugOutput = 256,
-        // FreeSlot = 512,
+        MultiplayerLoadingScreen = 512,
         OrreryUI = 1024
     }
 

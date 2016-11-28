@@ -276,6 +276,20 @@ namespace SpaceBattles
             ReturnString += "]";
             return ReturnString;
         }
+
+        /// <summary>
+        /// Only valid to use where the key int represents a flag enum
+        /// </summary>
+        /// <returns></returns>
+        public HashSet<int> GenerateRegisteredObjectFlags ()
+        {
+            HashSet<int> Flags = new HashSet<int>();
+            foreach (int key in RegisteredObjects.Keys)
+            {
+                Flags.Add(key);
+            }
+            return Flags;
+        }
     }
 }
 
