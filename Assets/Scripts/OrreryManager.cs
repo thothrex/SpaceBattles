@@ -21,13 +21,13 @@ namespace SpaceBattles
         public CameraWaypointModule CameraWaypointModule;
 
         private Camera MainCamera = null;
-        private GameObjectRegistryModule PlanetRegistry
-            = new GameObjectRegistryModule();
+        private GameObjectRegistry PlanetRegistry
+            = new GameObjectRegistry();
         
         // -- Methods --
         public void Start ()
         {
-            PlanetRegistry.RegisterGameObjects(Planets);
+            PlanetRegistry.RegisterObjects(Planets);
 
             MapViewCameraWaypoint.position
                 = GenerateMainOrreryCameraPosition();
