@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.Events;
 
 namespace SpaceBattles
 {
@@ -16,7 +17,8 @@ namespace SpaceBattles
         private float FadeCurrentElapsedTime = 0f;
         private float InitialAlpha = 1f;
         private float AlphaDifference = 1f;
-        private bool fading = false;
+        private bool Fading = false;
+        private Action FadeCompleteCallback = null;
 
         public void Awake()
         {
@@ -26,14 +28,24 @@ namespace SpaceBattles
 
         public void Update ()
         {
-            if (fading)
+            if (Fading)
             {
                 FadeCurrentElapsedTime += Time.deltaTime;
                 if (FadeCurrentElapsedTime > FadeTotalDuration)
                 {
                     FadeImg.color = TargetColor;
-                    fading = false;
-                    Debug.Log("Ending fade");
+                    Fading = false;
+                    //Debug.Log("Camera Fader: Ending fade");
+                    if (FadeCompleteCallback != null)
+                    {
+                        //Debug.Log("Camera Fader: triggering callback");
+                        FadeCompleteCallback();
+                        FadeCompleteCallback = null;
+                    }
+                    else
+                    {
+                        //Debug.Log("Camera Fader: No callback");
+                    }
                 }
                 else if (TargetColor != null
                 && FadeImg != null
@@ -79,19 +91,42 @@ namespace SpaceBattles
             StartFade(Color.clear);
         }
 
+        public void FadeToClear(Action fadeCompleteCallback)
+        {
+            StartFade(Color.clear, fadeCompleteCallback);
+        }
+
         public void FadeToBlack()
         {
             StartFade(Color.black);
         }
 
+        public void FadeToBlack(Action fadeCompleteCallback)
+        {
+            StartFade(Color.black, fadeCompleteCallback);
+        }
+
         private void StartFade (Color targetColour)
         {
-            Debug.Log("Starting Fade");
+            //Debug.Log("Starting Fade");
             TargetColor = targetColour;
             InitialAlpha = FadeImg.color.a;
             AlphaDifference = targetColour.a - InitialAlpha;
             FadeCurrentElapsedTime = 0f;
-            fading = true;
+            Fading = true;
+        }
+
+        private void
+        StartFade
+            (Color targetColour,
+             Action fadeCompleteCallback)
+        {
+            if (Fading)
+            {
+                Debug.LogWarning("Trying to start a fade while already fading");
+            }
+            FadeCompleteCallback = fadeCompleteCallback;
+            StartFade(targetColour);
         }
     }
 }
