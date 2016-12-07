@@ -63,7 +63,7 @@ namespace SpaceBattles
         private bool SceneLoadInProgress = false;
 
         private UIManager UIManager;
-        private IncorporealPlayerController PlayerController;
+        private NetworkedPlayerController PlayerController;
         private ClientState client_state = ClientState.MAIN_MENU;
         private System.Object SceneLoadLock = new System.Object();
         private System.Object LookingForGameLock = new System.Object();
@@ -176,7 +176,7 @@ namespace SpaceBattles
         /// N.B. Slightly hacky edge-case - I'm leaving deletion of these objects to the scene change
         /// (from online to offline scene)
         /// </summary>
-        public void LocalPlayerControllerCreatedHandler (IncorporealPlayerController IPC)
+        public void LocalPlayerControllerCreatedHandler (NetworkedPlayerController IPC)
         {
             Debug.Log("Local player object created");
 
@@ -310,7 +310,7 @@ namespace SpaceBattles
                         // this number is scoped to the connection
                         // i.e. if I only ever want one player
                         // per connection, this is fine
-                        ClientScene.AddPlayer(0);
+                        ClientScene.AddPlayer(net_client.connection, 0);
                     });
                     NetworkDiscoverer.StopBroadcast();
                 }
@@ -584,18 +584,20 @@ namespace SpaceBattles
                             NetworkDiscoverer.StopBroadcast();
                             Debug.Log("Game not found - starting server");
                             FoundGame = true;
-                            BeginEnterOnlineScene(delegate ()
-                            {
-                                Debug.Log("PIM: Start server callback");
-                                net_client = NetworkManager.StartHost();
-                                NetworkDiscoverer.StartAsServer();
-                            });
+                            BeginEnterOnlineScene(StartOnlineGameServerConnection);
                         }
                     }
                     //Debug.Log("Released FoundGameLock");
                 }
             }
             //Debug.Log("Released LookingForGameLock");
+        }
+
+        private void StartOnlineGameServerConnection ()
+        {
+            Debug.Log("PIM: Start server callback");
+            net_client = NetworkManager.StartHost();
+            NetworkDiscoverer.StartAsServer();
         }
 
         private IEnumerator ExitProgramAfterSceneLoadCoroutine ()
@@ -679,7 +681,7 @@ namespace SpaceBattles
             FoundGame = true;
             UIManager.FadeCamera(true, EnterOnlineSceneFadeOutComplete(doConnect));
             Debug.Log("Fading out due to BeginEnterOnlineScene");
-            SceneManager.activeSceneChanged += EnterOnlineSceneConnectionComplete;
+            NetworkManager.LocalPlayerStarted += EnterOnlineSceneConnectionComplete;
         }
 
         private Action EnterOnlineSceneFadeOutComplete (Action doConnect)
@@ -716,11 +718,10 @@ namespace SpaceBattles
 
         private void
         EnterOnlineSceneConnectionComplete
-            (Scene oldScene,
-             Scene newScene)
+            (NetworkedPlayerController playerController)
         {
             ServerConnectionComplete = true;
-            SceneManager.activeSceneChanged -= EnterOnlineSceneConnectionComplete;
+            NetworkManager.LocalPlayerStarted -= EnterOnlineSceneConnectionComplete;
             Debug.Log("PIM: Online connection complete");
             FinishEnterOnlineSceneIfReady();
         }

@@ -172,13 +172,16 @@ namespace SpaceBattles
                             + " has no Camera Fader - Skipping");
                 }
             }
-            CoroutineHost.StartCoroutine(
-                FadeCallbackCoroutine(
-                    ObjectsToFade,
-                    FadedObjectsFlag,
-                    fadeCallback
-                )
-            );
+            if (fadeCallback != null)
+            {
+                CoroutineHost.StartCoroutine(
+                    FadeCallbackCoroutine(
+                        ObjectsToFade,
+                        FadedObjectsFlag,
+                        fadeCallback
+                    )
+                );
+            }
         }
 
         private IEnumerator

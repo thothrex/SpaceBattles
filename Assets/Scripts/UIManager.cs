@@ -31,7 +31,7 @@ namespace SpaceBattles
         // -- (variable) fields --
         public bool dont_destroy_on_load;
 
-        public IncorporealPlayerController player_controller;
+        public NetworkedPlayerController player_controller;
 
         public Canvas PlayerScreenCanvasPrefab;
         public Camera FixedUiCameraPrefab;
@@ -480,7 +480,7 @@ namespace SpaceBattles
             }
         }
 
-        public void setPlayerController(IncorporealPlayerController player_controller)
+        public void setPlayerController(NetworkedPlayerController player_controller)
         {
             if (!CameraRegistry.Contains((int)CameraRoles.FixedUi))
             {

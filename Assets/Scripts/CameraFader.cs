@@ -47,10 +47,9 @@ namespace SpaceBattles
                         //Debug.Log("Camera Fader: No callback");
                     }
                 }
-                else if (TargetColor != null
-                && FadeImg != null
-                && (Math.Abs(FadeImg.color.a - TargetColor.a)
-                        > AcceptableAlphaDifference))
+                else if (FadeImg != null
+                     && (Math.Abs(FadeImg.color.a - TargetColor.a)
+                         > AcceptableAlphaDifference))
                 {
                     // Do fade
                     Color FadeImgColor = FadeImg.color;
