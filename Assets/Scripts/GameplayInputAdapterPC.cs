@@ -12,6 +12,12 @@ namespace SpaceBattles
         public string FireButtonName            { set; private get; }
         public string JoystickDepressedAxisName { set; private get; }
 
+        private static readonly string InGameMenuAxisName = "menu2";
+        private static readonly string ShipSelectAxisName = "menu1";
+        private static readonly string AccelerationAxisName = "Acceleration";
+        private static readonly string PitchAxisName = "Pitch";
+        private static readonly string RollAxisName = "Roll";
+
         public GameplayInputAdapterPc ()
         {
             // set default values
@@ -36,7 +42,7 @@ namespace SpaceBattles
             {
                 return CnControls
                       .CnInputManager
-                      .GetAxis("Acceleration") > 0;
+                      .GetAxis(AccelerationAxisName) > 0;
             }
         }
 
@@ -54,13 +60,17 @@ namespace SpaceBattles
         
         public bool ShipSelectMenuOpenInput()
         {
-            return CnControls.CnInputManager.GetButtonDown("menu1");
+            return CnControls
+                  .CnInputManager
+                  .GetButtonDown(ShipSelectAxisName);
         }
 
         // Primary in-game menu
         public bool InGameMenuOpenInput()
         {
-            return CnControls.CnInputManager.GetButtonDown("menu2");
+            return CnControls
+                  .CnInputManager
+                  .GetButtonDown(InGameMenuAxisName);
         }
 
         /// <summary>
@@ -78,7 +88,7 @@ namespace SpaceBattles
             // GetAxis for keyboard and virtual joystick
             float new_roll
                     = -Input.acceleration.x * 0.5f
-                    + (-CnControls.CnInputManager.GetAxis("Roll"))
+                    + (-CnControls.CnInputManager.GetAxis(RollAxisName))
                     ;
             if (InvertRollControls)
             {
@@ -94,7 +104,7 @@ namespace SpaceBattles
             // GetAxis for keyboard and virtual joystick
             float new_pitch
                     = Input.acceleration.z * 0.5f
-                    + (-CnControls.CnInputManager.GetAxis("Pitch"))
+                    + (-CnControls.CnInputManager.GetAxis(PitchAxisName))
                     ;
             if (InvertPitchControls)
             {
