@@ -127,7 +127,7 @@ namespace SpaceBattles
                 UI_manager_obj = GameObject.Instantiate(UI_manager_prefab);
                 UIManager = UI_manager_obj.GetComponent<UIManager>();
                 // TODO: Let player choose ship class
-                PlayerShipClassChoice = SpaceShipClass.CRUISER;
+                PlayerShipClassChoice = SpaceShipClass.FIGHTER;
 
                 // The UIManager is dependant on these before it starts AFAIK
                 //Debug.Log("Instantiating cameras");

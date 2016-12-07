@@ -6,6 +6,8 @@ namespace SpaceBattles
 {
     public class Projectile : NetworkBehaviour
     {
+        public PlayerIdentifier shooter;
+
         /// <summary>
         /// Projectile hits will be server-only in order to simplify the logical flow
         /// </summary>
@@ -28,7 +30,7 @@ namespace SpaceBattles
                     if (hitPlayer != null)
                     {
                         Debug.Log("Player hit registered");
-                        hitPlayer.onProjectileHit();
+                        hitPlayer.OnProjectileHit(shooter);
                     }
                     Destroy(this.gameObject);
                 }

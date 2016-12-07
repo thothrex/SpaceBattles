@@ -12,6 +12,8 @@ namespace SpaceBattles
         public string FireButtonName            { set; private get; }
         public string JoystickDepressedAxisName { set; private get; }
 
+        private static readonly string ScoreboardAxisName
+            = "InGameScoreboard";
         private static readonly string InGameMenuAxisName = "menu2";
         private static readonly string ShipSelectAxisName = "menu1";
         private static readonly string AccelerationAxisName = "Acceleration";
@@ -111,6 +113,15 @@ namespace SpaceBattles
                 new_pitch *= -1;
             }
             return new_pitch;
+        }
+
+        /// <summary>
+        /// True if the button is being held down.
+        /// </summary>
+        /// <returns></returns>
+        public bool InGameScoreboardInput()
+        {
+            return CnControls.CnInputManager.GetButton(ScoreboardAxisName);
         }
     }
 }

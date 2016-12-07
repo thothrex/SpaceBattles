@@ -109,5 +109,15 @@ namespace SpaceBattles
             }
             return new_pitch;
         }
+
+        public bool InGameScoreboardInput()
+        {
+            // TODO: Implement properly.
+            //       I think this needs a special button
+            //       and/or a mobile-specific, drag-down top-bar
+            //       for these kinds of input.
+            return false;
+            //throw new NotImplementedException();
+        }
     }
 }

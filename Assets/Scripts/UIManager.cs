@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace SpaceBattles
 {
-    public class UIManager : MonoBehaviour
+    public class UIManager : MonoBehaviour, IScoreListener
     {
         // -- constant fields --
         private const string CAMERA_NOT_SET_EXCEPTION_MESSAGE
@@ -105,6 +105,15 @@ namespace SpaceBattles
         }
 
         // -- methods --
+
+        // TODO: Remove once debugging complete
+        // need to do it this way because only occurs in standalone
+        public void DebugLogRegistryStatus()
+        {
+            Debug.Log(CameraRegistry.PrintDebugDestroyedRegisteredObjectCheck()
+                + "\n" + ComponentRegistry.PrintDebugDestroyedRegisteredObjectCheck());
+        }
+
         public void Awake ()
         {
             if (!UiObjectsInstantiated)
@@ -237,16 +246,18 @@ namespace SpaceBattles
                 {
                     ExitNetGameInputEvent.Invoke();
                 }
-
-                if (InputAdapter.InGameMenuOpenInput())
+                else if (InputAdapter.InGameMenuOpenInput())
                 {
                     ToggleInGameMenu();
                 }
-
-                if (InputAdapter.ShipSelectMenuOpenInput())
+                else if (InputAdapter.ShipSelectMenuOpenInput())
                 {
                     Debug.Log("ship select button pressed");
                     //toggleShipSelectUI();
+                }
+                else if (InputAdapter.InGameScoreboardInput())
+                {
+                    Debug.Log("Scoreboard opened!");
                 }
             }
         }
@@ -529,7 +540,7 @@ namespace SpaceBattles
         {
             OrreryManager.SetExplicitDateTime(newTime);
         }
-
+        
         public void FadeCamera (bool fadeOut, Action fadeCallback)
         {
             if (fadeOut)
@@ -541,7 +552,7 @@ namespace SpaceBattles
                 CameraRegistry.FadeAllToClear(fadeCallback);
             }
         }
-
+        
         /// <summary>
         /// Allows us to use the UIElement "all" as necessary
         /// (we already have none included but all seems to cause problems
@@ -690,6 +701,18 @@ namespace SpaceBattles
         {
             broadcaster.UiBacktrackRequest += TransitionUIElementsBacktrack;
             broadcaster.UiTransitionRequest += TransitionToUIElements;
+        }
+
+        public void
+        OnScoreUpdate
+            (PlayerIdentifier playerId,
+            int newScore)
+        {
+            // TODO: Implement
+            Debug.Log("Score was updated for player "
+                     + playerId.PlayerID
+                     + " to new score "
+                     + newScore);
         }
     }
 }
