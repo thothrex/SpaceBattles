@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.Networking;
 
 namespace SpaceBattles
@@ -11,11 +12,12 @@ namespace SpaceBattles
     /// Crucially, this means it should be the only source of [Command] and [ClientRPC] methods
     /// as it is the point where the network and the client interact.
     /// </summary>
-    public class IncorporealPlayerController : NetworkBehaviour
+    public class NetworkedPlayerController : NetworkBehaviour
     {
         // -- Constants --
         public const float RESPAWN_DELAY           = 2.0f;
         public const float SPACESHIP_DESTROY_DELAY = 0.5f;
+        
         private const string SHIP_CONTROLLER_NOT_SET_ERRMSG
             = "The ship controller has not been set yet.";
         private const string LOCAL_SHIP_SPAWN_NO_LISTENERS_ERRMSG
@@ -34,32 +36,32 @@ namespace SpaceBattles
         private bool warping = false;
         private bool setup_complete = false;
         // Cannot be synced - use with caution
-        private PlayerShipController ship_controller = null;
+        private PlayerShipController ShipController = null;
         private OrbitingBodyBackgroundGameObject current_nearest_orbiting_body;
         // Only valid for the server
         private NetworkStartPosition[] spawnPoints;
         // Write-only variable (written by the pim from UI manager etc.)
         private SpaceShipClass current_ship_choice = SpaceShipClass.NONE;
-        private SpaceShipClassManager spaceship_class_manager = null;
+        private SpaceShipClassManager SpaceshipClassManager = null;
         private OptionalEventModule oem = null;
         // NB SyncVars ALWAYS sync from server->client,
         //    even for client-authoritative objects (such as this)
         [SyncVar]
-        private GameObject current_spaceship = null;
+        private GameObject CurrentSpaceship = null;
         [SyncVar]
         private bool player_ship_spawned = false;
 
         // -- Delegates --
-        public delegate void LocalPlayerStartHandler    (IncorporealPlayerController IPC);
-        public delegate void ShipSpawnedHandler         (PlayerShipController        player_ship_controller);
-        public delegate void ShipHealthChangeHandler    (double                      new_health);
-        public delegate void LocalShipDestroyedHandler  ();
+        public delegate void LocalPlayerStartHandler    (NetworkedPlayerController  IPC);
+        public delegate void ShipSpawnedHandler         (PlayerShipController       player_ship_controller);
+        public delegate void ShipHealthChangeHandler    (double                     new_health);
+        public delegate void ShipDestructionHandler     (PlayerIdentifier           killer);
 
         // -- Events --
         public event LocalPlayerStartHandler    LocalPlayerStarted;
         public event ShipSpawnedHandler         LocalPlayerShipSpawned;
         public event ShipHealthChangeHandler    LocalPlayerShipHealthChanged;
-        public event LocalShipDestroyedHandler  LocalShipDestroyed;
+        public event ShipDestructionHandler     ShipDestroyed;
 
         // -- Methods --
 
@@ -75,8 +77,8 @@ namespace SpaceBattles
         {
             if (!player_ship_spawned)
             {
-                player_ship_spawned = true;
                 spawnSpaceShip(ss_type);
+                player_ship_spawned = true;
             }
         }
 
@@ -124,6 +126,18 @@ namespace SpaceBattles
         }
 
         /// <summary>
+        /// Precondition: requires there to only be one GameStateManager
+        /// </summary>
+        override
+        public void OnStartServer ()
+        {
+            GameStateManager ServerController
+                = GameStateManager.FindCurrentGameManager();
+
+            ServerController.OnPlayerJoin(this);
+        }
+
+        /// <summary>
         /// I only want to propagate this event
         /// if we have local authority
         /// </summary>
@@ -143,7 +157,7 @@ namespace SpaceBattles
 
         public void initialiseShipClassManager (SpaceShipClassManager ss_manager)
         {
-            spaceship_class_manager = ss_manager;
+            SpaceshipClassManager = ss_manager;
         }
 
         /// <summary>
@@ -158,9 +172,9 @@ namespace SpaceBattles
         public void accelerateShip(Vector3 direction)
         {
             // prevent it from happening before intialisation
-            if (ship_controller != null)
+            if (ShipController != null)
             {
-                ship_controller.accelerate(direction);
+                ShipController.accelerate(direction);
             }
         }
 
@@ -175,9 +189,9 @@ namespace SpaceBattles
         public void brakeShip()
         {
             // prevent it from happening before intialisation
-            if (ship_controller != null)
+            if (ShipController != null)
             {
-                ship_controller.brake();
+                ShipController.brake();
             }
         }
 
@@ -192,9 +206,9 @@ namespace SpaceBattles
         public void firePrimaryWeapon()
         {
             // prevent it from happening before intialisation
-            if (ship_controller != null)
+            if (ShipController != null)
             {
-                ship_controller.CmdFirePhaser();
+                ShipController.CmdFirePhaser();
             }
         }
 
@@ -213,7 +227,11 @@ namespace SpaceBattles
         {
             if (player_ship_spawned)
             {
-                playerShipSpawnedHandler(current_spaceship);
+                MyContract.RequireFieldNotNull(
+                    CurrentSpaceship,
+                    "Current Spaceship"
+                );
+                playerShipSpawnedHandler(CurrentSpaceship);
             }
         }
 
@@ -224,17 +242,17 @@ namespace SpaceBattles
 
         public void setRoll(float new_roll)
         {
-            if (ship_controller != null)
+            if (ShipController != null)
             {
-                ship_controller.setRoll(new_roll);
+                ShipController.setRoll(new_roll);
             }
         }
 
         public void setPitch(float new_pitch)
         {
-            if (ship_controller != null)
+            if (ShipController != null)
             {
-                ship_controller.setPitch(new_pitch);
+                ShipController.setPitch(new_pitch);
             }
         }
 
@@ -245,9 +263,14 @@ namespace SpaceBattles
         /// Minorly, propagates the ship controller change
         /// </summary>
         [ClientRpc]
-        private void RpcPlayerShipSpawned (GameObject spawned_spaceship)
+        private void RpcPlayerShipSpawned (GameObject spawnedSpaceship)
         {
-            playerShipSpawnedHandler(spawned_spaceship);
+            MyContract.RequireArgumentNotNull(
+                spawnedSpaceship,
+                "Spawned Spaceship"
+            );
+            Debug.Log("NPC: received RPC to receive spaceship");
+            playerShipSpawnedHandler(spawnedSpaceship);
             // This should be here, because if this ship controller
             // represents the local player, then we're guaranteed
             // to have witnessed all ship spawns directly through
@@ -260,7 +283,7 @@ namespace SpaceBattles
             // their own ship spawning after they join the game.
             if (hasAuthority)
             {
-                if (ship_controller == null)
+                if (ShipController == null)
                 {
                     throw new InvalidOperationException(
                         SHIP_CONTROLLER_NOT_SET_ERRMSG
@@ -269,17 +292,22 @@ namespace SpaceBattles
                 ShipSpawnedHandler handler = LocalPlayerShipSpawned;
                 if (oem.shouldTriggerEvent(handler))
                 {
-                    handler(ship_controller);
+                    handler(ShipController);
                 }
             }
         }
 
-        private void playerShipSpawnedHandler(GameObject spawned_spaceship)
+        private void playerShipSpawnedHandler(GameObject spawnedSpaceship)
         {
+            MyContract.RequireArgumentNotNull(
+                spawnedSpaceship,
+                "Spawned Spaceship"
+            );
             Debug.Log("Player Ship spawn registered on this client");
-            ship_controller = spawned_spaceship.GetComponent<PlayerShipController>();
-            ship_controller.EventDeath += playerBodyKilled;
-            ship_controller.EventHealthChanged += shipHealthChanged;
+            ShipController
+                = spawnedSpaceship.GetComponent<PlayerShipController>();
+            ShipController.EventDeath += playerBodyKilled;
+            ShipController.EventHealthChanged += shipHealthChanged;
         }
 
         private IEnumerator respawnShipWithDelay(SpaceShipClass new_ship_class)
@@ -293,52 +321,70 @@ namespace SpaceBattles
         /// 
         /// Needs to be invoked via a [Command] from the authoritative client.
         /// </summary>
-        /// <param name="ss_type"></param>
+        /// <param name="spaceShipType"></param>
         [Server]
-        private void spawnSpaceShip(SpaceShipClass ss_type)
+        private void spawnSpaceShip(SpaceShipClass spaceShipType)
         {
-            GameObject spaceship_prefab
-                = spaceship_class_manager.getSpaceShipPrefab(ss_type);
+            MyContract.RequireArgument(spaceShipType != SpaceShipClass.NONE,
+                                       "is not NONE",
+                                       "spaceShipType");
+            MyContract.RequireFieldNotNull(
+                SpaceshipClassManager,
+                "Spaceship Class Manager"
+            );
+            GameObject SpaceshipPrefab
+                = SpaceshipClassManager.getSpaceShipPrefab(spaceShipType);
+            MyContract.RequireFieldNotNull(SpaceshipPrefab, "Spaceship Prefab");
 
             // Should not remain null unless Unity.Instantiate can return null
-            GameObject server_spaceship = null;
-            if (current_spaceship != null
-            && ship_controller.getSpaceshipClass() == ss_type)
+            GameObject ServerSpaceship = null;
+            if (CurrentSpaceship != null
+            && ShipController.getSpaceshipClass() == spaceShipType)
             {
                 // current_spaceship was just despawned, not destroyed,
                 // so it simply needs to be respawned
-                server_spaceship = current_spaceship;
-                server_spaceship.SetActive(true);
+                ServerSpaceship = CurrentSpaceship;
+                ServerSpaceship.SetActive(true);
             }
             else
             {
                 // Create the ship locally (local to the server)
                 // NB: the ship will be moved to an appropriate NetworkStartPosition
                 //     by the server so the location specified here is irrelevant
-                server_spaceship = (GameObject)Instantiate(
-                    spaceship_prefab,
+                ServerSpaceship = (GameObject)Instantiate(
+                    SpaceshipPrefab,
                     transform.TransformPoint(chooseSpawnLocation()),
                     transform.rotation);
             }
+            MyContract.RequireFieldNotNull(
+                ServerSpaceship,
+                "Server Spaceship"
+            );
 
             // Spawn the ship on the clients
-            NetworkServer.SpawnWithClientAuthority(server_spaceship, connectionToClient);
+            NetworkServer.SpawnWithClientAuthority(ServerSpaceship, connectionToClient);
             // Update [SyncVar]s
-            current_spaceship = server_spaceship;
-            ship_controller = server_spaceship.GetComponent<PlayerShipController>();
-            ship_controller.setSpaceshipClass(ss_type);
+            CurrentSpaceship = ServerSpaceship;
+            ShipController = ServerSpaceship.GetComponent<PlayerShipController>();
+            ShipController.setSpaceshipClass(spaceShipType);
+            ShipController.owner = PlayerIdentifier.CreateNew(this);
             // Send RPC to clients
-            RpcPlayerShipSpawned(current_spaceship);
+            RpcPlayerShipSpawned(CurrentSpaceship);
 
-            ship_controller.EventDeath += shipDestroyedServerAction;
+            ShipController.EventDeath += shipDestroyedServerAction;
         }
         /// <summary>
         /// </summary>
         /// <param name="death_location">Ignored for this function</param>
         [Server]
-        private void shipDestroyedServerAction(Vector3 death_location)
+        private void
+        shipDestroyedServerAction
+            (PlayerIdentifier killer, Vector3 deathLocation)
         {
             Debug.Log("Ship destroyed - taking server action");
+
+            ShipDestroyed.Invoke(killer);
+
             Vector3 respawn_location = chooseSpawnLocation();
             StartCoroutine(destroyShipWithDelayCoroutine());
         }
@@ -348,8 +394,8 @@ namespace SpaceBattles
         {
             yield return new WaitForSeconds(SPACESHIP_DESTROY_DELAY);
             Debug.Log("Unspawning spaceship");
-            current_spaceship.SetActive(false);
-            NetworkServer.UnSpawn(current_spaceship);
+            CurrentSpaceship.SetActive(false);
+            NetworkServer.UnSpawn(CurrentSpaceship);
         }
 
         /// <summary>
@@ -363,6 +409,7 @@ namespace SpaceBattles
         /// (as spawnPoints is only set server-side)
         /// </summary>
         /// <returns></returns>
+        [Server]
         private Vector3 chooseSpawnLocation()
         {
             // Set the spawn point to origin as a default value
@@ -391,18 +438,18 @@ namespace SpaceBattles
         /// 
         /// Probably should have a different one for other objects owned by this player.
         /// </summary>
-        /// <param name="death_location">
+        /// <param name="deathLocation">
         /// Used to set camera transforms during respawn period
         /// </param>
-        private void playerBodyKilled(Vector3 death_location)
+        private void playerBodyKilled(PlayerIdentifier killer, Vector3 deathLocation)
         {
             Debug.Log("A player is dead!");
 
             // Create the explosion locally
             GameObject explosion = (GameObject)Instantiate(
                  explosion_prefab,
-                 current_spaceship.transform.position,
-                 current_spaceship.transform.rotation);
+                 CurrentSpaceship.transform.position,
+                 CurrentSpaceship.transform.rotation);
 
             // The spaceship gameObject is destroyed by the server
             // as server is still technically the source
@@ -414,7 +461,7 @@ namespace SpaceBattles
             if (hasAuthority)
             {
                 Debug.Log("Our player is dead!");
-                this.transform.position = death_location;
+                this.transform.position = deathLocation;
                 //LocalShipDestroyed(); // TODO: Listen to this event
                 //CmdRequestRespawn(current_ship_choice);
             }
@@ -430,19 +477,21 @@ namespace SpaceBattles
         /// <param name="new_health"></param>
         private void shipHealthChanged(double new_health)
         {
-            Debug.Log("Incorporeal controller recceived event from ship controller");
+            //Debug.Log("Incorporeal controller recceived event from ship controller");
             if (hasAuthority)
             {
                 ShipHealthChangeHandler handler = LocalPlayerShipHealthChanged;
                 if (oem.shouldTriggerEvent(handler))
                 {
+                    Debug.Log("Error start?");
                     handler(new_health);
-                    Debug.Log("Incorporeal controller propagated event");
+                    Debug.Log("Error end?");
+                    //Debug.Log("Incorporeal controller propagated event");
                 }
             }
             else
             {
-                Debug.Log("Ship health changed for a non-player ship");
+                //Debug.Log("Ship health changed for a non-player ship");
             }
         }
     }

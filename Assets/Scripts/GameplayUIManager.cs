@@ -11,8 +11,8 @@ namespace SpaceBattles
         public UIBarManager LocalPlayerHealthBar;
         public List<GameObject> SubComponents;
         
-        private GameObjectRegistryModule ComponentRegistry
-            = new GameObjectRegistryModule();
+        private UIRegistry ComponentRegistry
+            = new UIRegistry();
 
         // -- Methods --
 
@@ -36,11 +36,9 @@ namespace SpaceBattles
         public void ActivateVirtualJoystick (bool joystickActive)
         {
             GameObject Joystick
-                = ComponentRegistry
-                .RetrieveGameObject((int)UIElements.VirtualJoystick);
+                = ComponentRegistry[(int)UIElements.VirtualJoystick];
             GameObject AccelerateButton
-                = ComponentRegistry
-                .RetrieveGameObject((int)UIElements.AccelerateButton);
+                = ComponentRegistry[(int)UIElements.AccelerateButton];
 
             MyContract.RequireFieldNotNull(Joystick,
                                           "Joystick Component");

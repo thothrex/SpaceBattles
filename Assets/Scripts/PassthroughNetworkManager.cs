@@ -28,7 +28,7 @@ namespace SpaceBattles
         private OptionalEventModule oem;
 
         // Delegates
-        public delegate void LocalPlayerStartHandler(IncorporealPlayerController IPC);
+        public delegate void LocalPlayerStartHandler(NetworkedPlayerController IPC);
 
         // Events
         public event LocalPlayerStartHandler    LocalPlayerStarted;
@@ -64,8 +64,8 @@ namespace SpaceBattles
                 = (GameObject)Instantiate(player_prefab,
                                           position,
                                           Quaternion.identity);
-            IncorporealPlayerController spawned_player_controller
-                = player_obj.GetComponent<IncorporealPlayerController>();
+            NetworkedPlayerController spawned_player_controller
+                = player_obj.GetComponent<NetworkedPlayerController>();
 
             spawned_player_controller.LocalPlayerStarted += passthroughLocalPlayerStarted;
             spawned_player_controller.SetupComplete();
@@ -78,7 +78,7 @@ namespace SpaceBattles
             Destroy(player_controller_obj);
         }
 
-        private void passthroughLocalPlayerStarted (IncorporealPlayerController IPC)
+        private void passthroughLocalPlayerStarted (NetworkedPlayerController IPC)
         {
             LocalPlayerStartHandler handler = LocalPlayerStarted;
             if (oem.shouldTriggerEvent(handler))

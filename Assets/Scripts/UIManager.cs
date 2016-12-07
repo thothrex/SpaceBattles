@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 namespace SpaceBattles
 {
@@ -30,15 +31,16 @@ namespace SpaceBattles
         // -- (variable) fields --
         public bool dont_destroy_on_load;
 
-        public IncorporealPlayerController player_controller;
+        public NetworkedPlayerController player_controller;
 
         public Canvas PlayerScreenCanvasPrefab;
         public Camera FixedUiCameraPrefab;
         public Camera ship_select_camera_prefab;
         
         public List<GameObject> UiComponentObjectPrefabs;
-        public List<GameObject> CameraPrefabs;
+        public List<Camera> CameraPrefabs;
         public bool PrintScreenSizeDebugText;
+        public GameObject ScreenFadeImageHost;
 
         //public Vector3 player_centred_UI_offset;
         
@@ -66,10 +68,10 @@ namespace SpaceBattles
         private CameraRoles ActiveCameras = CameraRoles.None;
         private Stack<UIElements> UITransitionHistory
             = new Stack<UIElements>();
-        private GameObjectRegistryModule ComponentRegistry
-            = new GameObjectRegistryModule();
-        private GameObjectRegistryModule CameraRegistry
-            = new GameObjectRegistryModule();
+        private UIRegistry ComponentRegistry
+            = new UIRegistry();
+        private CameraRegistry CameraRegistry
+            = new CameraRegistry();
 
         // -- delegates --
         public delegate void enterOrreryEventHandler();
@@ -144,16 +146,9 @@ namespace SpaceBattles
                 //player_centred_canvas        = player_centred_canvas_object.GetComponent<Canvas>();
 
                 // Initialise UI events structure
-                //InGameMenuManager.ExitNetGameButtonPress += exitNetGameButtonPress;
                 Debug.Log("ExitNetGameInputEvent "
                     + (ExitNetGameInputEvent == null ? "does not have" : "has")
                     + " listeners");
-                //InGameMenuManager.ExitInGameMenuEvent += ToggleInGameMenu;
-                //InGameMenuManager.EnterSettingsMenuEvent += EnterSettingsMenu;
-                //MainMenuUIManager.EnterSettingsMenuEvent += EnterSettingsMenu;
-                //MainMenuUIManager.EnterOrreryMenuEvent += EnterOrreryTrigger;
-                //MainMenuUIManager.ExitProgramEvent += exitProgram;
-                //SettingsMenuManager.ExitSettingsMenuEvent += ExitSettingsMenu;
                 SettingsMenuManager.VirtualJoystickSetEvent += OnVirtualJoystickEnabled;
                 OrreryUiManager.DateTimeSet += SetOrreryDateTimeTrigger;
                 
@@ -163,15 +158,34 @@ namespace SpaceBattles
 
                 // TODO: Move to InstantiateUIObjects
                 ITransitionRequestBroadcaster TransitionBroadcaster
-                    = ComponentRegistry
-                    .RetrieveGameObject((int)UIElements.OrreryUI)
+                    = ComponentRegistry[(int)UIElements.OrreryUI]
                     .GetComponent<UIComponentStem>();
                 RegisterTransitionHandlers(TransitionBroadcaster);
-                
 
                 // Initialise cameras
                 InitialiseUICameras();
                 //hideShipSelectionUI();
+
+                // Setup hacky screen fading
+                CameraRegistry.CoroutineHost = this;
+                ScreenFadeImageHost
+                    .transform
+                    .SetParent(PlayerScreenCanvas.transform, false);
+                CameraFader Fader =
+                    CameraRegistry[(int)CameraRoles.FixedUi]
+                    .GetComponent<CameraFader>();
+                MyContract.RequireFieldNotNull(
+                    Fader, "Fixed UI CameraFader component"
+                );
+                Fader.FadeImg = ScreenFadeImageHost.GetComponent<Image>();
+                MyContract.RequireFieldNotNull(
+                    Fader.FadeImg, "ScreenFadeImageHost Image component"
+                );
+                PlayerScreenCanvas
+                    .GetComponent<ScreenSizeChangeTrigger>()
+                    .ScreenResizedInternal
+                    .AddListener(Fader.OnScreenSizeChange);
+                Fader.OnScreenSizeChange(PlayerScreenCanvas.GetComponent<RectTransform>().rect);
 
                 if (dont_destroy_on_load)
                 {
@@ -185,8 +199,7 @@ namespace SpaceBattles
                 if (PrintScreenSizeDebugText)
                 {
                     DebugTextbox
-                        = ComponentRegistry
-                        .RetrieveGameObject((int)UIElements.DebugOutput);
+                        = ComponentRegistry[(int)UIElements.DebugOutput];
                     DebugTextbox.SetActive(true);
                     VariableTextboxPrinter Printer
                         = DebugTextbox.GetComponent<VariableTextboxPrinter>();
@@ -423,11 +436,11 @@ namespace SpaceBattles
         {
             // TODO: change to start in ship selection
             ui_state = UiInputState.InGame;
-            TransitionToUIElements(
-                UiElementTransitionType.Fresh,
-                UIElements.GameplayUI
-            );
-            CameraTransition(CameraRoles.FixedUi);
+            //TransitionToUIElements(
+            //    UiElementTransitionType.Fresh,
+            //    UIElements.GameplayUI
+            //);
+            //CameraTransition(CameraRoles.FixedUi);
         }
 
         public void playerShipCreated ()
@@ -467,7 +480,7 @@ namespace SpaceBattles
             }
         }
 
-        public void setPlayerController(IncorporealPlayerController player_controller)
+        public void setPlayerController(NetworkedPlayerController player_controller)
         {
             if (!CameraRegistry.Contains((int)CameraRoles.FixedUi))
             {
@@ -497,31 +510,15 @@ namespace SpaceBattles
             CameraRegistry.KeyEnum = typeof(CameraRoles);
             CameraRegistry.InitialiseAndRegisterGenericPrefabs(CameraPrefabs);
             SSCManager.FixedUICamera
-                = CameraRegistry
-                .RetrieveGameObject((int)CameraRoles.FixedUi)
-                .GetComponent<Camera>();
+                = CameraRegistry[(int)CameraRoles.FixedUi];
             Debug.Log("Fixed UI Camera for the SSCManager has been set");
-
-            setInGameUICamerasActive(false);
         }
-
-        /// <summary>
-        /// Utility method to enable/disable in-game UI cameras
-        /// </summary>
-        /// <param name="active">cameras active/true or inactive/false</param>
-        public void setInGameUICamerasActive(bool active)
+        public void ProvideCamera (Camera camera)
         {
-            CameraRegistry.ActivateGameObject(
-                (int)CameraRoles.ShipSelection, active
-            );
-        }
-
-        public void ProvideCamera (GameObject cameraHostObject)
-        {
-            List<GameObject> NewCameraList
-                = new List<GameObject>();
-            NewCameraList.Add(cameraHostObject);
-            CameraRegistry.RegisterGameObjects(NewCameraList);
+            List<Camera> NewCameraList
+                = new List<Camera>();
+            NewCameraList.Add(camera);
+            CameraRegistry.RegisterObjects(NewCameraList);
             //Debug.Log("Camera provided to UIManager with key "
             //        + cameraHostObject
             //         .GetComponent<IGameObjectRegistryKeyComponent>()
@@ -533,12 +530,16 @@ namespace SpaceBattles
             OrreryManager.SetExplicitDateTime(newTime);
         }
 
-        // TODO: remove once my print debugging is complete
-        // need to do it this way because only occurs in standalone
-        public void DebugLogRegistryStatus ()
+        public void FadeCamera (bool fadeOut, Action fadeCallback)
         {
-            Debug.Log(CameraRegistry.PrintDebugDestroyedRegisteredObjectCheck()
-                + "\n" + ComponentRegistry.PrintDebugDestroyedRegisteredObjectCheck());
+            if (fadeOut)
+            {
+                CameraRegistry.FadeAllToBlack(fadeCallback);
+            }
+            else
+            {
+                CameraRegistry.FadeAllToClear(fadeCallback);
+            }
         }
 
         /// <summary>
