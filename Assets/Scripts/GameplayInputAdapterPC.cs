@@ -115,13 +115,14 @@ namespace SpaceBattles
             return new_pitch;
         }
 
-        /// <summary>
-        /// True if the button is being held down.
-        /// </summary>
-        /// <returns></returns>
-        public bool InGameScoreboardInput()
+        public bool InGameScoreboardOpenInput()
         {
-            return CnControls.CnInputManager.GetButton(ScoreboardAxisName);
+            return CnControls.CnInputManager.GetButtonDown(ScoreboardAxisName);
+        }
+
+        public bool InGameScoreboardCloseInput()
+        {
+            return CnControls.CnInputManager.GetButtonUp(ScoreboardAxisName);
         }
     }
 }

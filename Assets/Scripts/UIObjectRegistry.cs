@@ -41,6 +41,43 @@ namespace SpaceBattles
             );
         }
 
+        public ManagerType
+        RetrieveManager<ManagerType>
+            (UIElements element)
+        where ManagerType : Component
+        {
+            Type ExpectedManagerType = element.ManagerClass();
+            MyContract.RequireArgument(
+                typeof(ManagerType) == ExpectedManagerType,
+                "is expected type",
+                "ManagerType: " + typeof(ManagerType).Name
+            );
+            
+            ManagerType Manager
+                = RegisteredObjects[(int)element].GetComponent<ManagerType>();
+            MyContract.RequireFieldNotNull(
+                Manager,
+                typeof(ManagerType).Name
+                    + " component of GameObject "
+                    + element.ToString()
+            );
+            return Manager;
+        }
+
+        public void RegisterTransitions (UIManager uiManager)
+        {
+            foreach (GameObject Element in RegisteredObjects.Values)
+            {
+                ITransitionRequestBroadcaster TransitionBroadcaster
+                    = Element.GetComponent<UIComponentStem>();
+                MyContract.RequireFieldNotNull(
+                    TransitionBroadcaster,
+                    "TransitionBroadcaster"
+                );
+                uiManager.RegisterTransitionHandlers(TransitionBroadcaster);
+            }
+        }
+
         /// <summary>
         /// Instantiates, but also sets parent canvas
         /// and recentres UI component relative to that parent canvas
@@ -79,8 +116,12 @@ namespace SpaceBattles
                 NewTransform.SetParent(parentTransform, false);
 
                 // don't know why but special case
-                if (NewObj.GetComponent<UIComponentStem>()
-                    .ElementIdentifier == UIElements.SettingsMenu)
+                UIElements NewElementId
+                    = NewObj
+                    .GetComponent<UIComponentStem>()
+                    .ElementIdentifier;
+                if (NewElementId == UIElements.SettingsMenu
+                ||  NewElementId == UIElements.Scoreboard)
                 {
                     NewTransform.anchorMin = PrefabTransform.anchorMin;
                     NewTransform.anchorMax = PrefabTransform.anchorMax;

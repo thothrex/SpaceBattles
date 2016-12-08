@@ -4,9 +4,6 @@ using UnityEngine.Networking;
 
 namespace SpaceBattles
 {
-    /// <summary>
-    /// Should only be created and used by the server, as 
-    /// </summary>
     public class PlayerIdentifier : NetworkBehaviour
     {
         /// <summary>
@@ -48,16 +45,22 @@ namespace SpaceBattles
             PlayerID = controller.netId;
         }
 
+        /// <summary>
+        /// This represents their "tag"
+        /// which will be used in-game,
+        /// rather than just a developer view
+        /// </summary>
+        /// <returns></returns>
         new
         public string ToString()
         {
             if (BackingController == null)
             {
-                return "null";
+                return "Null";
             }
             else
             {
-                return PlayerID.ToString();
+                return "Player " + PlayerID.ToString();
             }
         }
     }

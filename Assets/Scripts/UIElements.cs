@@ -19,7 +19,8 @@ namespace SpaceBattles
         FireButton = 128,
         DebugOutput = 256,
         MultiplayerLoadingScreen = 512,
-        OrreryUI = 1024
+        OrreryUI = 1024,
+        Scoreboard = 2048
     }
 
     public static class UIElementExtensions
@@ -33,7 +34,7 @@ namespace SpaceBattles
         /// <returns>
         /// Manager class if it has one, null otherwise
         /// </returns>
-        public static Type ManagerClass(this UIElements uiElement)
+        public static Type ManagerClass (this UIElements uiElement)
         {
             switch (uiElement)
             {
@@ -47,6 +48,8 @@ namespace SpaceBattles
                     return typeof(InGameMenuManager);
                 case UIElements.OrreryUI:
                     return typeof(OrreryUIManager);
+                case UIElements.Scoreboard:
+                    return typeof(ScoreboardUiManager);
                 default:
                     return null; 
             }

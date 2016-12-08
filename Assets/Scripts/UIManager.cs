@@ -29,7 +29,7 @@ namespace SpaceBattles
             = 0.001f;
 
         // -- (variable) fields --
-        public bool dont_destroy_on_load;
+        public bool DontDestroyOnLoad;
 
         public NetworkedPlayerController player_controller;
 
@@ -118,105 +118,30 @@ namespace SpaceBattles
         {
             if (!UiObjectsInstantiated)
             {
-                // UI objects
-                Debug.Log("UI Manager instantiating UI objects");
-
-                initialiseUIElementAll();
+                InitialiseUIElementAll();
                 SSCManager = GetComponent<ScreenSizeChangeManager>();
                 InstantiateUIObjects();
+                ComponentRegistry.RegisterTransitions(this);
+                InitialiseManagerFields();
+                InitialiseGameplayUi();
+                InitialiseSettingsMenu();
+                InitialiseOrreryUi();
 
-                MainMenuUIManager
-                    = ComponentRegistry[(int)UIElements.MainMenu]
-                    .GetComponent<MainMenuUIManager>();
-
-                SettingsMenuManager
-                    = ComponentRegistry[(int)UIElements.SettingsMenu]
-                    .GetComponent<SettingsMenuUIManager>();
-
-                InGameMenuManager
-                    = ComponentRegistry[(int)UIElements.InGameMenu]
-                    .GetComponent<InGameMenuManager>();
-                
-                GameplayUiManager
-                    = ComponentRegistry[(int)UIElements.GameplayUI]
-                    .GetComponent<GameplayUIManager>();
-
-                OrreryUiManager
-                    = ComponentRegistry[(int)UIElements.OrreryUI]
-                    .GetComponent<OrreryUIManager>();
-
-                GameplayUiManager.InitialiseSubComponents(SSCManager);
-                InitialiseInputAdapter();
-                GameplayUiManager.ActivateVirtualJoystick(
-                    InputAdapter.VirtualJoystickEnabled
-                );
-
-                //player_centred_canvas_object = GameObject.Instantiate(player_centred_UI_prefab);
-                //player_centred_canvas        = player_centred_canvas_object.GetComponent<Canvas>();
-
-                // Initialise UI events structure
-                Debug.Log("ExitNetGameInputEvent "
-                    + (ExitNetGameInputEvent == null ? "does not have" : "has")
-                    + " listeners");
-                SettingsMenuManager.VirtualJoystickSetEvent += OnVirtualJoystickEnabled;
-                OrreryUiManager.DateTimeSet += SetOrreryDateTimeTrigger;
-                
                 EventSwitchboard Switchboard
                     = GetComponent<EventSwitchboard>();
                 Switchboard.ConnectCords(ComponentRegistry);
 
-                // TODO: Move to InstantiateUIObjects
-                ITransitionRequestBroadcaster TransitionBroadcaster
-                    = ComponentRegistry[(int)UIElements.OrreryUI]
-                    .GetComponent<UIComponentStem>();
-                RegisterTransitionHandlers(TransitionBroadcaster);
-
-                // Initialise cameras
                 InitialiseUICameras();
-                //hideShipSelectionUI();
+                InitialiseScreenFader();
 
-                // Setup hacky screen fading
-                CameraRegistry.CoroutineHost = this;
-                ScreenFadeImageHost
-                    .transform
-                    .SetParent(PlayerScreenCanvas.transform, false);
-                CameraFader Fader =
-                    CameraRegistry[(int)CameraRoles.FixedUi]
-                    .GetComponent<CameraFader>();
-                MyContract.RequireFieldNotNull(
-                    Fader, "Fixed UI CameraFader component"
-                );
-                Fader.FadeImg = ScreenFadeImageHost.GetComponent<Image>();
-                MyContract.RequireFieldNotNull(
-                    Fader.FadeImg, "ScreenFadeImageHost Image component"
-                );
-                PlayerScreenCanvas
-                    .GetComponent<ScreenSizeChangeTrigger>()
-                    .ScreenResizedInternal
-                    .AddListener(Fader.OnScreenSizeChange);
-                Fader.OnScreenSizeChange(PlayerScreenCanvas.GetComponent<RectTransform>().rect);
-
-                if (dont_destroy_on_load)
+                if (DontDestroyOnLoad)
                 {
-                    //Test
                     UnityEngine.Object.DontDestroyOnLoad(PlayerScreenCanvas);
-                    //Sets this to not be destroyed when reloading scene
                     UnityEngine.Object.DontDestroyOnLoad(gameObject);
-                    Debug.Log("objects prevented from being destroyed on load");
                 }
 
                 if (PrintScreenSizeDebugText)
-                {
-                    DebugTextbox
-                        = ComponentRegistry[(int)UIElements.DebugOutput];
-                    DebugTextbox.SetActive(true);
-                    VariableTextboxPrinter Printer
-                        = DebugTextbox.GetComponent<VariableTextboxPrinter>();
-                    MyContract.RequireField(Printer != null,
-                                            "debug textbox object has a variabletextprinter component attached",
-                                            "DebugTextboxPrefab");
-                    SSCManager.ScreenResized.AddListener(Printer.PrintVariable);
-                }
+                    { InitialiseDebugTextUiObject(); }
 
                 UiObjectsInstantiated = true;
             }
@@ -255,9 +180,21 @@ namespace SpaceBattles
                     Debug.Log("ship select button pressed");
                     //toggleShipSelectUI();
                 }
-                else if (InputAdapter.InGameScoreboardInput())
+                else if (InputAdapter.InGameScoreboardOpenInput())
                 {
                     Debug.Log("Scoreboard opened!");
+                    TransitionToUIElements(
+                        UiElementTransitionType.Additive,
+                        UIElements.Scoreboard
+                    );
+                }
+                else if (InputAdapter.InGameScoreboardCloseInput())
+                {
+                    Debug.Log("Scoreboard closed!");
+                    TransitionToUIElements(
+                        UiElementTransitionType.Subtractive,
+                        UIElements.Scoreboard
+                    );
                 }
             }
         }
@@ -546,19 +483,42 @@ namespace SpaceBattles
             if (fadeOut)
             {
                 CameraRegistry.FadeAllToBlack(fadeCallback);
-            }
+            } 
             else
             {
                 CameraRegistry.FadeAllToClear(fadeCallback);
             }
         }
-        
+
+        public void
+        RegisterTransitionHandlers
+        (ITransitionRequestBroadcaster broadcaster)
+        {
+            broadcaster.UiBacktrackRequest += TransitionUIElementsBacktrack;
+            broadcaster.UiTransitionRequest += TransitionToUIElements;
+        }
+
+        public void
+        OnScoreUpdate
+            (PlayerIdentifier playerId,
+            int newScore)
+        {
+            ComponentRegistry
+                .RetrieveManager<ScoreboardUiManager>(UIElements.Scoreboard)
+                .ChangePlayerScore(playerId, newScore);
+            // Debug
+            Debug.Log("Score was updated for player "
+                     + playerId.PlayerID
+                     + " to new score "
+                     + newScore);
+        }
+
         /// <summary>
         /// Allows us to use the UIElement "all" as necessary
         /// (we already have none included but all seems to cause problems
         /// [if it doesn't cause problems just add it back in])
         /// </summary>
-        private void initialiseUIElementAll ()
+        private void InitialiseUIElementAll ()
         {
             Array allUIElementValues = Enum.GetValues(typeof(UIElements));
             UIElement_ALL = UIElements.None;
@@ -695,24 +655,86 @@ namespace SpaceBattles
             GameplayUiManager.ActivateVirtualJoystick(enabled);
         }
 
-        private void
-        RegisterTransitionHandlers
-        (ITransitionRequestBroadcaster broadcaster)
+        private void InitialiseDebugTextUiObject()
         {
-            broadcaster.UiBacktrackRequest += TransitionUIElementsBacktrack;
-            broadcaster.UiTransitionRequest += TransitionToUIElements;
+            DebugTextbox = ComponentRegistry[(int)UIElements.DebugOutput];
+            DebugTextbox.SetActive(true);
+            VariableTextboxPrinter Printer
+                = DebugTextbox.GetComponent<VariableTextboxPrinter>();
+            MyContract.RequireField(Printer != null,
+                                    "debug textbox object has a variabletextprinter component attached",
+                                    "DebugTextboxPrefab");
+            SSCManager.ScreenResized.AddListener(Printer.PrintVariable);
         }
 
-        public void
-        OnScoreUpdate
-            (PlayerIdentifier playerId,
-            int newScore)
+        private void InitialiseScreenFader()
         {
-            // TODO: Implement
-            Debug.Log("Score was updated for player "
-                     + playerId.PlayerID
-                     + " to new score "
-                     + newScore);
+            CameraRegistry.CoroutineHost = this;
+            ScreenFadeImageHost
+                .transform
+                .SetParent(PlayerScreenCanvas.transform, false);
+            CameraFader Fader =
+                CameraRegistry[(int)CameraRoles.FixedUi]
+                .GetComponent<CameraFader>();
+            MyContract.RequireFieldNotNull(
+                Fader, "Fixed UI CameraFader component"
+            );
+            Fader.FadeImg = ScreenFadeImageHost.GetComponent<Image>();
+            MyContract.RequireFieldNotNull(
+                Fader.FadeImg, "ScreenFadeImageHost Image component"
+            );
+            PlayerScreenCanvas
+                .GetComponent<ScreenSizeChangeTrigger>()
+                .ScreenResizedInternal
+                .AddListener(Fader.OnScreenSizeChange);
+            Fader.OnScreenSizeChange(PlayerScreenCanvas.GetComponent<RectTransform>().rect);
+        }
+
+        private void InitialiseOrreryUi()
+        {
+            OrreryUiManager.DateTimeSet += SetOrreryDateTimeTrigger;
+        }
+
+        private void InitialiseSettingsMenu()
+        {
+            SettingsMenuManager.VirtualJoystickSetEvent += OnVirtualJoystickEnabled;
+        }
+
+        private void InitialiseGameplayUi()
+        {
+            GameplayUiManager.InitialiseSubComponents(SSCManager);
+            InitialiseInputAdapter();
+            GameplayUiManager.ActivateVirtualJoystick(
+                InputAdapter.VirtualJoystickEnabled
+            );
+        }
+
+        private void InitialiseManagerFields()
+        {
+            MainMenuUIManager
+                = ComponentRegistry
+                .RetrieveManager<MainMenuUIManager>
+                    (UIElements.MainMenu);
+
+            SettingsMenuManager
+                = ComponentRegistry
+                .RetrieveManager<SettingsMenuUIManager>
+                    (UIElements.SettingsMenu);
+
+            InGameMenuManager
+                = ComponentRegistry
+                .RetrieveManager<InGameMenuManager>
+                    (UIElements.InGameMenu);
+
+            GameplayUiManager
+                = ComponentRegistry
+                .RetrieveManager<GameplayUIManager>
+                    (UIElements.GameplayUI);
+
+            OrreryUiManager
+                = ComponentRegistry
+                .RetrieveManager<OrreryUIManager>
+                    (UIElements.OrreryUI);
         }
     }
 }

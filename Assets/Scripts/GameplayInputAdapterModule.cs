@@ -18,7 +18,8 @@ namespace SpaceBattles
         bool ShipSelectMenuOpenInput();
         bool InGameMenuOpenInput();
         bool ExitNetGameInput();
-        bool InGameScoreboardInput();
+        bool InGameScoreboardOpenInput();
+        bool InGameScoreboardCloseInput();
         float ReadRollInputValue();
         float ReadPitchInputValue();
     }

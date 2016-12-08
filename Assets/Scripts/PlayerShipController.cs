@@ -265,6 +265,8 @@ namespace SpaceBattles
 
         private void KillThisUnit (PlayerIdentifier killer)
         {
+            // This lock was put in as a result of bugs,
+            // it's not just experimental!
             lock (DeathLock)
             {
                 if (!IsDead) // If we're the first responder
