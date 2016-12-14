@@ -109,5 +109,25 @@ namespace SpaceBattles
             }
             return new_pitch;
         }
+
+        public bool InGameScoreboardOpenInput()
+        {
+            // TODO: Implement properly.
+            //       I think this needs a special button
+            //       and/or a mobile-specific, drag-down top-bar
+            //       for these kinds of input.
+            return false;
+            //throw new NotImplementedException();
+        }
+
+        public bool InGameScoreboardCloseInput()
+        {
+            // TODO: Implement properly.
+            //       I think this needs a special button
+            //       and/or a mobile-specific, drag-down top-bar
+            //       for these kinds of input.
+            return false;
+            //throw new NotImplementedException();
+        }
     }
 }

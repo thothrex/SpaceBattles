@@ -127,7 +127,7 @@ namespace SpaceBattles
                 UI_manager_obj = GameObject.Instantiate(UI_manager_prefab);
                 UIManager = UI_manager_obj.GetComponent<UIManager>();
                 // TODO: Let player choose ship class
-                PlayerShipClassChoice = SpaceShipClass.CRUISER;
+                PlayerShipClassChoice = SpaceShipClass.FIGHTER;
 
                 // The UIManager is dependant on these before it starts AFAIK
                 //Debug.Log("Instantiating cameras");
@@ -179,48 +179,11 @@ namespace SpaceBattles
         public void LocalPlayerControllerCreatedHandler (NetworkedPlayerController IPC)
         {
             Debug.Log("Local player object created");
-
-            // Generate local scene (including play space entities)
-            // i.e. there are dependencies from here
-            PlanetRegistry.PersistThroughScenes = true;
-            ActivatePlanets();
-            InstantiateSunlight();
-
-            // TODO: replace this with a query to server about what planet we are near
-            CurrentNearestOrbitingBody = getPlanet(OrbitingBody.EARTH);
-            // this is a Network player controller, not a SpaceBattles player controller!
-            this.PlayerController = IPC;
-
-            PlayerController.setCurrentShipChoice(PlayerShipClassChoice);
-            PlayerController.initialiseShipClassManager(SpaceshipClassManager);
-
-            // Hook up spaceship spawn event
-            PlayerController.LocalPlayerShipSpawned += localPlayerShipCreatedHandler;
-            // as this is the local player,
-            // there is no need to check for existing ship spawns
-            // (they would have been observed directly through the RPC in the IPC)
-            PlayerController.LocalPlayerShipHealthChanged += UIManager.setCurrentPlayerHealth;
-
-            // Camera setup
+            GenerateLocalScene(); // N.B. there are dependencies from here
+            InitialisePlayerController(IPC);
             SetupGameCameras(PlayerController.transform);
-            //SetCamerasFollowTransform(PlayerController.transform);
-            WarpTo(CurrentNearestOrbitingBody);
-            //UIManager.setPlayerCamera(player_camera.GetComponent<Camera>());
-            // Following is archived and not relevant any more:
-            // -- Player controller should be set after the camera
-            // -- because the UI manager does some setup afterwards
-            UIManager.setPlayerController(PlayerController);
-            UIManager.EnteringMultiplayerGame();
-
+            SetupInGameUI(IPC);
             PlayerController.CmdSpawnStartingSpaceShip(PlayerShipClassChoice);
-        }
-
-        private void localPlayerShipCreatedHandler (PlayerShipController ship_controller)
-        {
-            UIManager.setCurrentPlayerMaxHealth(PlayerShipController.MAX_HEALTH);
-            UIManager.setCurrentPlayerHealth(PlayerShipController.MAX_HEALTH);
-
-            CameraRegistry.SetAllFollowTransforms(ship_controller.transform);
         }
 
         public void OnDisconnectedFromServer (NetworkDisconnection info)
@@ -372,7 +335,7 @@ namespace SpaceBattles
 
             // Playable Area Warp
             //transform.position = new Vector3(0, 0, 0);
-            Debug.Log("TODO: warp player position (maybe?) (CURRENTLY DOES NOTHING)");
+            //Debug.Log("TODO: warp player position (maybe?) (CURRENTLY DOES NOTHING)");
 
             CurrentNearestOrbitingBody = warpTarget;
 
@@ -414,7 +377,9 @@ namespace SpaceBattles
             }
         }
 
-        private void SetupGameCameras (Transform initialFollowTransform)
+        private void
+        SetupGameCameras
+            (Transform initialFollowTransform)
         {
             //Debug.Log("Setting-up game cameras");
             MyContract.RequireFieldNotNull(
@@ -428,6 +393,8 @@ namespace SpaceBattles
                     = SpaceshipClassManager
                     .getCameraOffset(PlayerShipClassChoice);
             CameraRegistry.SetAllFollowTransforms(initialFollowTransform);
+
+            WarpTo(CurrentNearestOrbitingBody);
         }
 
         private void SetPlayerCamerasActive (bool active)
@@ -728,6 +695,7 @@ namespace SpaceBattles
 
         private void FinishEnterOnlineSceneIfReady ()
         {
+            Debug.Log("PIM: in FinishEnterOnlineSceneIfReady");
             if (ServerConnectionComplete
             &&  FadeToBlackComplete
             &&  LoadScreenComplete)
@@ -746,6 +714,47 @@ namespace SpaceBattles
             );
             Debug.Log("Fading in due to FinishEnterOnlineScene");
             UIManager.FadeCamera(false, null);
+        }
+
+        private void SetupInGameUI (NetworkedPlayerController NPC)
+        {
+            UIManager.SetPlayerController(PlayerController);
+            UIManager.EnteringMultiplayerGame();
+            NPC.EventScoreUpdated += UIManager.OnScoreUpdate;
+            NPC.CmdSendScoreboardStateToUI();
+        }
+
+        private void GenerateLocalScene()
+        {
+            PlanetRegistry.PersistThroughScenes = true;
+            ActivatePlanets();
+            InstantiateSunlight();
+
+            // TODO: replace this with a query to server about what planet we are near
+            CurrentNearestOrbitingBody = getPlanet(OrbitingBody.EARTH);
+        }
+
+        private void InitialisePlayerController(NetworkedPlayerController IPC)
+        {
+            this.PlayerController = IPC;
+
+            PlayerController.setCurrentShipChoice(PlayerShipClassChoice);
+            PlayerController.initialiseShipClassManager(SpaceshipClassManager);
+
+            // Hook up spaceship spawn event
+            PlayerController.LocalPlayerShipSpawned += localPlayerShipCreatedHandler;
+            // as this is the local player,
+            // there is no need to check for existing ship spawns
+            // (they would have been observed directly through the RPC in the IPC)
+            PlayerController.LocalPlayerShipHealthChanged += UIManager.setCurrentPlayerHealth;
+        }
+
+        private void localPlayerShipCreatedHandler(PlayerShipController ship_controller)
+        {
+            UIManager.setCurrentPlayerMaxHealth(PlayerShipController.MAX_HEALTH);
+            UIManager.setCurrentPlayerHealth(PlayerShipController.MAX_HEALTH);
+
+            CameraRegistry.SetAllFollowTransforms(ship_controller.transform);
         }
     }
 }

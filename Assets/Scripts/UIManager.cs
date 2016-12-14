@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace SpaceBattles
 {
-    public class UIManager : MonoBehaviour
+    public class UIManager : MonoBehaviour, IScoreListener
     {
         // -- constant fields --
         private const string CAMERA_NOT_SET_EXCEPTION_MESSAGE
@@ -29,9 +29,9 @@ namespace SpaceBattles
             = 0.001f;
 
         // -- (variable) fields --
-        public bool dont_destroy_on_load;
+        public bool DontDestroyOnLoad;
 
-        public NetworkedPlayerController player_controller;
+        public NetworkedPlayerController PlayerController;
 
         public Canvas PlayerScreenCanvasPrefab;
         public Camera FixedUiCameraPrefab;
@@ -105,109 +105,43 @@ namespace SpaceBattles
         }
 
         // -- methods --
+
+        // TODO: Remove once debugging complete
+        // need to do it this way because only occurs in standalone
+        public void DebugLogRegistryStatus()
+        {
+            Debug.Log(CameraRegistry.PrintDebugDestroyedRegisteredObjectCheck()
+                + "\n" + ComponentRegistry.PrintDebugDestroyedRegisteredObjectCheck());
+        }
+
         public void Awake ()
         {
             if (!UiObjectsInstantiated)
             {
-                // UI objects
-                Debug.Log("UI Manager instantiating UI objects");
-
-                initialiseUIElementAll();
+                InitialiseUIElementAll();
                 SSCManager = GetComponent<ScreenSizeChangeManager>();
                 InstantiateUIObjects();
+                ComponentRegistry.RegisterTransitions(this);
+                InitialiseManagerFields();
+                InitialiseGameplayUi();
+                InitialiseSettingsMenu();
+                InitialiseOrreryUi();
 
-                MainMenuUIManager
-                    = ComponentRegistry[(int)UIElements.MainMenu]
-                    .GetComponent<MainMenuUIManager>();
-
-                SettingsMenuManager
-                    = ComponentRegistry[(int)UIElements.SettingsMenu]
-                    .GetComponent<SettingsMenuUIManager>();
-
-                InGameMenuManager
-                    = ComponentRegistry[(int)UIElements.InGameMenu]
-                    .GetComponent<InGameMenuManager>();
-                
-                GameplayUiManager
-                    = ComponentRegistry[(int)UIElements.GameplayUI]
-                    .GetComponent<GameplayUIManager>();
-
-                OrreryUiManager
-                    = ComponentRegistry[(int)UIElements.OrreryUI]
-                    .GetComponent<OrreryUIManager>();
-
-                GameplayUiManager.InitialiseSubComponents(SSCManager);
-                InitialiseInputAdapter();
-                GameplayUiManager.ActivateVirtualJoystick(
-                    InputAdapter.VirtualJoystickEnabled
-                );
-
-                //player_centred_canvas_object = GameObject.Instantiate(player_centred_UI_prefab);
-                //player_centred_canvas        = player_centred_canvas_object.GetComponent<Canvas>();
-
-                // Initialise UI events structure
-                Debug.Log("ExitNetGameInputEvent "
-                    + (ExitNetGameInputEvent == null ? "does not have" : "has")
-                    + " listeners");
-                SettingsMenuManager.VirtualJoystickSetEvent += OnVirtualJoystickEnabled;
-                OrreryUiManager.DateTimeSet += SetOrreryDateTimeTrigger;
-                
                 EventSwitchboard Switchboard
                     = GetComponent<EventSwitchboard>();
                 Switchboard.ConnectCords(ComponentRegistry);
 
-                // TODO: Move to InstantiateUIObjects
-                ITransitionRequestBroadcaster TransitionBroadcaster
-                    = ComponentRegistry[(int)UIElements.OrreryUI]
-                    .GetComponent<UIComponentStem>();
-                RegisterTransitionHandlers(TransitionBroadcaster);
-
-                // Initialise cameras
                 InitialiseUICameras();
-                //hideShipSelectionUI();
+                InitialiseScreenFader();
 
-                // Setup hacky screen fading
-                CameraRegistry.CoroutineHost = this;
-                ScreenFadeImageHost
-                    .transform
-                    .SetParent(PlayerScreenCanvas.transform, false);
-                CameraFader Fader =
-                    CameraRegistry[(int)CameraRoles.FixedUi]
-                    .GetComponent<CameraFader>();
-                MyContract.RequireFieldNotNull(
-                    Fader, "Fixed UI CameraFader component"
-                );
-                Fader.FadeImg = ScreenFadeImageHost.GetComponent<Image>();
-                MyContract.RequireFieldNotNull(
-                    Fader.FadeImg, "ScreenFadeImageHost Image component"
-                );
-                PlayerScreenCanvas
-                    .GetComponent<ScreenSizeChangeTrigger>()
-                    .ScreenResizedInternal
-                    .AddListener(Fader.OnScreenSizeChange);
-                Fader.OnScreenSizeChange(PlayerScreenCanvas.GetComponent<RectTransform>().rect);
-
-                if (dont_destroy_on_load)
+                if (DontDestroyOnLoad)
                 {
-                    //Test
                     UnityEngine.Object.DontDestroyOnLoad(PlayerScreenCanvas);
-                    //Sets this to not be destroyed when reloading scene
                     UnityEngine.Object.DontDestroyOnLoad(gameObject);
-                    Debug.Log("objects prevented from being destroyed on load");
                 }
 
                 if (PrintScreenSizeDebugText)
-                {
-                    DebugTextbox
-                        = ComponentRegistry[(int)UIElements.DebugOutput];
-                    DebugTextbox.SetActive(true);
-                    VariableTextboxPrinter Printer
-                        = DebugTextbox.GetComponent<VariableTextboxPrinter>();
-                    MyContract.RequireField(Printer != null,
-                                            "debug textbox object has a variabletextprinter component attached",
-                                            "DebugTextboxPrefab");
-                    SSCManager.ScreenResized.AddListener(Printer.PrintVariable);
-                }
+                    { InitialiseDebugTextUiObject(); }
 
                 UiObjectsInstantiated = true;
             }
@@ -237,16 +171,30 @@ namespace SpaceBattles
                 {
                     ExitNetGameInputEvent.Invoke();
                 }
-
-                if (InputAdapter.InGameMenuOpenInput())
+                else if (InputAdapter.InGameMenuOpenInput())
                 {
                     ToggleInGameMenu();
                 }
-
-                if (InputAdapter.ShipSelectMenuOpenInput())
+                else if (InputAdapter.ShipSelectMenuOpenInput())
                 {
                     Debug.Log("ship select button pressed");
                     //toggleShipSelectUI();
+                }
+                else if (InputAdapter.InGameScoreboardOpenInput())
+                {
+                    Debug.Log("Scoreboard opened!");
+                    TransitionToUIElements(
+                        UiElementTransitionType.Additive,
+                        UIElements.Scoreboard
+                    );
+                }
+                else if (InputAdapter.InGameScoreboardCloseInput())
+                {
+                    Debug.Log("Scoreboard closed!");
+                    TransitionToUIElements(
+                        UiElementTransitionType.Subtractive,
+                        UIElements.Scoreboard
+                    );
                 }
             }
         }
@@ -279,20 +227,20 @@ namespace SpaceBattles
                 //       with the input,
                 //       rather than having program logic decisions
                 //       here in the input manager.
-                if (player_controller != null)
+                if (PlayerController != null)
                 {
                     if (InputAdapter.AccelerateInput())
                     {
-                        player_controller.accelerateShip(new Vector3(0, 0, 1));
+                        PlayerController.accelerateShip(new Vector3(0, 0, 1));
                     }
                     else if (InputAdapter.BrakeInput())
                     {
-                        player_controller.brakeShip();
+                        PlayerController.brakeShip();
                     }
 
                     if (InputAdapter.FireInput())
                     {
-                        player_controller.firePrimaryWeapon();
+                        PlayerController.firePrimaryWeapon();
                     }
                 }
             }
@@ -354,7 +302,7 @@ namespace SpaceBattles
             || transitionType == UiElementTransitionType.Tracked)
             {
                 // Deactivate current UIElements
-                Debug.Log("TransitionToUIElements hiding elements " + ActiveUIElements);
+                //Debug.Log("TransitionToUIElements hiding elements " + ActiveUIElements);
                 showUIElementFromFlags(false, ActiveUIElements);
                 ActiveUIElements = UIElements.None;
             }
@@ -371,7 +319,7 @@ namespace SpaceBattles
             else
             {
                 // Activate new UIElements
-                Debug.Log("TransitionToUIElements showing elements " + newUIElements);
+                //Debug.Log("TransitionToUIElements showing elements " + newUIElements);
                 showUIElementFromFlags(true, newUIElements);
                 ActiveUIElements |= newUIElements;
             }
@@ -480,13 +428,24 @@ namespace SpaceBattles
             }
         }
 
-        public void setPlayerController(NetworkedPlayerController player_controller)
+        public void SetPlayerController(NetworkedPlayerController playerController)
         {
             if (!CameraRegistry.Contains((int)CameraRoles.FixedUi))
             {
                 throw new InvalidOperationException(CAMERA_NOT_SET_EXCEPTION_MESSAGE);
             }
-            this.player_controller = player_controller;
+
+            ScoreboardUiManager ScoreUIManager
+                = ComponentRegistry
+                .RetrieveManager
+                    <ScoreboardUiManager>
+                    (UIElements.Scoreboard);
+            if (ScoreUIManager != null)
+            {
+                ScoreUIManager.LocalPlayerId = playerController.netId;
+            }
+
+            this.PlayerController = playerController;
             //player_centred_canvas.worldCamera = player_UI_camera;
             //player_centred_canvas_object.transform.SetParent(player_object.transform);
             //player_centred_canvas_object.transform.localPosition = player_centred_UI_offset;
@@ -529,17 +488,46 @@ namespace SpaceBattles
         {
             OrreryManager.SetExplicitDateTime(newTime);
         }
-
+        
         public void FadeCamera (bool fadeOut, Action fadeCallback)
         {
             if (fadeOut)
             {
                 CameraRegistry.FadeAllToBlack(fadeCallback);
-            }
+            } 
             else
             {
                 CameraRegistry.FadeAllToClear(fadeCallback);
             }
+        }
+
+        public void
+        RegisterTransitionHandlers
+        (ITransitionRequestBroadcaster broadcaster)
+        {
+            broadcaster.UiBacktrackRequest += TransitionUIElementsBacktrack;
+            broadcaster.UiTransitionRequest += TransitionToUIElements;
+        }
+
+        public void
+        OnScoreUpdate
+            (PlayerIdentifier playerId,
+            int newScore)
+        {
+            MyContract.RequireField(
+                ComponentRegistry.Contains(UIElements.Scoreboard),
+                "contains a scoreboard",
+                "ComponentRegistry"
+            );
+            
+            ComponentRegistry
+                .RetrieveManager<ScoreboardUiManager>(UIElements.Scoreboard)
+                .ChangePlayerScore(playerId, newScore);
+            // Debug
+            Debug.Log("Score was updated for player "
+                     + playerId.PlayerID
+                     + " to new score "
+                     + newScore);
         }
 
         /// <summary>
@@ -547,7 +535,7 @@ namespace SpaceBattles
         /// (we already have none included but all seems to cause problems
         /// [if it doesn't cause problems just add it back in])
         /// </summary>
-        private void initialiseUIElementAll ()
+        private void InitialiseUIElementAll ()
         {
             Array allUIElementValues = Enum.GetValues(typeof(UIElements));
             UIElement_ALL = UIElements.None;
@@ -684,12 +672,86 @@ namespace SpaceBattles
             GameplayUiManager.ActivateVirtualJoystick(enabled);
         }
 
-        private void
-        RegisterTransitionHandlers
-        (ITransitionRequestBroadcaster broadcaster)
+        private void InitialiseDebugTextUiObject()
         {
-            broadcaster.UiBacktrackRequest += TransitionUIElementsBacktrack;
-            broadcaster.UiTransitionRequest += TransitionToUIElements;
+            DebugTextbox = ComponentRegistry[(int)UIElements.DebugOutput];
+            DebugTextbox.SetActive(true);
+            VariableTextboxPrinter Printer
+                = DebugTextbox.GetComponent<VariableTextboxPrinter>();
+            MyContract.RequireField(Printer != null,
+                                    "debug textbox object has a variabletextprinter component attached",
+                                    "DebugTextboxPrefab");
+            SSCManager.ScreenResized.AddListener(Printer.PrintVariable);
+        }
+
+        private void InitialiseScreenFader()
+        {
+            CameraRegistry.CoroutineHost = this;
+            ScreenFadeImageHost
+                .transform
+                .SetParent(PlayerScreenCanvas.transform, false);
+            CameraFader Fader =
+                CameraRegistry[(int)CameraRoles.FixedUi]
+                .GetComponent<CameraFader>();
+            MyContract.RequireFieldNotNull(
+                Fader, "Fixed UI CameraFader component"
+            );
+            Fader.FadeImg = ScreenFadeImageHost.GetComponent<Image>();
+            MyContract.RequireFieldNotNull(
+                Fader.FadeImg, "ScreenFadeImageHost Image component"
+            );
+            PlayerScreenCanvas
+                .GetComponent<ScreenSizeChangeTrigger>()
+                .ScreenResizedInternal
+                .AddListener(Fader.OnScreenSizeChange);
+            Fader.OnScreenSizeChange(PlayerScreenCanvas.GetComponent<RectTransform>().rect);
+        }
+
+        private void InitialiseOrreryUi()
+        {
+            OrreryUiManager.DateTimeSet += SetOrreryDateTimeTrigger;
+        }
+
+        private void InitialiseSettingsMenu()
+        {
+            SettingsMenuManager.VirtualJoystickSetEvent += OnVirtualJoystickEnabled;
+        }
+
+        private void InitialiseGameplayUi()
+        {
+            GameplayUiManager.InitialiseSubComponents(SSCManager);
+            InitialiseInputAdapter();
+            GameplayUiManager.ActivateVirtualJoystick(
+                InputAdapter.VirtualJoystickEnabled
+            );
+        }
+
+        private void InitialiseManagerFields()
+        {
+            MainMenuUIManager
+                = ComponentRegistry
+                .RetrieveManager<MainMenuUIManager>
+                    (UIElements.MainMenu);
+
+            SettingsMenuManager
+                = ComponentRegistry
+                .RetrieveManager<SettingsMenuUIManager>
+                    (UIElements.SettingsMenu);
+
+            InGameMenuManager
+                = ComponentRegistry
+                .RetrieveManager<InGameMenuManager>
+                    (UIElements.InGameMenu);
+
+            GameplayUiManager
+                = ComponentRegistry
+                .RetrieveManager<GameplayUIManager>
+                    (UIElements.GameplayUI);
+
+            OrreryUiManager
+                = ComponentRegistry
+                .RetrieveManager<OrreryUIManager>
+                    (UIElements.OrreryUI);
         }
     }
 }

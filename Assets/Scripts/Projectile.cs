@@ -6,6 +6,10 @@ namespace SpaceBattles
 {
     public class Projectile : NetworkBehaviour
     {
+        public PlayerIdentifier shooter;
+
+        private System.Object CollisionLock = new object();
+
         /// <summary>
         /// Projectile hits will be server-only in order to simplify the logical flow
         /// </summary>
@@ -14,23 +18,26 @@ namespace SpaceBattles
         {
             if (hasAuthority)
             {
-                var hit = collision.gameObject;
-                // projectiles pass through each other
-                var hit_projectile = hit.GetComponent<Projectile>();
-                if (hit_projectile != null)
+                lock (CollisionLock)
                 {
-                    Debug.Log("Projectile x projectile collision registered");
-                }
-                else
-                {
-                    Debug.Log("Projectile hit registered");
-                    var hitPlayer = hit.GetComponent<PlayerShipController>();
-                    if (hitPlayer != null)
+                    var hit = collision.gameObject;
+                    // projectiles pass through each other
+                    var hit_projectile = hit.GetComponent<Projectile>();
+                    if (hit_projectile != null)
                     {
-                        Debug.Log("Player hit registered");
-                        hitPlayer.onProjectileHit();
+                        Debug.Log("Projectile x projectile collision registered");
                     }
-                    Destroy(this.gameObject);
+                    else
+                    {
+                        //Debug.Log("Projectile hit registered");
+                        var hitPlayer = hit.GetComponent<PlayerShipController>();
+                        if (hitPlayer != null)
+                        {
+                            Debug.Log("Player hit registered");
+                            hitPlayer.OnProjectileHit(shooter);
+                        }
+                        Destroy(this.gameObject);
+                    }
                 }
             }      
         }

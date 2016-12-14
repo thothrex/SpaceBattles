@@ -10,16 +10,19 @@ namespace SpaceBattles
     {
         public GameObject health_bar_background_object;
         public GameObject health_bar_foreground_object;
-
         public double max_bar_value;
         public double current_bar_value;
         public double scroll_speed = 1.0;
-
-        private RectTransform health_bar_foreground;
-        private RectTransform health_bar_background;
         public double bar_max_width;
         public double current_bar_width;
         public double target_bar_width;
+
+        private const string larger_than_possible_error_message
+            = "New bar value is larger than this bar's current maximum value";
+        private const string smaller_than_possible_error_message
+            = "New bar value is less than 0";
+        private RectTransform health_bar_foreground;
+        private RectTransform health_bar_background;
 
         void Awake ()
         {
@@ -57,12 +60,6 @@ namespace SpaceBattles
             this.enabled = true;
         }
 
-        private const string larger_than_possible_error_message
-            = "New bar value is larger than this bar's current maximum value";
-
-        private const string smaller_than_possible_error_message
-            = "New bar value is less than 0";
-
         /// <summary>
         /// Simple pass-through overload to the double version
         /// </summary>
@@ -86,7 +83,7 @@ namespace SpaceBattles
         /// </summary>
         public void SetCurrentValue (double new_value)
         {
-            Debug.Log("Setting new bar value to " + new_value);
+            //Debug.Log("Setting new bar value to " + new_value);
             if (new_value > max_bar_value)
             {
                 throw new ArgumentOutOfRangeException(

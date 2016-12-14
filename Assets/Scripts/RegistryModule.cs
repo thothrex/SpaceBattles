@@ -194,7 +194,7 @@ namespace SpaceBattles
                 throw new InvalidOperationException(err_msg);
             }
         }
-
+        
         public bool Contains (int key)
         {
             return RegisteredObjects.ContainsKey(key);
@@ -233,7 +233,7 @@ namespace SpaceBattles
                 RegisteredType OriginalObject = objectsToRegister[Index];
                 GenericRegisterObject(OriginalObject, objectsArePrefabs, initialisationCallback, Index);
             }
-            Debug.Log("Registered indices: " + PrintRegistry());
+            //Debug.Log("Registered indices: " + PrintRegistry());
         }
 
         protected string PrintRegistry ()

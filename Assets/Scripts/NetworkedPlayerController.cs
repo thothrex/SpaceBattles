@@ -12,7 +12,7 @@ namespace SpaceBattles
     /// Crucially, this means it should be the only source of [Command] and [ClientRPC] methods
     /// as it is the point where the network and the client interact.
     /// </summary>
-    public class NetworkedPlayerController : NetworkBehaviour
+    public class NetworkedPlayerController : NetworkBehaviour, IScoreListener
     {
         // -- Constants --
         public const float RESPAWN_DELAY           = 2.0f;
@@ -44,6 +44,7 @@ namespace SpaceBattles
         private SpaceShipClass current_ship_choice = SpaceShipClass.NONE;
         private SpaceShipClassManager SpaceshipClassManager = null;
         private OptionalEventModule oem = null;
+        private GameStateManager ServerController = null;
         // NB SyncVars ALWAYS sync from server->client,
         //    even for client-authoritative objects (such as this)
         [SyncVar]
@@ -52,16 +53,25 @@ namespace SpaceBattles
         private bool player_ship_spawned = false;
 
         // -- Delegates --
-        public delegate void LocalPlayerStartHandler    (NetworkedPlayerController  IPC);
-        public delegate void ShipSpawnedHandler         (PlayerShipController       player_ship_controller);
-        public delegate void ShipHealthChangeHandler    (double                     new_health);
-        public delegate void ShipDestructionHandler     (PlayerIdentifier           killer);
+        public delegate void LocalPlayerStartHandler
+            (NetworkedPlayerController IPC);
+        public delegate void ShipSpawnedHandler
+            (PlayerShipController player_ship_controller);
+        public delegate void ShipHealthChangeHandler
+            (double new_health);
+        public delegate void ShipDestructionHandler
+            (PlayerIdentifier killer);
+        public delegate void ScoreboardResetHandler
+            (List<KeyValuePair<PlayerIdentifier, int>> newScores);
+        public delegate void ScoreUpdateHandler
+            (PlayerIdentifier playerId, int newScore);
 
         // -- Events --
         public event LocalPlayerStartHandler    LocalPlayerStarted;
         public event ShipSpawnedHandler         LocalPlayerShipSpawned;
         public event ShipHealthChangeHandler    LocalPlayerShipHealthChanged;
         public event ShipDestructionHandler     ShipDestroyed;
+        [SyncEvent] public event ScoreUpdateHandler         EventScoreUpdated;
 
         // -- Methods --
 
@@ -95,6 +105,17 @@ namespace SpaceBattles
             // TODO: Implement
         }
 
+        [Command]
+        public void
+        CmdSendScoreboardStateToUI()
+        {
+            MyContract.RequireFieldNotNull(
+                ServerController, "ServerControler"
+            );
+
+            ServerController.InitialiseScoreListener(this);
+        }
+
         /// <summary>
         /// Authority isn't set yet so cannot check it
         /// </summary>
@@ -104,7 +125,7 @@ namespace SpaceBattles
             initialiseShipSpawnStatus();
             setSpawnLocations(); // TODO: Why is this done here?
             oem = new OptionalEventModule();
-            oem.allow_no_event_listeners = false;
+            oem.AllowNoEventListeners = false;
         }
 
         /// <summary>
@@ -114,7 +135,7 @@ namespace SpaceBattles
         override
         public void OnStartAuthority ()
         {
-            Debug.Log("IPC authority started");
+            //Debug.Log("IPC authority started");
             if (setup_complete)
             {
                 LocalPlayerStartHandler handler = LocalPlayerStarted;
@@ -131,7 +152,7 @@ namespace SpaceBattles
         override
         public void OnStartServer ()
         {
-            GameStateManager ServerController
+            ServerController
                 = GameStateManager.FindCurrentGameManager();
 
             ServerController.OnPlayerJoin(this);
@@ -254,6 +275,11 @@ namespace SpaceBattles
             {
                 ShipController.setPitch(new_pitch);
             }
+        }
+
+        public void OnScoreUpdate(PlayerIdentifier playerId, int newScore)
+        {
+            EventScoreUpdated(playerId, newScore);
         }
 
         /// <summary>
@@ -483,9 +509,7 @@ namespace SpaceBattles
                 ShipHealthChangeHandler handler = LocalPlayerShipHealthChanged;
                 if (oem.shouldTriggerEvent(handler))
                 {
-                    Debug.Log("Error start?");
                     handler(new_health);
-                    Debug.Log("Error end?");
                     //Debug.Log("Incorporeal controller propagated event");
                 }
             }

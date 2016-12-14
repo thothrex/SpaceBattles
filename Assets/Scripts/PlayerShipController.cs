@@ -38,6 +38,11 @@ namespace SpaceBattles
             + "follow the ship."
          )]
         public Transform projectile_spawn_location;
+        // Set by code
+        /// <summary>
+        /// Currently server-only
+        /// </summary>
+        public PlayerIdentifier owner = null;
 
         private Vector3 acceleration_direction; // in LOCAL coordinates
         private bool accelerating = false;
@@ -51,10 +56,14 @@ namespace SpaceBattles
         private OptionalEventModule oem = null;
         [SyncVar] private double health;
 
+        private object DeathLock = new object();
+        private bool IsDead = false;
+
         // -- Delegates --
         public delegate void LocalPlayerStartHandler();
         public delegate void HealthChangeHandler(double new_health);
-        public delegate void DeathHandler(Vector3 death_location);
+        public delegate void DeathHandler
+            (PlayerIdentifier killer, Vector3 deathLocation);
 
         // -- Events --
         public event LocalPlayerStartHandler StartLocalPlayer;
@@ -84,7 +93,7 @@ namespace SpaceBattles
         public void OnStartClient ()
         {
             oem = new OptionalEventModule();
-            oem.allow_no_event_listeners = false;
+            oem.AllowNoEventListeners = false;
             physics_body = GetComponent<Rigidbody>();
         }
 
@@ -163,29 +172,36 @@ namespace SpaceBattles
         public void CmdFirePhaser()
         {
             // Create the bolt locally
-            GameObject bolt = (GameObject)Instantiate(
+            GameObject Bolt = (GameObject)Instantiate(
                  phaser_bolt_prefab,
                  projectile_spawn_location.position,
                  transform.rotation);
-            bolt.GetComponent<Rigidbody>()
-                .velocity = (PHASER_BOLT_FORCE * bolt.transform.forward);
+
+            Projectile BoltController
+                = Bolt.GetComponent<Projectile>();
+            MyContract.RequireFieldNotNull(BoltController, "BoltController");
+            MyContract.RequireFieldNotNull(owner, "owner");
+            BoltController.shooter = owner;
+
+            Bolt.GetComponent<Rigidbody>()
+                .velocity = (PHASER_BOLT_FORCE * Bolt.transform.forward);
 
             // Spawn the bullet on the clients
-            NetworkServer.Spawn(bolt);
+            NetworkServer.Spawn(Bolt);
             // Set self-destruct timer
-            Destroy(bolt, 2.0f);
+            Destroy(Bolt, 2.0f);
         }
         /// <summary>
         /// I would expand this to include a new parameter
         /// of enum HitType with value of PHASER_BOLT etc.
         /// </summary>
-        public void onProjectileHit()
+        public void OnProjectileHit(PlayerIdentifier shooter)
         {
             // Stops useless messages propagating
             // Easier to reason about with one path
             if (isServer)
             {
-                takeDamage(1.0);
+                TakeDamage(1.0, shooter);
             }
         }
 
@@ -229,12 +245,12 @@ namespace SpaceBattles
         /// </summary>
         /// <param name="amount"></param>
         [Server]
-        private void takeDamage(double amount)
+        private void TakeDamage (double amount, PlayerIdentifier shooter)
         {
             if (amount >= health)
             {
                 health = 0;
-                killThisUnit();
+                KillThisUnit(shooter);
             }
             else
             {
@@ -247,13 +263,22 @@ namespace SpaceBattles
             }
         }
 
-        private void killThisUnit()
+        private void KillThisUnit (PlayerIdentifier killer)
         {
-            Debug.Log("Player is dead!");
-            DeathHandler handler = EventDeath;
-            if (oem.shouldTriggerEvent(handler))
+            // This lock was put in as a result of bugs,
+            // it's not just experimental!
+            lock (DeathLock)
             {
-                handler(transform.position);
+                if (!IsDead) // If we're the first responder
+                {
+                    Debug.Log("Player is dead!");
+                    IsDead = true;
+                    DeathHandler handler = EventDeath;
+                    if (oem.shouldTriggerEvent(handler))
+                    {
+                        handler(killer, transform.position);
+                    }
+                }
             }
         }
     }
