@@ -97,12 +97,12 @@ namespace SpaceBattles
         {
             return delegate (GameObject NewObj, int index)
             {
-                Debug.Log(
-                    "Setting up fresh UI component with elementid "
-                    + NewObj
-                      .GetComponent<UIComponentStem>()
-                      .ElementIdentifier
-                );
+                //Debug.Log(
+                //    "Setting up fresh UI component with elementid "
+                //    + NewObj
+                //      .GetComponent<UIComponentStem>()
+                //      .ElementIdentifier
+                //);
                 RectTransform NewTransform
                     = NewObj.GetComponent<RectTransform>();
                 RectTransform PrefabTransform

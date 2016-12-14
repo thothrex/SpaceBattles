@@ -182,23 +182,23 @@ namespace SpaceBattles
 
                 object_registry.Add(registrant, new_breakpoints);
                 trigger_list.Add(new_key, new_breakpoints);
-                Debug.Log("Pulled old breakpoints: "
-                         + printBreakpoints(existing_breakpoints));
-                Debug.Log("Added new breakpoints: "
-                         + printBreakpoints(object_breakpoints));
-                Debug.Log("Created concatenated breakpoints: "
-                         + printBreakpoints(new_breakpoints));
+                //Debug.Log("Pulled old breakpoints: "
+                //         + printBreakpoints(existing_breakpoints));
+                //Debug.Log("Added new breakpoints: "
+                //         + printBreakpoints(object_breakpoints));
+                //Debug.Log("Created concatenated breakpoints: "
+                //         + printBreakpoints(new_breakpoints));
             }
             else
             {
                 Debug.Assert(sorted_object_breakpoints != null);
                 Debug.Assert(sorted_object_breakpoints.Keys != null);
-                Debug.Log("sorted_object_breakpoints: "
-                        + printBreakpoints(sorted_object_breakpoints));
+                //Debug.Log("sorted_object_breakpoints: "
+                //        + printBreakpoints(sorted_object_breakpoints));
                 float largest_breakpoint = sorted_object_breakpoints.Keys.Max();
                 object_registry.Add(registrant, object_breakpoints);
                 trigger_list.Add(largest_breakpoint, object_breakpoints);
-                Debug.Log("Added breakpoints normally");
+                //Debug.Log("Added breakpoints normally");
             }
         }
 

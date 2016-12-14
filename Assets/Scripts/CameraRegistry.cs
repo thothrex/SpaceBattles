@@ -167,9 +167,9 @@ namespace SpaceBattles
                 }
                 else
                 {
-                    Debug.Log("Camera "
-                            + Cam.gameObject.name
-                            + " has no Camera Fader - Skipping");
+                    //Debug.Log("Camera "
+                    //        + Cam.gameObject.name
+                    //        + " has no Camera Fader - Skipping");
                 }
             }
             if (fadeCallback != null)
