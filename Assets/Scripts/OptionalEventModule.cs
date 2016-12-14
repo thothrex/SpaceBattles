@@ -14,8 +14,8 @@ namespace SpaceBattles
             + "allow_no_event_listeners value to false "
             + "(which can be done via the editor or in the parent class)";
 
-        public bool allow_no_event_listeners = false;
-        public bool suppress_error_messages  = false;
+        public bool AllowNoEventListeners = false;
+        public bool SuppressErrorMessages = false;
 
         /// <summary>
         /// 
@@ -30,9 +30,9 @@ namespace SpaceBattles
         /// </returns>
         public bool shouldTriggerEvent<H>(H event_handler)
         {
-            if (allow_no_event_listeners && event_handler == null)
+            if (AllowNoEventListeners && event_handler == null)
             {
-                if (!suppress_error_messages)
+                if (!SuppressErrorMessages)
                 {
                     Debug.LogWarning("Event "
                                + event_handler.ToString()

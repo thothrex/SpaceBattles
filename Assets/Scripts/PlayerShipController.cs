@@ -93,7 +93,7 @@ namespace SpaceBattles
         public void OnStartClient ()
         {
             oem = new OptionalEventModule();
-            oem.allow_no_event_listeners = false;
+            oem.AllowNoEventListeners = false;
             physics_body = GetComponent<Rigidbody>();
         }
 
