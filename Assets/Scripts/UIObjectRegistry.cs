@@ -78,6 +78,11 @@ namespace SpaceBattles
             }
         }
 
+        public bool Contains(UIElements key)
+        {
+            return base.Contains((int)key);
+        }
+
         /// <summary>
         /// Instantiates, but also sets parent canvas
         /// and recentres UI component relative to that parent canvas
