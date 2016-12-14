@@ -34,8 +34,6 @@ namespace SpaceBattles
         public NetworkedPlayerController PlayerController;
 
         public Canvas PlayerScreenCanvasPrefab;
-        public Camera FixedUiCameraPrefab;
-        public Camera ship_select_camera_prefab;
         
         public List<GameObject> UiComponentObjectPrefabs;
         public List<Camera> CameraPrefabs;
