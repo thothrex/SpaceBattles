@@ -31,7 +31,7 @@ namespace SpaceBattles
         // -- (variable) fields --
         public bool DontDestroyOnLoad;
 
-        public NetworkedPlayerController player_controller;
+        public NetworkedPlayerController PlayerController;
 
         public Canvas PlayerScreenCanvasPrefab;
         public Camera FixedUiCameraPrefab;
@@ -227,20 +227,20 @@ namespace SpaceBattles
                 //       with the input,
                 //       rather than having program logic decisions
                 //       here in the input manager.
-                if (player_controller != null)
+                if (PlayerController != null)
                 {
                     if (InputAdapter.AccelerateInput())
                     {
-                        player_controller.accelerateShip(new Vector3(0, 0, 1));
+                        PlayerController.accelerateShip(new Vector3(0, 0, 1));
                     }
                     else if (InputAdapter.BrakeInput())
                     {
-                        player_controller.brakeShip();
+                        PlayerController.brakeShip();
                     }
 
                     if (InputAdapter.FireInput())
                     {
-                        player_controller.firePrimaryWeapon();
+                        PlayerController.firePrimaryWeapon();
                     }
                 }
             }
@@ -302,7 +302,7 @@ namespace SpaceBattles
             || transitionType == UiElementTransitionType.Tracked)
             {
                 // Deactivate current UIElements
-                Debug.Log("TransitionToUIElements hiding elements " + ActiveUIElements);
+                //Debug.Log("TransitionToUIElements hiding elements " + ActiveUIElements);
                 showUIElementFromFlags(false, ActiveUIElements);
                 ActiveUIElements = UIElements.None;
             }
@@ -319,7 +319,7 @@ namespace SpaceBattles
             else
             {
                 // Activate new UIElements
-                Debug.Log("TransitionToUIElements showing elements " + newUIElements);
+                //Debug.Log("TransitionToUIElements showing elements " + newUIElements);
                 showUIElementFromFlags(true, newUIElements);
                 ActiveUIElements |= newUIElements;
             }
@@ -428,13 +428,13 @@ namespace SpaceBattles
             }
         }
 
-        public void setPlayerController(NetworkedPlayerController player_controller)
+        public void SetPlayerController(NetworkedPlayerController playerController)
         {
             if (!CameraRegistry.Contains((int)CameraRoles.FixedUi))
             {
                 throw new InvalidOperationException(CAMERA_NOT_SET_EXCEPTION_MESSAGE);
             }
-            this.player_controller = player_controller;
+            this.PlayerController = playerController;
             //player_centred_canvas.worldCamera = player_UI_camera;
             //player_centred_canvas_object.transform.SetParent(player_object.transform);
             //player_centred_canvas_object.transform.localPosition = player_centred_UI_offset;
@@ -503,6 +503,12 @@ namespace SpaceBattles
             (PlayerIdentifier playerId,
             int newScore)
         {
+            MyContract.RequireField(
+                ComponentRegistry.Contains(UIElements.Scoreboard),
+                "contains a scoreboard",
+                "ComponentRegistry"
+            );
+            
             ComponentRegistry
                 .RetrieveManager<ScoreboardUiManager>(UIElements.Scoreboard)
                 .ChangePlayerScore(playerId, newScore);

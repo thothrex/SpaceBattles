@@ -15,8 +15,8 @@ namespace SpaceBattles
         public GameObject ScoreUiElementPrefab;
 
         [HideInInspector]
-        public Dictionary<PlayerIdentifier, ScoreUiElementManager> ScoreElement
-            = new Dictionary<PlayerIdentifier, ScoreUiElementManager>();
+        public Dictionary<NetworkInstanceId, ScoreUiElementManager> ScoreElement
+            = new Dictionary<NetworkInstanceId, ScoreUiElementManager>();
 
         public void Start ()
         {
@@ -24,54 +24,57 @@ namespace SpaceBattles
                                            "ScoreUiElementPrefab");
         }
 
-        public void
-        InitialiseScoreboardState
-            (List<KeyValuePair<PlayerIdentifier, int>> scores)
-        {
-            ClearUiElements();
-            foreach (KeyValuePair<PlayerIdentifier, int> ScoreEntry in scores)
-            {
-                AddNewPlayer(ScoreEntry.Key, ScoreEntry.Value);
-            }
-        }
-
         public void AddNewPlayer (PlayerIdentifier player, int score)
         {
             MyContract.RequireArgumentNotNull(player, "player");
             MyContract.RequireField(
-                !ScoreElement.ContainsKey(player),
+                !ScoreElement.ContainsKey(player.PlayerID),
                 "does not already contain an entry for player "
                     + player.ToString(),
                 "ScoreElement"
             );
 
-            GameObject NewScoreUiElement
-                = Instantiate(ScoreUiElementPrefab);
+            Debug.Log(
+                "ScoreboardUIManager: Adding new element ["
+                + player.ToString()
+                + " -> "
+                + score+ "]"
+            );
+
+            GameObject NewScoreUiElement;
+            string DisplayName = "[Uninitialised]";
+                NewScoreUiElement
+                    = Instantiate(ScoreUiElementPrefab);
+                DisplayName = player.ToString();
+            
+            NewScoreUiElement.transform.SetParent(UiElementListParent, false);
+
             ScoreUiElementManager ElementManager
                 = NewScoreUiElement.GetComponent<ScoreUiElementManager>();
             // This is programmer/compile-time error if it occurs
             // as in, this shouldn't be needed in production code
             MyContract.RequireFieldNotNull(ElementManager, "ScoreUiElementManager");
-            ElementManager.Initialise(player.ToString(), score);
-            
+            ElementManager.Initialise(DisplayName, score);
+            NewScoreUiElement.SetActive(true);
+
             ScoreUiElements.Add(ElementManager);
             SortScoreElements();
-            ScoreElement.Add(player, ElementManager);
+            ScoreElement.Add(player.PlayerID, ElementManager);
         }
 
         public void RemovePlayer (PlayerIdentifier player)
         {
             MyContract.RequireArgumentNotNull(player, "player");
             MyContract.RequireField(
-                ScoreElement.ContainsKey(player),
+                ScoreElement.ContainsKey(player.PlayerID),
                 "Contains an entry for player "
                     + player.ToString(),
                 "ScoreElement"
             );
 
-            ScoreUiElementManager ElementManager = ScoreElement[player];
+            ScoreUiElementManager ElementManager = ScoreElement[player.PlayerID];
 
-            ScoreElement.Remove(player);
+            ScoreElement.Remove(player.PlayerID);
             ScoreUiElements.Remove(ElementManager);
             // If needed this can be optimised by pooling the
             // score ui elements,
@@ -85,15 +88,21 @@ namespace SpaceBattles
         public void ChangePlayerScore (PlayerIdentifier player, int score)
         {
             MyContract.RequireArgumentNotNull(player, "player");
-            MyContract.RequireField(
-                ScoreElement.ContainsKey(player),
-                "Contains an entry for player "
-                    + player.ToString(),
-                "ScoreElement"
-            );
-
-            ScoreElement[player].UpdateScore(score);
-            SortScoreElements();
+            if (ScoreElement.ContainsKey(player.PlayerID))
+            {
+                ScoreElement[player.PlayerID].UpdateScore(score);
+                SortScoreElements();
+            }
+            else
+            {
+                Debug.Log(
+                    "ScoreboardUIManager: Received a ChangePlayerScore "
+                    + "request for an unregistered player ("
+                    + player.ToString()
+                    + ")"
+                );
+                AddNewPlayer(player, score);
+            }
         }
 
         private void SortScoreElements ()

@@ -48,21 +48,27 @@ namespace SpaceBattles
         {
             MyContract.RequireArgumentNotNull(playerController, "playerController");
             PlayerIdentifier NewPlayerId = PlayerIdentifier.CreateNew(playerController);
-            Scoreboard.RegisterNewPlayer(NewPlayerId);
             playerController.ShipDestroyed
                 += delegate (PlayerIdentifier hunter)
                    {
                        Scoreboard.OnKillEvent(hunter, NewPlayerId);
                    };
-            Debug.Log("Game State Manager: Checking if we have a spaceship class manager");
+            Scoreboard.ScoreUpdate += playerController.OnScoreUpdate;
+            Scoreboard.RegisterNewPlayer(NewPlayerId);
+            //Debug.Log("Game State Manager: Checking if we have a spaceship class manager");
             MyContract.RequireFieldNotNull(SSClassManager, "Spaceship Class Manager");
-            Debug.Log("Game State Manager: Initialising given NPC with our SSCManager");
+            //Debug.Log("Game State Manager: Initialising given NPC with our SSCManager");
             playerController.initialiseShipClassManager(SSClassManager);
         }
 
-        public void AddScoreListener(IScoreListener listener)
+        [Server]
+        public void InitialiseScoreListener (IScoreListener listener)
         {
-            Scoreboard.EventScoreUpdate += listener.OnScoreUpdate;
+            var Scores = Scoreboard.GetScoreList();
+            foreach (var Score in Scores)
+            {
+                listener.OnScoreUpdate(Score.Key, Score.Value);
+            }
         }
     }
 }
