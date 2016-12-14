@@ -9,15 +9,24 @@ namespace SpaceBattles
 {
     public class ScoreboardUiManager : MonoBehaviour
     {
+        // -- Fields --
         public Transform UiElementListParent;
         public int NumberOfHeaderElementsInList;
         public List<ScoreUiElementManager> ScoreUiElements;
         public GameObject ScoreUiElementPrefab;
+        public GameObject LocalPlayerScoreUiElementPrefab;
 
         [HideInInspector]
         public Dictionary<NetworkInstanceId, ScoreUiElementManager> ScoreElement
             = new Dictionary<NetworkInstanceId, ScoreUiElementManager>();
 
+        // -- Properties --
+        public NetworkInstanceId LocalPlayerId
+        {
+            set; private get;
+        }
+
+        // -- Methods --
         public void Start ()
         {
             MyContract.RequireFieldNotNull(ScoreUiElementPrefab,
@@ -43,9 +52,18 @@ namespace SpaceBattles
 
             GameObject NewScoreUiElement;
             string DisplayName = "[Uninitialised]";
+            if (player.PlayerID == LocalPlayerId)
+            {
+                NewScoreUiElement
+                    = Instantiate(LocalPlayerScoreUiElementPrefab);
+                DisplayName = player.ToString() + " (Me)";
+            }
+            else
+            {
                 NewScoreUiElement
                     = Instantiate(ScoreUiElementPrefab);
                 DisplayName = player.ToString();
+            }
             
             NewScoreUiElement.transform.SetParent(UiElementListParent, false);
 

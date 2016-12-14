@@ -434,6 +434,17 @@ namespace SpaceBattles
             {
                 throw new InvalidOperationException(CAMERA_NOT_SET_EXCEPTION_MESSAGE);
             }
+
+            ScoreboardUiManager ScoreUIManager
+                = ComponentRegistry
+                .RetrieveManager
+                    <ScoreboardUiManager>
+                    (UIElements.Scoreboard);
+            if (ScoreUIManager != null)
+            {
+                ScoreUIManager.LocalPlayerId = playerController.netId;
+            }
+
             this.PlayerController = playerController;
             //player_centred_canvas.worldCamera = player_UI_camera;
             //player_centred_canvas_object.transform.SetParent(player_object.transform);
