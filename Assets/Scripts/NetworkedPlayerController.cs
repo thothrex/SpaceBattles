@@ -27,11 +27,11 @@ namespace SpaceBattles
             = "Attempting to spawn a spaceship when one already exists";
         // -- Fields --
 
+        public readonly float RespawnDelay = 3.0f;
         // The following are set in the editor,
         // so should be left unassigned here
         public GameObject explosion_prefab;
-
-        private readonly float RespawnDelay = 3.0f;
+        
         private readonly float SpaceshipDestroyDelay = 0.5f;
         private readonly int RespawnRequestMaxAttempts = 3;
         private bool warping = false;
@@ -76,6 +76,7 @@ namespace SpaceBattles
         public event LocalPlayerStartHandler    LocalPlayerStarted;
         public event ShipSpawnedHandler         LocalPlayerShipSpawned;
         public event ShipHealthChangeHandler    LocalPlayerShipHealthChanged;
+        public event ShipDestructionHandler     LocalPlayerShipDestroyed;
         public event ShipDestructionHandler     ShipDestroyed;
         [SyncEvent] public event ScoreUpdateHandler         EventScoreUpdated;
 
@@ -341,7 +342,7 @@ namespace SpaceBattles
             Debug.Log("Player Ship spawn registered on this client");
             ShipController
                 = spawnedSpaceship.GetComponent<PlayerShipController>();
-            ShipController.EventDeath += PlayerBodyKilled;
+            ShipController.EventDeath += ShipDestroyedClientAction;
             ShipController.EventHealthChanged += shipHealthChanged;
         }
 
@@ -492,13 +493,14 @@ namespace SpaceBattles
         /// Used to set camera transforms during respawn period
         /// </param>
         [Client]
-        private void PlayerBodyKilled(PlayerIdentifier killer, Vector3 deathLocation)
+        private void
+        ShipDestroyedClientAction
+            (PlayerIdentifier killer, Vector3 deathLocation)
         {
             AnyShipDestroyedAction();
-
             if (hasAuthority)
             {
-                LocalShipDestroyedAction(deathLocation);
+                LocalShipDestroyedAction(killer, deathLocation);
             }
         }
 
@@ -522,11 +524,13 @@ namespace SpaceBattles
         }
 
         [Client]
-        private void LocalShipDestroyedAction(Vector3 deathLocation)
+        private void
+        LocalShipDestroyedAction
+            (PlayerIdentifier killer, Vector3 deathLocation)
         {
             Debug.Log("Our player is dead!");
             this.transform.position = deathLocation;
-            //LocalShipDestroyed(); // TODO: Listen to this event
+            LocalPlayerShipDestroyed(killer);
             StartCoroutine(RequestRespawn());
         }
 

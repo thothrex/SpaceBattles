@@ -244,15 +244,10 @@ namespace SpaceBattles
             }
         }
 
-        public void setCurrentPlayerHealth(double new_value)
+        public void SetCurrentPlayerHealth(double new_value)
         {
-            Debug.Log("UI Manager updating local player health");
+            //Debug.Log("UI Manager updating local player health");
             GameplayUiManager.LocalPlayerSetCurrentHealth(new_value);
-        }
-
-        public void setCurrentPlayerMaxHealth(double new_value)
-        {
-            GameplayUiManager.LocalPlayerSetMaxHealth(new_value);
         }
 
         public void SetPlayerConnectState(PlayerConnectState newState)
@@ -526,6 +521,20 @@ namespace SpaceBattles
                      + playerId.PlayerID
                      + " to new score "
                      + newScore);
+        }
+
+        public void OnLocalPlayerShipDestroyed (PlayerIdentifier killer)
+        {
+            Debug.Log("UIManager: received player kill message - swapping to respawn UI");
+            // TODO: implement
+        }
+
+        public void OnLocalPlayerShipSpawned (PlayerShipController shipController)
+        {
+            Debug.Log("UIManager: received player ship spawn message");
+            double PlayerCurrentHealth = PlayerShipController.MAX_HEALTH;
+            GameplayUiManager.LocalPlayerSetMaxHealth(PlayerCurrentHealth);
+            SetCurrentPlayerHealth(PlayerCurrentHealth);
         }
 
         /// <summary>
