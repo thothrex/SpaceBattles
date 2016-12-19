@@ -51,7 +51,7 @@ namespace SpaceBattles
         private float rotate_roll = 0.0f;
         private float rotate_pitch = 0.0f;
         private OrbitingBodyBackgroundGameObject current_nearest_orbiting_body;
-        private SpaceShipClass current_spaceship_class = SpaceShipClass.NONE;
+        private SpaceShipClass CurrentSpaceshipClass = SpaceShipClass.NONE;
         private Rigidbody physics_body;
         private OptionalEventModule oem = null;
         [SyncVar] private double health;
@@ -78,7 +78,7 @@ namespace SpaceBattles
             {
                 return "setSpaceShipClass is attempting to set a value for spaceShipClass "
                  + "when the PlayerShipController already has a SpaceShipClass set: "
-                 + current_spaceship_class.ToString();
+                 + CurrentSpaceshipClass.ToString();
             }
         }
 
@@ -208,25 +208,17 @@ namespace SpaceBattles
         public SpaceShipClass getSpaceshipClass ()
         {
             // This is a value type so safe to return directly
-            return current_spaceship_class;
+            return CurrentSpaceshipClass;
         }
 
-        public void setSpaceshipClass (SpaceShipClass ss_class)
+        public void SetSpaceshipClass (SpaceShipClass ssClass)
         {
-            if (current_spaceship_class == SpaceShipClass.NONE)
-            {
-                current_spaceship_class = ss_class;
-            }
-            else if (ss_class == SpaceShipClass.NONE)
-            {
-                throw new ArgumentException(SSCLASS_NULL_ERRMSG, "ss_class");
-            }
-            else if (current_spaceship_class != SpaceShipClass.NONE)
-            {
-                throw new InvalidOperationException(
-                    SSCLASS_ALREADY_SET_ERRMSG
-                );
-            }
+            MyContract.RequireArgument(
+                ssClass != SpaceShipClass.NONE,
+                "is not NONE",
+                "ssClass"
+            );
+            CurrentSpaceshipClass = ssClass;
         }
 
         public void setRoll (float new_roll)
