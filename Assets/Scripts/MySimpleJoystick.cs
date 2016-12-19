@@ -267,7 +267,7 @@ namespace SpaceBattles
             }
 
             JoystickDepressedAxis.Value = 1.0f;
-            Debug.Log("receiving input is true");
+            //Debug.Log("receiving input is true");
         }
 
         /// <summary>
