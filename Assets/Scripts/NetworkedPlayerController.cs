@@ -15,7 +15,7 @@ namespace SpaceBattles
     public class NetworkedPlayerController : NetworkBehaviour, IScoreListener
     {
         // -- Constants --
-        public const float RESPAWN_DELAY           = 2.0f;
+        public readonly float RespawnDelay         = 3.0f;
         public const float SPACESHIP_DESTROY_DELAY = 0.5f;
         
         private const string SHIP_CONTROLLER_NOT_SET_ERRMSG
@@ -26,7 +26,8 @@ namespace SpaceBattles
             = "There are no listeners for the local player controller spawning event.";
         private const string NONLOCAL_PLAYER_SPAWN_NO_LISTENERS_ERRMSG
             = "There are no listeners for the non-local player controller spawning event.";
-
+        private static readonly string ShipAlreadySpawnedWarning
+            = "Attempting to spawn a spaceship when one already exists";
         // -- Fields --
 
         // The following are set in the editor,
@@ -35,6 +36,7 @@ namespace SpaceBattles
 
         private bool warping = false;
         private bool setup_complete = false;
+        private bool CanRespawn = false;
         // Cannot be synced - use with caution
         private PlayerShipController ShipController = null;
         private OrbitingBodyBackgroundGameObject current_nearest_orbiting_body;
@@ -45,12 +47,14 @@ namespace SpaceBattles
         private SpaceShipClassManager SpaceshipClassManager = null;
         private OptionalEventModule oem = null;
         private GameStateManager ServerController = null;
+
+        private System.Object SpaceshipSpawnLock = new System.Object();
         // NB SyncVars ALWAYS sync from server->client,
         //    even for client-authoritative objects (such as this)
         [SyncVar]
         private GameObject CurrentSpaceship = null;
         [SyncVar]
-        private bool player_ship_spawned = false;
+        private bool ShipSpawned = false;
 
         // -- Delegates --
         public delegate void LocalPlayerStartHandler
@@ -85,10 +89,9 @@ namespace SpaceBattles
         [Command]
         public void CmdSpawnStartingSpaceShip(SpaceShipClass ss_type)
         {
-            if (!player_ship_spawned)
+            if (!ShipSpawned)
             {
                 spawnSpaceShip(ss_type);
-                player_ship_spawned = true;
             }
         }
 
@@ -246,7 +249,7 @@ namespace SpaceBattles
         /// </summary>
         public void initialiseShipSpawnStatus ()
         {
-            if (player_ship_spawned)
+            if (ShipSpawned)
             {
                 MyContract.RequireFieldNotNull(
                     CurrentSpaceship,
@@ -323,6 +326,7 @@ namespace SpaceBattles
             }
         }
 
+        [Client]
         private void playerShipSpawnedHandler(GameObject spawnedSpaceship)
         {
             MyContract.RequireArgumentNotNull(
@@ -338,7 +342,7 @@ namespace SpaceBattles
 
         private IEnumerator respawnShipWithDelay(SpaceShipClass new_ship_class)
         {
-            yield return new WaitForSeconds(RESPAWN_DELAY);
+            yield return new WaitForSeconds(RespawnDelay);
             spawnSpaceShip(new_ship_class);
         }
 
@@ -351,60 +355,69 @@ namespace SpaceBattles
         [Server]
         private void spawnSpaceShip(SpaceShipClass spaceShipType)
         {
-            MyContract.RequireArgument(spaceShipType != SpaceShipClass.NONE,
+            lock (SpaceshipSpawnLock)
+            {
+                if (ShipSpawned)
+                {
+                    Debug.LogWarning(ShipAlreadySpawnedWarning);
+                    return;
+                }
+                MyContract.RequireArgument(spaceShipType != SpaceShipClass.NONE,
                                        "is not NONE",
                                        "spaceShipType");
-            MyContract.RequireFieldNotNull(
-                SpaceshipClassManager,
-                "Spaceship Class Manager"
-            );
-            GameObject SpaceshipPrefab
-                = SpaceshipClassManager.getSpaceShipPrefab(spaceShipType);
-            MyContract.RequireFieldNotNull(SpaceshipPrefab, "Spaceship Prefab");
+                MyContract.RequireFieldNotNull(
+                    SpaceshipClassManager,
+                    "Spaceship Class Manager"
+                );
+                GameObject SpaceshipPrefab
+                    = SpaceshipClassManager.getSpaceShipPrefab(spaceShipType);
+                MyContract.RequireFieldNotNull(SpaceshipPrefab, "Spaceship Prefab");
 
-            // Should not remain null unless Unity.Instantiate can return null
-            GameObject ServerSpaceship = null;
-            if (CurrentSpaceship != null
-            && ShipController.getSpaceshipClass() == spaceShipType)
-            {
-                // current_spaceship was just despawned, not destroyed,
-                // so it simply needs to be respawned
-                ServerSpaceship = CurrentSpaceship;
-                ServerSpaceship.SetActive(true);
+                // Should not remain null unless Unity.Instantiate can return null
+                GameObject ServerSpaceship = null;
+                if (CurrentSpaceship != null
+                && ShipController.getSpaceshipClass() == spaceShipType)
+                {
+                    // current_spaceship was just despawned, not destroyed,
+                    // so it simply needs to be respawned
+                    ServerSpaceship = CurrentSpaceship;
+                    ServerSpaceship.SetActive(true);
+                }
+                else
+                {
+                    // Create the ship locally (local to the server)
+                    // NB: the ship will be moved to an appropriate NetworkStartPosition
+                    //     by the server so the location specified here is irrelevant
+                    ServerSpaceship = (GameObject)Instantiate(
+                        SpaceshipPrefab,
+                        transform.TransformPoint(chooseSpawnLocation()),
+                        transform.rotation);
+                }
+                MyContract.RequireFieldNotNull(
+                    ServerSpaceship,
+                    "Server Spaceship"
+                );
+
+                // Spawn the ship on the clients
+                NetworkServer.SpawnWithClientAuthority(ServerSpaceship, connectionToClient);
+                // Update [SyncVar]s
+                CurrentSpaceship = ServerSpaceship;
+                ShipController = ServerSpaceship.GetComponent<PlayerShipController>();
+                ShipController.setSpaceshipClass(spaceShipType);
+                ShipController.owner = PlayerIdentifier.CreateNew(this);
+                // Send RPC to clients
+                RpcPlayerShipSpawned(CurrentSpaceship);
+
+                ShipController.EventDeath += ShipDestroyedServerAction;
+                ShipSpawned = true;
             }
-            else
-            {
-                // Create the ship locally (local to the server)
-                // NB: the ship will be moved to an appropriate NetworkStartPosition
-                //     by the server so the location specified here is irrelevant
-                ServerSpaceship = (GameObject)Instantiate(
-                    SpaceshipPrefab,
-                    transform.TransformPoint(chooseSpawnLocation()),
-                    transform.rotation);
-            }
-            MyContract.RequireFieldNotNull(
-                ServerSpaceship,
-                "Server Spaceship"
-            );
-
-            // Spawn the ship on the clients
-            NetworkServer.SpawnWithClientAuthority(ServerSpaceship, connectionToClient);
-            // Update [SyncVar]s
-            CurrentSpaceship = ServerSpaceship;
-            ShipController = ServerSpaceship.GetComponent<PlayerShipController>();
-            ShipController.setSpaceshipClass(spaceShipType);
-            ShipController.owner = PlayerIdentifier.CreateNew(this);
-            // Send RPC to clients
-            RpcPlayerShipSpawned(CurrentSpaceship);
-
-            ShipController.EventDeath += shipDestroyedServerAction;
         }
         /// <summary>
         /// </summary>
         /// <param name="death_location">Ignored for this function</param>
         [Server]
         private void
-        shipDestroyedServerAction
+        ShipDestroyedServerAction
             (PlayerIdentifier killer, Vector3 deathLocation)
         {
             Debug.Log("Ship destroyed - taking server action");
@@ -413,6 +426,7 @@ namespace SpaceBattles
 
             Vector3 respawn_location = chooseSpawnLocation();
             StartCoroutine(destroyShipWithDelayCoroutine());
+            StartCoroutine(EnableRespawnAfterDelayCoroutine());
         }
 
         [Server]
@@ -422,6 +436,14 @@ namespace SpaceBattles
             Debug.Log("Unspawning spaceship");
             CurrentSpaceship.SetActive(false);
             NetworkServer.UnSpawn(CurrentSpaceship);
+        }
+
+        [Server]
+        private IEnumerator EnableRespawnAfterDelayCoroutine()
+        {
+            yield return new WaitForSeconds(RespawnDelay);
+            Debug.Log("Enabling spacehsip respawn");
+            CanRespawn = true;
         }
 
         /// <summary>
