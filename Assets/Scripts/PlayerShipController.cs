@@ -54,7 +54,7 @@ namespace SpaceBattles
         private SpaceShipClass CurrentSpaceshipClass = SpaceShipClass.NONE;
         private Rigidbody physics_body;
         private OptionalEventModule oem = null;
-        [SyncVar] private double health;
+        [SyncVar] private double Health;
 
         private object DeathLock = new object();
         private bool IsDead = false;
@@ -63,7 +63,9 @@ namespace SpaceBattles
         public delegate void LocalPlayerStartHandler();
         public delegate void HealthChangeHandler(double new_health);
         public delegate void DeathHandler
-            (PlayerIdentifier killer, Vector3 deathLocation);
+            (PlayerIdentifier killer,
+             Vector3 deathLocation,
+             Vector3 deathEulerRotation);
 
         // -- Events --
         public event LocalPlayerStartHandler StartLocalPlayer;
@@ -86,7 +88,7 @@ namespace SpaceBattles
         public void Awake ()
         {
             // init health
-            health = MAX_HEALTH;
+            Health = MAX_HEALTH;
         }
 
         override
@@ -141,7 +143,7 @@ namespace SpaceBattles
 
         public double getHealth ()
         {
-            return health;
+            return Health;
         }
 
         public Vector3 get_projectile_spawn_location()
@@ -231,6 +233,13 @@ namespace SpaceBattles
             rotate_pitch = new_pitch;
         }
 
+        [Server]
+        public void Respawn ()
+        {
+            Health = MAX_HEALTH;
+            IsDead = false;
+        }
+
         /// <summary>
         /// The result is propagated via the SyncEvent
         /// EventHealthChanged(int new_health);
@@ -239,18 +248,20 @@ namespace SpaceBattles
         [Server]
         private void TakeDamage (double amount, PlayerIdentifier shooter)
         {
-            if (amount >= health)
+            Debug.Log("Taking Damage");
+            if (amount >= Health)
             {
-                health = 0;
+                Health = 0;
                 KillThisUnit(shooter);
             }
             else
             {
-                health -= amount;
+                Health -= amount;
                 HealthChangeHandler handler = EventHealthChanged;
                 if (oem.shouldTriggerEvent(handler))
                 {
-                    handler(health);
+                    Debug.Log("Triggering Health change event");
+                    handler(Health);
                 }
             }
         }
@@ -268,7 +279,11 @@ namespace SpaceBattles
                     DeathHandler handler = EventDeath;
                     if (oem.shouldTriggerEvent(handler))
                     {
-                        handler(killer, transform.position);
+                        handler(
+                            killer,
+                            transform.position,
+                            transform.eulerAngles
+                        );
                     }
                 }
             }

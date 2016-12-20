@@ -30,13 +30,13 @@ namespace SpaceBattles
         public readonly float RespawnDelay = 3.0f;
         // The following are set in the editor,
         // so should be left unassigned here
-        public GameObject explosion_prefab;
+        public GameObject ExplosionPrefab;
         
         private readonly float SpaceshipDestroyDelay = 0.5f;
         private readonly int RespawnRequestMaxAttempts = 3;
         private bool warping = false;
         private bool setup_complete = false;
-        private bool CanRespawn = false;
+        private bool CanRespawn = true;
         // Cannot be synced - use with caution
         private PlayerShipController ShipController = null;
         private OrbitingBodyBackgroundGameObject current_nearest_orbiting_body;
@@ -49,7 +49,7 @@ namespace SpaceBattles
         private GameStateManager ServerController = null;
 
         private System.Object SpaceshipSpawnLock = new System.Object();
-        private System.Object RespawnRequestLock = new System.Object();
+        private System.Object SpawnRequestLock = new System.Object();
 
         // NB SyncVars ALWAYS sync from server->client,
         //    even for client-authoritative objects (such as this)
@@ -88,13 +88,16 @@ namespace SpaceBattles
         /// 
         /// Needs to be called by the authoritative client.
         /// </summary>
-        /// <param name="ss_type"></param>
+        /// <param name="ssType"></param>
         [Command]
-        public void CmdSpawnStartingSpaceShip(SpaceShipClass ss_type)
+        public void CmdSpawnStartingSpaceShip(SpaceShipClass ssType)
         {
-            if (!ShipSpawned)
+            lock (SpawnRequestLock)
             {
-                SpawnSpaceShip(ss_type);
+                if (CanRespawn)
+                {
+                    SpawnSpaceShip(ssType);
+                }
             }
         }
 
@@ -105,7 +108,7 @@ namespace SpaceBattles
         [Command]
         public void CmdRequestRespawn(SpaceShipClass newShipClass)
         {
-            lock (RespawnRequestLock)
+            lock (SpawnRequestLock)
             {
                 if (CanRespawn)
                 {
@@ -384,6 +387,11 @@ namespace SpaceBattles
                     // so it simply needs to be respawned
                     ServerSpaceship = CurrentSpaceship;
                     ServerSpaceship.SetActive(true);
+                    MyContract.RequireFieldNotNull(
+                        ShipController,
+                        "ShipController"
+                    );
+                    ShipController.Respawn();
                 }
                 else
                 {
@@ -422,7 +430,9 @@ namespace SpaceBattles
         [Server]
         private void
         ShipDestroyedServerAction
-            (PlayerIdentifier killer, Vector3 deathLocation)
+            (PlayerIdentifier killer,
+             Vector3 deathLocation,
+             Vector3 deathEulerRotation)
         {
             Debug.Log("Ship destroyed - taking server action");
             ShipSpawned = false;
@@ -495,9 +505,11 @@ namespace SpaceBattles
         [Client]
         private void
         ShipDestroyedClientAction
-            (PlayerIdentifier killer, Vector3 deathLocation)
+            (PlayerIdentifier killer,
+             Vector3 deathLocation,
+             Vector3 deathEulerRotation)
         {
-            AnyShipDestroyedAction();
+            AnyShipDestroyedAction(deathLocation, deathEulerRotation);
             if (hasAuthority)
             {
                 LocalShipDestroyedAction(killer, deathLocation);
@@ -505,22 +517,27 @@ namespace SpaceBattles
         }
 
         [Client]
-        private void AnyShipDestroyedAction()
+        private void
+        AnyShipDestroyedAction
+            (Vector3 deathLocation,
+             Vector3 deathEulerRotation)
         {
             Debug.Log("A player is dead!");
 
             // Create the explosion locally
-            GameObject explosion = (GameObject)Instantiate(
-                 explosion_prefab,
-                 CurrentSpaceship.transform.position,
-                 CurrentSpaceship.transform.rotation);
-
-            // The spaceship gameObject is destroyed by the server
-            // as server is still technically the source
-            // of client-authoritative objects (slightly confusingly)
+            MyContract.RequireFieldNotNull(
+                ExplosionPrefab,
+                "ExplosionPrefab"
+            );
+            GameObject Explosion
+                = Instantiate(
+                    ExplosionPrefab,
+                    deathLocation,
+                    Quaternion.Euler(deathEulerRotation)
+                );
 
             // Set self-destruct timer
-            Destroy(explosion, 2.0f);
+            UnityEngine.GameObject.Destroy(Explosion, 2.0f);
         }
 
         [Client]
