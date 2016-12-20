@@ -235,7 +235,7 @@ namespace SpaceBattles
             }
 
             JoystickDepressedAxis.Value = 0f;
-            Debug.Log("receiving input is false");
+            //Debug.Log("receiving input is false");
         }
 
         public void OnPointerDown(PointerEventData eventData)
