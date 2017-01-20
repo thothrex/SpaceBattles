@@ -721,7 +721,10 @@ namespace SpaceBattles
             UIManager.SetPlayerController(PlayerController);
             UIManager.EnteringMultiplayerGame();
             NPC.EventScoreUpdated += UIManager.OnScoreUpdate;
-            NPC.LocalPlayerShipDestroyed += UIManager.OnLocalPlayerShipDestroyed;
+            NPC.LocalPlayerShipDestroyed += delegate (PlayerIdentifier killer)
+            {
+                UIManager.OnLocalPlayerShipDestroyed(killer, NPC.RespawnDelay);
+            };
             NPC.CmdSendScoreboardStateToUI();
         }
 

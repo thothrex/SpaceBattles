@@ -556,8 +556,8 @@ namespace SpaceBattles
             yield return new WaitForSeconds(RespawnDelay);
             for (int i = 0; i < RespawnRequestMaxAttempts; i++)
             {
-                Debug.Log("Requesting Respawn " + i);
                 if (ShipSpawned) { yield break; }
+                Debug.Log("Requesting Respawn " + i);
                 CmdRequestRespawn(CurrentShipClassChoice);
                 if (ShipSpawned) { yield break; }
                 else

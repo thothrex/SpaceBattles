@@ -523,12 +523,15 @@ namespace SpaceBattles
                      + newScore);
         }
 
-        public void OnLocalPlayerShipDestroyed (PlayerIdentifier killer)
+        public void OnLocalPlayerShipDestroyed (PlayerIdentifier killer, float respawnDelay)
         {
             Debug.Log("UIManager: received player kill message - swapping to respawn UI");
             TransitionToUIElements(UiElementTransitionType.Subtractive, UIElements.GameplayUI);
             TransitionToUIElements(UiElementTransitionType.Additive, UIElements.Respawn);
-            // TODO: implement
+            RespawnUIManager RespawnUI =
+                ComponentRegistry
+                .RetrieveManager<RespawnUIManager>(UIElements.Respawn);
+            RespawnUI.StartTimer(respawnDelay);
         }
 
         public void OnLocalPlayerShipSpawned (PlayerShipController shipController)

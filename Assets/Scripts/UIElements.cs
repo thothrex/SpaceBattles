@@ -51,6 +51,8 @@ namespace SpaceBattles
                     return typeof(OrreryUIManager);
                 case UIElements.Scoreboard:
                     return typeof(ScoreboardUiManager);
+                case UIElements.Respawn:
+                    return typeof(RespawnUIManager);
                 default:
                     return null; 
             }
