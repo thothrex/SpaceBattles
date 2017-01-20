@@ -531,6 +531,7 @@ namespace SpaceBattles
             RespawnUIManager RespawnUI =
                 ComponentRegistry
                 .RetrieveManager<RespawnUIManager>(UIElements.Respawn);
+            RespawnUI.SetKiller(killer);
             RespawnUI.StartTimer(respawnDelay);
         }
 

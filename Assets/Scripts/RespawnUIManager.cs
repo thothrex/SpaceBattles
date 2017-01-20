@@ -39,6 +39,11 @@ namespace SpaceBattles
             TimerRunning = true;
         }
 
+        public void SetKiller (PlayerIdentifier killer)
+        {
+            KillerIdentifierDisplay.text = killer.ToString();
+        }
+
         private void DisplayTime (float timeRemaining)
         {
             int CurTimeRemaining = (int)Math.Floor(timeRemaining);
