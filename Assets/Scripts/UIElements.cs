@@ -20,7 +20,8 @@ namespace SpaceBattles
         DebugOutput = 256,
         MultiplayerLoadingScreen = 512,
         OrreryUI = 1024,
-        Scoreboard = 2048
+        Scoreboard = 2048,
+        Respawn = 4096
     }
 
     public static class UIElementExtensions

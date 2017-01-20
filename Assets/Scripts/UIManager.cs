@@ -526,6 +526,8 @@ namespace SpaceBattles
         public void OnLocalPlayerShipDestroyed (PlayerIdentifier killer)
         {
             Debug.Log("UIManager: received player kill message - swapping to respawn UI");
+            TransitionToUIElements(UiElementTransitionType.Subtractive, UIElements.GameplayUI);
+            TransitionToUIElements(UiElementTransitionType.Additive, UIElements.Respawn);
             // TODO: implement
         }
 
@@ -535,6 +537,8 @@ namespace SpaceBattles
             double PlayerCurrentHealth = PlayerShipController.MAX_HEALTH;
             GameplayUiManager.LocalPlayerSetMaxHealth(PlayerCurrentHealth);
             SetCurrentPlayerHealth(PlayerCurrentHealth);
+            TransitionToUIElements(UiElementTransitionType.Subtractive, UIElements.Respawn);
+            TransitionToUIElements(UiElementTransitionType.Additive, UIElements.GameplayUI);
         }
 
         /// <summary>
