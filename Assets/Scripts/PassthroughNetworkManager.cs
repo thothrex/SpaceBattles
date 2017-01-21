@@ -28,10 +28,19 @@ namespace SpaceBattles
         private OptionalEventModule oem;
 
         // Delegates
-        public delegate void LocalPlayerStartHandler(NetworkedPlayerController IPC);
+        public delegate void LocalPlayerStartHandler (NetworkedPlayerController IPC);
+        public delegate void PlayerDisconnectedHandler (PlayerIdentifier pID);
 
         // Events
         public event LocalPlayerStartHandler    LocalPlayerStarted;
+        /// <summary>
+        /// Called when this client is disconnected from the server
+        /// </summary>
+        public event Action                     ClientDisconnected;
+        /// <summary>
+        /// Called when a player disconnects from this server
+        /// </summary>
+        public event PlayerDisconnectedHandler  PlayerDisconnected;
 
         public void Start ()
         {
@@ -73,9 +82,47 @@ namespace SpaceBattles
             return player_obj;
         }
 
-        public void playerControllerDespawnHandler(GameObject player_controller_obj)
+        public void playerControllerDespawnHandler (GameObject player_controller_obj)
         {
             Destroy(player_controller_obj);
+        }
+
+        override
+        public void OnClientDisconnect (NetworkConnection conn)
+        {
+            Debug.Log("OnClientDisconnect message received");
+            if (Network.isServer)
+            {
+                Debug.Log("Local server connection disconnected");
+            }
+            else
+            {
+                Debug.Log("Successfully disconnected from the server");
+            }
+
+            if (oem.shouldTriggerEvent(ClientDisconnected))
+            {
+                ClientDisconnected();
+            }
+        }
+
+        override
+        public void OnClientError (NetworkConnection conn, int errorCode)
+        {
+            Debug.Log("Network error message received. Code: " + errorCode);
+            if (oem.shouldTriggerEvent(ClientDisconnected))
+            {
+                ClientDisconnected();
+            }
+        }
+
+        override
+        public void OnServerDisconnect (NetworkConnection conn)
+        {
+            if (oem.shouldTriggerEvent(PlayerDisconnected))
+            {
+                PlayerDisconnected(PlayerIdentifier.CreateNew(conn));
+            }
         }
 
         private void passthroughLocalPlayerStarted (NetworkedPlayerController IPC)

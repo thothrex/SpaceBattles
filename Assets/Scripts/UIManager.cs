@@ -180,7 +180,7 @@ namespace SpaceBattles
                 }
                 else if (InputAdapter.InGameScoreboardOpenInput())
                 {
-                    Debug.Log("Scoreboard opened!");
+                    //Debug.Log("Scoreboard opened!");
                     TransitionToUIElements(
                         UiElementTransitionType.Additive,
                         UIElements.Scoreboard
@@ -188,7 +188,7 @@ namespace SpaceBattles
                 }
                 else if (InputAdapter.InGameScoreboardCloseInput())
                 {
-                    Debug.Log("Scoreboard closed!");
+                    //Debug.Log("Scoreboard closed!");
                     TransitionToUIElements(
                         UiElementTransitionType.Subtractive,
                         UIElements.Scoreboard
@@ -521,6 +521,23 @@ namespace SpaceBattles
                      + playerId.PlayerID
                      + " to new score "
                      + newScore);
+        }
+
+        public void OnPlayerRemovedFromScoreboard (PlayerIdentifier playerId)
+        {
+            MyContract.RequireField(
+                ComponentRegistry.Contains(UIElements.Scoreboard),
+                "contains a scoreboard",
+                "ComponentRegistry"
+            );
+
+            ComponentRegistry
+                .RetrieveManager<ScoreboardUiManager>(UIElements.Scoreboard)
+                .RemovePlayer(playerId);
+            // Debug
+            Debug.Log("Player "
+                     + playerId.PlayerID
+                     + " was removed");
         }
 
         public void OnLocalPlayerShipDestroyed (PlayerIdentifier killer, float respawnDelay)

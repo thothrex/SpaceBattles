@@ -26,6 +26,29 @@ namespace SpaceBattles
             = "PlayerIdentifier: This component is not "
             + "attached to a GameObject, "
             + "attempting to circumvent this problem";
+        private static readonly string NpcIdentifyingText
+            = "Networked Player Controller attached to the "
+            + "PlayerController's host GameObject";
+
+        public static PlayerIdentifier
+        CreateNew
+            (NetworkConnection conn)
+        {
+            MyContract.RequireArgument(
+                conn.playerControllers.Count == 1,
+                "the input connection has only one "
+                + "player controller associated with it",
+                "conn"
+            );
+            PlayerController PC = conn.playerControllers[0];
+            GameObject RootObject = PC.gameObject;
+            NetworkedPlayerController NPC
+                = RootObject.GetComponent<NetworkedPlayerController>();
+            MyContract.RequireArgumentNotNull(NPC, NpcIdentifyingText);
+
+            return CreateNew(NPC);
+        }
+
 
         public static PlayerIdentifier
         CreateNew

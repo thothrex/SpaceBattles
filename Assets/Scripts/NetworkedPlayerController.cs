@@ -71,6 +71,8 @@ namespace SpaceBattles
             (List<KeyValuePair<PlayerIdentifier, int>> newScores);
         public delegate void ScoreUpdateHandler
             (PlayerIdentifier playerId, int newScore);
+        public delegate void PlayerActionHandler
+            (PlayerIdentifier playerId);
 
         // -- Events --
         public event LocalPlayerStartHandler    LocalPlayerStarted;
@@ -78,7 +80,8 @@ namespace SpaceBattles
         public event ShipHealthChangeHandler    LocalPlayerShipHealthChanged;
         public event ShipDestructionHandler     LocalPlayerShipDestroyed;
         public event ShipDestructionHandler     ShipDestroyed;
-        [SyncEvent] public event ScoreUpdateHandler         EventScoreUpdated;
+        [SyncEvent] public event ScoreUpdateHandler  EventScoreUpdated;
+        [SyncEvent] public event PlayerActionHandler EventPlayerRemovedFromScoreboard;
 
         // -- Methods --
 
@@ -292,6 +295,11 @@ namespace SpaceBattles
         public void OnScoreUpdate(PlayerIdentifier playerId, int newScore)
         {
             EventScoreUpdated(playerId, newScore);
+        }
+
+        public void OnPlayerRemovedFromScoreboardPassthrough (PlayerIdentifier playerId)
+        {
+            EventPlayerRemovedFromScoreboard(playerId);
         }
 
         /// <summary>

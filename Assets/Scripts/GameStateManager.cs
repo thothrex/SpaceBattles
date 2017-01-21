@@ -54,6 +54,8 @@ namespace SpaceBattles
                        Scoreboard.OnKillEvent(hunter, NewPlayerId);
                    };
             Scoreboard.ScoreUpdate += playerController.OnScoreUpdate;
+            Scoreboard.PlayerRemoved
+                += playerController.OnPlayerRemovedFromScoreboardPassthrough;
             Scoreboard.RegisterNewPlayer(NewPlayerId);
             //Debug.Log("Game State Manager: Checking if we have a spaceship class manager");
             MyContract.RequireFieldNotNull(SSClassManager, "Spaceship Class Manager");
@@ -69,6 +71,12 @@ namespace SpaceBattles
             {
                 listener.OnScoreUpdate(Score.Key, Score.Value);
             }
+        }
+
+        [Server]
+        public void OnPlayerDisconnect (PlayerIdentifier player)
+        {
+            Scoreboard.RemovePlayer(player);
         }
     }
 }

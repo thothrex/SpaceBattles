@@ -19,9 +19,12 @@ namespace SpaceBattles
         // -- Delegates
         public delegate void ScoreUpdateDelegate
             (PlayerIdentifier playerId, int newScore);
+        public delegate void PlayerRemovedDelegate
+            (PlayerIdentifier playerId);
 
         // -- Events
         public event ScoreUpdateDelegate ScoreUpdate;
+        public event PlayerRemovedDelegate PlayerRemoved;
 
         // -- Methods --
         override
@@ -49,6 +52,25 @@ namespace SpaceBattles
             Debug.Log(PrintPlayerScore());
             if (oem.shouldTriggerEvent(ScoreUpdate))
                 { ScoreUpdate(newPlayerId, InitialScore); }
+        }
+
+        [Server]
+        public void RemovePlayer (PlayerIdentifier playerId)
+        {
+            MyContract.RequireArgumentNotNull(playerId, "newPlayerId");
+            MyContract.RequireField(
+                PlayerScore.ContainsKey(playerId.PlayerID),
+                "PlayerScore contains the player ID "
+                    + playerId.ToString(),
+                "playerId " + playerId.ToString()
+            );
+            PlayerScore.Remove(playerId.PlayerID);
+            Debug.Log("Scoreboard: Removed player id "
+                    + playerId.ToString()
+                    + " from the scoreboard.");
+            Debug.Log(PrintPlayerScore());
+            if (oem.shouldTriggerEvent(PlayerRemoved))
+                { PlayerRemoved(playerId); }
         }
 
         [Server]

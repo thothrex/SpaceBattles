@@ -71,7 +71,7 @@ namespace SpaceBattles
         // TODO: Actually let the player choose their ship class
         private SpaceShipClass PlayerShipClassChoiceBackingValue;
         // might need this to avoid garbage collection (maybe I'm just dumb)
-        private NetworkClient net_client = null;
+        private NetworkClient NetClient = null;
         private GameObjectRegistry PlanetRegistry
             = new GameObjectRegistry();
         private CameraRegistry CameraRegistry
@@ -167,6 +167,7 @@ namespace SpaceBattles
             NetworkDiscoverer.Initialize();
 
             NetworkManager.LocalPlayerStarted += LocalPlayerControllerCreatedHandler;
+            NetworkManager.ClientDisconnected += OnClientDisconnect;
         }
 
         /// <summary>
@@ -184,27 +185,6 @@ namespace SpaceBattles
             SetupGameCameras(PlayerController.transform);
             SetupInGameUI(IPC);
             PlayerController.CmdSpawnStartingSpaceShip(PlayerShipClassChoice);
-        }
-
-        public void OnDisconnectedFromServer (NetworkDisconnection info)
-        {
-            PlayerController = null;
-            if (Network.isServer)
-            {
-                Debug.Log("Local server connection disconnected");
-            }
-            else
-            {
-                if (info == NetworkDisconnection.LostConnection)
-                {
-                    Debug.Log("Lost connection to the server");
-                }
-                else
-                {
-                    Debug.Log("Successfully diconnected from the server");
-                }
-            }
-            ExitNetworkGame();
         }
 
         /// <summary>
@@ -258,7 +238,7 @@ namespace SpaceBattles
         {
             Debug.Log("Server detected at address " + fromAddress);
             // I don't even know if this will do anything
-            if (net_client != null) return;
+            if (NetClient != null) return;
             lock (FoundGameLock)
             {
                 Debug.Log("Acquired FoundGameLock");
@@ -269,11 +249,11 @@ namespace SpaceBattles
                     BeginEnterOnlineScene(delegate ()
                     {
                         Debug.Log("PIM: Server detected - joining as a client");
-                        net_client = NetworkManager.StartClient();
+                        NetClient = NetworkManager.StartClient();
                         // this number is scoped to the connection
                         // i.e. if I only ever want one player
                         // per connection, this is fine
-                        ClientScene.AddPlayer(net_client.connection, 0);
+                        ClientScene.AddPlayer(NetClient.connection, 0);
                     });
                     NetworkDiscoverer.StopBroadcast();
                 }
@@ -340,6 +320,12 @@ namespace SpaceBattles
             CurrentNearestOrbitingBody = warpTarget;
 
             warping = false;
+        }
+
+        public void OnClientDisconnect()
+        {
+            PlayerController = null;
+            ExitNetworkGame();
         }
 
         private OrbitingBodyBackgroundGameObject
@@ -560,10 +546,13 @@ namespace SpaceBattles
             //Debug.Log("Released LookingForGameLock");
         }
 
+        /// <summary>
+        /// Makes this program instance a game server
+        /// </summary>
         private void StartOnlineGameServerConnection ()
         {
             Debug.Log("PIM: Start server callback");
-            net_client = NetworkManager.StartHost();
+            NetClient = NetworkManager.StartHost();
             NetworkDiscoverer.StartAsServer();
         }
 
@@ -582,6 +571,9 @@ namespace SpaceBattles
                 // as the documentation is very slim
                 Debug.Log("Stopping game");
                 SetPlayerCamerasActive(false);
+                GameStateManager GSM = GameStateManager.FindCurrentGameManager();
+                MyContract.RequireFieldNotNull(GSM, "Game State Manager");
+                NetworkManager.PlayerDisconnected -= GSM.OnPlayerDisconnect;
                 NetworkManager.StopHost();
                 if (NetworkDiscoverer.running)
                 {
@@ -690,6 +682,9 @@ namespace SpaceBattles
             ServerConnectionComplete = true;
             NetworkManager.LocalPlayerStarted -= EnterOnlineSceneConnectionComplete;
             Debug.Log("PIM: Online connection complete");
+            GameStateManager GSM = GameStateManager.FindCurrentGameManager();
+            MyContract.RequireFieldNotNull(GSM, "Game State Manager");
+            NetworkManager.PlayerDisconnected += GSM.OnPlayerDisconnect;
             FinishEnterOnlineSceneIfReady();
         }
 
@@ -721,6 +716,8 @@ namespace SpaceBattles
             UIManager.SetPlayerController(PlayerController);
             UIManager.EnteringMultiplayerGame();
             NPC.EventScoreUpdated += UIManager.OnScoreUpdate;
+            NPC.EventPlayerRemovedFromScoreboard
+                += UIManager.OnPlayerRemovedFromScoreboard;
             NPC.LocalPlayerShipDestroyed += delegate (PlayerIdentifier killer)
             {
                 UIManager.OnLocalPlayerShipDestroyed(killer, NPC.RespawnDelay);
