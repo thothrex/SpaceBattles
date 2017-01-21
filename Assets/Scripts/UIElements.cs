@@ -20,7 +20,8 @@ namespace SpaceBattles
         DebugOutput = 256,
         MultiplayerLoadingScreen = 512,
         OrreryUI = 1024,
-        Scoreboard = 2048
+        Scoreboard = 2048,
+        Respawn = 4096
     }
 
     public static class UIElementExtensions
@@ -50,6 +51,8 @@ namespace SpaceBattles
                     return typeof(OrreryUIManager);
                 case UIElements.Scoreboard:
                     return typeof(ScoreboardUiManager);
+                case UIElements.Respawn:
+                    return typeof(RespawnUIManager);
                 default:
                     return null; 
             }

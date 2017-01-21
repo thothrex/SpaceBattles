@@ -33,7 +33,7 @@ namespace SpaceBattles
                         var hitPlayer = hit.GetComponent<PlayerShipController>();
                         if (hitPlayer != null)
                         {
-                            Debug.Log("Player hit registered");
+                            //Debug.Log("Player hit registered");
                             hitPlayer.OnProjectileHit(shooter);
                         }
                         Destroy(this.gameObject);

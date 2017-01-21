@@ -721,6 +721,10 @@ namespace SpaceBattles
             UIManager.SetPlayerController(PlayerController);
             UIManager.EnteringMultiplayerGame();
             NPC.EventScoreUpdated += UIManager.OnScoreUpdate;
+            NPC.LocalPlayerShipDestroyed += delegate (PlayerIdentifier killer)
+            {
+                UIManager.OnLocalPlayerShipDestroyed(killer, NPC.RespawnDelay);
+            };
             NPC.CmdSendScoreboardStateToUI();
         }
 
@@ -743,17 +747,15 @@ namespace SpaceBattles
 
             // Hook up spaceship spawn event
             PlayerController.LocalPlayerShipSpawned += localPlayerShipCreatedHandler;
+            PlayerController.LocalPlayerShipSpawned += UIManager.OnLocalPlayerShipSpawned;
             // as this is the local player,
             // there is no need to check for existing ship spawns
             // (they would have been observed directly through the RPC in the IPC)
-            PlayerController.LocalPlayerShipHealthChanged += UIManager.setCurrentPlayerHealth;
+            PlayerController.LocalPlayerShipHealthChanged += UIManager.SetCurrentPlayerHealth;
         }
 
         private void localPlayerShipCreatedHandler(PlayerShipController ship_controller)
         {
-            UIManager.setCurrentPlayerMaxHealth(PlayerShipController.MAX_HEALTH);
-            UIManager.setCurrentPlayerHealth(PlayerShipController.MAX_HEALTH);
-
             CameraRegistry.SetAllFollowTransforms(ship_controller.transform);
         }
     }
