@@ -47,6 +47,7 @@ namespace SpaceBattles
         private bool UiObjectsInstantiated = false;
         private bool InGameMenuVisible = false;
         private bool ship_select_menu_visible = false;
+        private bool UITransitionsOnHold = false;
         private UiInputState ui_state = UiInputState.MainMenu;
         private UIElements UIElement_ALL;
         private GameObject DebugTextbox = null;
@@ -66,6 +67,8 @@ namespace SpaceBattles
         private CameraRoles ActiveCameras = CameraRoles.None;
         private Stack<UIElements> UITransitionHistory
             = new Stack<UIElements>();
+        private Queue<UiElementTransition> DelayedTransitions
+            = new Queue<UiElementTransition>();
         private UIRegistry ComponentRegistry
             = new UIRegistry();
         private CameraRegistry CameraRegistry
@@ -285,41 +288,53 @@ namespace SpaceBattles
             (UiElementTransitionType transitionType,
             UIElements newUIElements)
         {
+            if (UITransitionsOnHold)
+            {
+                // Queue this to be played later,
+                // then exit early
+                DelayedTransitions.Enqueue(
+                    new UiElementTransition(transitionType, newUIElements)
+                );
+                return;
+            }
+            // Add current active elements as a new history element
             if (transitionType == UiElementTransitionType.Tracked)
             {
-                // Add current active elements as a new history element
+                
                 UITransitionHistory.Push(ActiveUIElements);
             }
 
+            // Deactivate current UIElements
             if (transitionType == UiElementTransitionType.Fresh
             || transitionType == UiElementTransitionType.Tracked)
             {
-                // Deactivate current UIElements
                 //Debug.Log("TransitionToUIElements hiding elements " + ActiveUIElements);
                 showUIElementFromFlags(false, ActiveUIElements);
                 ActiveUIElements = UIElements.None;
             }
 
+            // Deactivate newUIElements
             if (transitionType == UiElementTransitionType.Subtractive)
             {
-                // Deactivate newUIElements
+                
                 showUIElementFromFlags(false, newUIElements);
                 // Remove deactivated elements from ActiveUIElements
                 UIElements DeactivatedComponents
                     = newUIElements & ActiveUIElements;
                 ActiveUIElements ^= DeactivatedComponents;
             }
-            else
+            // Activate new UIElements
+            else // transitionType != UiElementTransitionType.Subtractive
             {
-                // Activate new UIElements
+                
                 //Debug.Log("TransitionToUIElements showing elements " + newUIElements);
                 showUIElementFromFlags(true, newUIElements);
                 ActiveUIElements |= newUIElements;
             }
 
+            // Clear history
             if (transitionType == UiElementTransitionType.Fresh)
             {
-                // Clear history
                 UITransitionHistory.Clear();
             }
         }
@@ -560,6 +575,18 @@ namespace SpaceBattles
             SetCurrentPlayerHealth(PlayerCurrentHealth);
             TransitionToUIElements(UiElementTransitionType.Subtractive, UIElements.Respawn);
             TransitionToUIElements(UiElementTransitionType.Additive, UIElements.GameplayUI);
+        }
+
+        public void PauseUITransitions (bool pause)
+        {
+            UITransitionsOnHold = pause;
+            if (!pause) //unpause - play all the paused transitions in order
+            {
+                foreach (UiElementTransition transition in DelayedTransitions)
+                {
+                    TransitionToUIElements(transition);
+                }
+            }
         }
 
         /// <summary>

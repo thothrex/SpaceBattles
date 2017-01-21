@@ -655,7 +655,8 @@ namespace SpaceBattles
                     UiElementTransitionType.Fresh,
                     UIElements.MultiplayerLoadingScreen
                 );
-                CameraRegistry.ActivateAllGameObjects(false);
+                UIManager.PauseUITransitions(true);
+                CameraRegistry.ActivateGameObject((int)CameraRoles.MainMenuAndOrrery, false);
                 UIManager.FadeCamera(false, null);
                 Debug.Log("Fading in due to EnterOnlineSceneFadeOutComplete");
                 StartCoroutine(MinimumLoadScreenDurationCoroutine());
@@ -702,6 +703,7 @@ namespace SpaceBattles
         private void FinishEnterOnlineScene ()
         {
             Debug.Log("PIM: Finishing online scene entry");
+            UIManager.PauseUITransitions(false);
             CameraRegistry.ActivateAllGameObjects(true);
             UIManager.TransitionToUIElements(
                 UiElementTransitionType.Fresh,
