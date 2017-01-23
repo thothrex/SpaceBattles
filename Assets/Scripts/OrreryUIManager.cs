@@ -12,11 +12,13 @@ namespace SpaceBattles
 
         // -- Delegates --
         public delegate void ExplicitDateTimeSetHandler (DateTime newTime);
-        public delegate void ScaleSetHandler (float scaledValue, Scale scale);
+        public delegate void LinearScaleSetHandler (float scale);
+        public delegate void LogScaleSetHandler (float logBase, float innerMultiplier, float outerMultiplier);
 
         // -- Events --
         public event ExplicitDateTimeSetHandler DateTimeSet;
-        public event ScaleSetHandler PlanetScaleSet;
+        public event LinearScaleSetHandler PlanetLinearScaleSet;
+        public event LogScaleSetHandler PlanetLogarithmicScaleSet;
 
         public void BroadcastNewDateTime ()
         {
@@ -29,20 +31,40 @@ namespace SpaceBattles
 
         public void BroadcastNewScale ()
         {
-            Debug.Log(
-                "Broadcasting new scale: "
-                + ScalePicker.CurrentScaledValue
-                + ", "
-                + ScalePicker.CurrentScale
-            );
             MyContract.RequireFieldNotNull(ScalePicker, "ScalePicker");
-            if (oem.shouldTriggerEvent(PlanetScaleSet))
+            Debug.Log(
+                "Broadcasting new "
+                + ScalePicker.CurrentScaleType
+                + " scale"
+            );
+
+            ScalePicker.ScaleOption ScaleOption = ScalePicker.CurrentScaleType;
+            switch (ScaleOption)
             {
-                PlanetScaleSet(
-                    ScalePicker.CurrentScaledValue,
-                    ScalePicker.CurrentScale
-                );
+                case ScalePicker.ScaleOption.Linear:
+                    if (oem.shouldTriggerEvent(PlanetLinearScaleSet))
+                    {
+                        PlanetLinearScaleSet(
+                            ScalePicker.CurrentLinearScale
+                        );
+                    }
+                    break;
+                case ScalePicker.ScaleOption.Logarithmic:
+                    if (oem.shouldTriggerEvent(PlanetLogarithmicScaleSet))
+                    {
+                        PlanetLogarithmicScaleSet(
+                            ScalePicker.CurrentLogBase,
+                            ScalePicker.CurrentLogInnerMultiplier,
+                            ScalePicker.CurrentLogOuterMultiplier
+                        );
+                    }
+                    break;
+                default:
+                    throw new UnexpectedEnumValueException
+                        <ScalePicker.ScaleOption>(ScaleOption);
             }
+            
+            
         }
     }
 }

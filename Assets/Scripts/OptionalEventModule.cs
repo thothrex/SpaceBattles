@@ -7,13 +7,6 @@ namespace SpaceBattles
     public delegate void PlayGameButtonPressEventHandler();
     public class OptionalEventModule
     {
-        private const string NO_EVENT_LISTENERS_ERRMSG
-            = "An event which was marked as requiring at least one "
-            + "event listener has none. Either add an event listener "
-            + "or change the OptionalEventModule's "
-            + "allow_no_event_listeners value to false "
-            + "(which can be done via the editor or in the parent class)";
-
         public bool AllowNoEventListeners = false;
         public bool SuppressErrorMessages = false;
 
@@ -42,12 +35,25 @@ namespace SpaceBattles
             }
             else if (event_handler == null)
             {
-                throw new InvalidOperationException(NO_EVENT_LISTENERS_ERRMSG);
+                throw new InvalidOperationException(
+                    NoEventListenersExceptionMessage(typeof(H).Name)
+                );
             }
             else // event_handler != null
             {
                 return true;
             }
+        }
+
+        private string NoEventListenersExceptionMessage (string handlerName)
+        {
+            return "An event with handler type "
+            + handlerName
+            + " which was marked as requiring at least one "
+            + "event listener has none. Either add an event listener "
+            + "or change the OptionalEventModule's "
+            + "allow_no_event_listeners value to false "
+            + "(which can be done via the editor or in the parent class)";
         }
     }
 }

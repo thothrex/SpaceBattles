@@ -46,7 +46,7 @@ namespace SpaceBattles
             Debug.Log("Setting explicit background earth scale");
             BackgroundOrbitalBody
                 .GetComponent<OrbitingBodyBackgroundGameObject>()
-                .SetRelativeScaleExplicitly(BackgroundOrbitalBodyScale);
+                .SetRelativeLinearScaleExplicitly(BackgroundOrbitalBodyScale);
         }
 
         public void Update ()

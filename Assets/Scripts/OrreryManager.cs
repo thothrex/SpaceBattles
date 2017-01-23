@@ -7,7 +7,7 @@ namespace SpaceBattles
     public class OrreryManager : MonoBehaviour
     {
         // -- Const Fields --
-        private const string PLANET_MANAGER_NAME
+        private static readonly string PlanetManagerName
             = "A planet's OrbitingBodyBackgroundGameObject";
 
         // -- Fields --
@@ -59,10 +59,21 @@ namespace SpaceBattles
             }
         }
 
-        public void SetScale (float scaleMultiplier, Scale newScale)
+        public void SetLinearScale (float scaleMultiplier)
         {
-            // TODO: Support more than linear scale
             ChangePlanetsScale(Planets, scaleMultiplier);
+        }
+
+        public void
+        SetLogarithmicScale
+            (float logBase, float innerMultiplier, float outerMultiplier)
+        {
+            ChangePlanetsScale(
+                Planets,
+                logBase,
+                innerMultiplier,
+                outerMultiplier
+            );
         }
 
         private Vector3 GenerateMainOrreryCameraPosition ()
@@ -114,14 +125,34 @@ namespace SpaceBattles
 
         private void
         ChangePlanetsScale
-            (List<GameObject> planets, float targetScale)
+            (List<GameObject> planets, float targetLinearScale)
         {
             foreach (GameObject Planet in planets)
             {
                 OrbitingBodyBackgroundGameObject PlanetManager
                     = Planet.GetComponent<OrbitingBodyBackgroundGameObject>();
-                MyContract.RequireArgumentNotNull(PlanetManager, PLANET_MANAGER_NAME);
-                PlanetManager.SetRelativeScaleExplicitly(targetScale);
+                MyContract.RequireArgumentNotNull(PlanetManager, PlanetManagerName);
+                PlanetManager.SetRelativeLinearScaleExplicitly(targetLinearScale);
+            }
+        }
+
+        private void
+        ChangePlanetsScale
+            (List<GameObject> planets,
+             float logBase,
+             float innerMultiplier,
+             float outerMultiplier)
+        {
+            foreach (GameObject Planet in planets)
+            {
+                OrbitingBodyBackgroundGameObject PlanetManager
+                    = Planet.GetComponent<OrbitingBodyBackgroundGameObject>();
+                MyContract.RequireArgumentNotNull(
+                    PlanetManager, PlanetManagerName
+                );
+                PlanetManager.SetRelativeLogarithmicScaleExplicitly(
+                    logBase, innerMultiplier, outerMultiplier
+                );
             }
         }
 
@@ -133,7 +164,7 @@ namespace SpaceBattles
             {
                 OrbitingBodyBackgroundGameObject PlanetManager
                     = Planet.GetComponent<OrbitingBodyBackgroundGameObject>();
-                MyContract.RequireArgumentNotNull(PlanetManager, PLANET_MANAGER_NAME);
+                MyContract.RequireArgumentNotNull(PlanetManager, PlanetManagerName);
                 PlanetManager.SetScaleToPredefinedScale(targetScale);
             }
         }
