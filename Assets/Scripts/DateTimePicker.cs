@@ -24,6 +24,8 @@ namespace SpaceBattles
             get;
         }
 
+        // -- Methods --
+
         public void ChangeYear (string input)
         {
             ChangeField(out CurrentYear, input, int.MinValue, int.MaxValue);

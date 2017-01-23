@@ -492,11 +492,16 @@ namespace SpaceBattles
             //         .Key);
         }
 
-        public void SetOrreryDateTimeTrigger (DateTime newTime)
+        public void OnOrreryDateTimeInput (DateTime newTime)
         {
             OrreryManager.SetExplicitDateTime(newTime);
         }
-        
+
+        public void OnOrreryScaleInput (float scaleMultiplier, Scale newScale)
+        {
+            OrreryManager.SetScale(scaleMultiplier, newScale);
+        }
+
         public void FadeCamera (bool fadeOut, Action fadeCallback)
         {
             if (fadeOut)
@@ -768,7 +773,8 @@ namespace SpaceBattles
 
         private void InitialiseOrreryUi()
         {
-            OrreryUiManager.DateTimeSet += SetOrreryDateTimeTrigger;
+            OrreryUiManager.DateTimeSet += OnOrreryDateTimeInput;
+            OrreryUiManager.PlanetScaleSet += OnOrreryScaleInput;
         }
 
         private void InitialiseSettingsMenu()

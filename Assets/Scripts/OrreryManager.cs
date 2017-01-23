@@ -59,6 +59,12 @@ namespace SpaceBattles
             }
         }
 
+        public void SetScale (float scaleMultiplier, Scale newScale)
+        {
+            // TODO: Support more than linear scale
+            ChangePlanetsScale(Planets, scaleMultiplier);
+        }
+
         private Vector3 GenerateMainOrreryCameraPosition ()
         {
             double MinimumCameraHeight

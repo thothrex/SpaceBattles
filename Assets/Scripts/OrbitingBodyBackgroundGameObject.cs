@@ -149,7 +149,7 @@ namespace SpaceBattles
         }
 
         /// <summary>
-        /// Sets the obrbiting body's size relative to its radius
+        /// Sets the orbiting body's size relative to its radius
         /// i.e. a true scaling of the orbiting body
         /// </summary>
         /// <param name="relativeScale"></param>
