@@ -9,6 +9,8 @@ namespace SpaceBattles
         public DateTimePicker DateTimePicker;
         public ScalePicker ScalePicker;
         private OptionalEventModule oem = new OptionalEventModule();
+        private Camera PlanetCamera = null;
+        private InertialCameraController PlanetCameraController = null;
 
         // -- Delegates --
         public delegate void ExplicitDateTimeSetHandler (DateTime newTime);
@@ -83,6 +85,28 @@ namespace SpaceBattles
             }
             
             
+        }
+
+        public void ProvidePlanetCamera (Camera newCamera)
+        {
+            MyContract.RequireArgumentNotNull(newCamera, "newCamera");
+            PlanetCamera = newCamera;
+            PlanetCameraController =
+                    PlanetCamera.GetComponent<InertialCameraController>();
+            MyContract.RequireFieldNotNull(
+                PlanetCameraController,
+                "PlanetCameraController"
+            );
+        }
+
+        public void SetZoom (float newZoom)
+        {
+            MyContract.RequireFieldNotNull(
+                PlanetCameraController, "PlanetCameraController"
+            );
+            Vector3 newCoords = PlanetCameraController.offset;
+            newCoords.z = newZoom;
+            PlanetCameraController.offset = newCoords;
         }
     }
 }

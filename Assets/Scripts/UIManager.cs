@@ -126,7 +126,6 @@ namespace SpaceBattles
                 InitialiseManagerFields();
                 InitialiseGameplayUi();
                 InitialiseSettingsMenu();
-                InitialiseOrreryUi();
 
                 EventSwitchboard Switchboard
                     = GetComponent<EventSwitchboard>();
@@ -245,6 +244,16 @@ namespace SpaceBattles
                     }
                 }
             }
+        }
+
+        public void InitialiseOrreryUi()
+        {
+            OrreryUiManager.DateTimeSet += OnOrreryDateTimeInput;
+            OrreryUiManager.PlanetLinearScaleSet += OnOrreryLinearScaleInput;
+            OrreryUiManager.PlanetLogarithmicScaleSet += OnOrreryLogarithmicScaleInput;
+            OrreryUiManager.ProvidePlanetCamera(
+                CameraRegistry[(int)CameraRoles.MainMenuAndOrrery]
+            );
         }
 
         public void SetCurrentPlayerHealth(double new_value)
@@ -774,13 +783,6 @@ namespace SpaceBattles
                 .ScreenResizedInternal
                 .AddListener(Fader.OnScreenSizeChange);
             Fader.OnScreenSizeChange(PlayerScreenCanvas.GetComponent<RectTransform>().rect);
-        }
-
-        private void InitialiseOrreryUi()
-        {
-            OrreryUiManager.DateTimeSet += OnOrreryDateTimeInput;
-            OrreryUiManager.PlanetLinearScaleSet += OnOrreryLinearScaleInput;
-            OrreryUiManager.PlanetLogarithmicScaleSet += OnOrreryLogarithmicScaleInput;
         }
 
         private void InitialiseSettingsMenu()

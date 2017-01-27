@@ -420,51 +420,52 @@ namespace SpaceBattles
 
         private void SwapToOrreryScene ()
         {
-            Debug.Log("Orrery Scene Loaded");
+            Debug.Log("Orrery Scene Loading");
             // Debug
-            GameObject DebugCheckObject
-                = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery].gameObject;
+            //GameObject DebugCheckObject
+            //    = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery].gameObject;
             //DontDestroyOnLoad(DebugCheckObject);
-            Debug.Log("MainMenuAndOrreryCamera is "
-                    + (DebugCheckObject == null ? "null" : "not null")
-                    + "\nCamera Registry: "
-                    + CameraRegistry.PrintDebugDestroyedRegisteredObjectCheck()
-                    + "\nPlanet Registry: "
-                    + PlanetRegistry.PrintDebugDestroyedRegisteredObjectCheck()
-                    + "\nUIManager is "
-                    + (UIManager == null ? "null" : "not null"));
-            GameObject OrreryCameraBefore
-                = GameObject.Find("Main Menu Background Camera(Clone)");
-            Debug.Log((OrreryCameraBefore == null ? "Could not find" : "Found")
-                      + " the main menu background/orrery camera");
-            UIManager.DebugLogRegistryStatus();
+            //Debug.Log("MainMenuAndOrreryCamera is "
+            //        + (DebugCheckObject == null ? "null" : "not null")
+            //        + "\nCamera Registry: "
+            //        + CameraRegistry.PrintDebugDestroyedRegisteredObjectCheck()
+            //        + "\nPlanet Registry: "
+            //        + PlanetRegistry.PrintDebugDestroyedRegisteredObjectCheck()
+            //        + "\nUIManager is "
+            //        + (UIManager == null ? "null" : "not null"));
+            //GameObject OrreryCameraBefore
+            //    = GameObject.Find("Main Menu Background Camera(Clone)");
+            //Debug.Log((OrreryCameraBefore == null ? "Could not find" : "Found")
+            //          + " the main menu background/orrery camera");
+            //UIManager.DebugLogRegistryStatus();
             // end debug
+            UIManager.InitialiseOrreryUi();
             Scene OrreryScene
                 = SceneManager.GetSceneByName(SceneIndex.Orrery.SceneName());
             Scene SceneSwappingFrom = SceneManager.GetActiveScene();
             CameraRegistry.EnsureObjectsStayAlive();
             SceneManager.SetActiveScene(OrreryScene);
-            SceneManager.UnloadScene(SceneSwappingFrom);
+            AsyncOperation Unloading = SceneManager.UnloadSceneAsync(SceneSwappingFrom);
             UIManager.TransitionToUIElements(
                 UiElementTransitionType.Tracked,
                 UIElements.OrreryUI
             );
             // Debug
-            DebugCheckObject
-                = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery].gameObject;
-            Debug.Log("MainMenuAndOrreryCamera is "
-                    + (DebugCheckObject == null ? "null" : "not null")
-                    + "\nCamera Registry: "
-                    + CameraRegistry.PrintDebugDestroyedRegisteredObjectCheck()
-                    + "\nPlanet Registry: "
-                    + PlanetRegistry.PrintDebugDestroyedRegisteredObjectCheck()
-                    + "\nUIManager is "
-                    + (UIManager == null ? "null" : "not null"));
-            GameObject OrreryCameraAfter
-                = GameObject.Find("Main Menu Background Camera(Clone)");
-            Debug.Log(( OrreryCameraAfter == null ? "Could not find" : "Found")
-                      + " the main menu background/orrery camera");
-            UIManager.DebugLogRegistryStatus();
+            //DebugCheckObject
+            //    = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery].gameObject;
+            //Debug.Log("MainMenuAndOrreryCamera is "
+            //        + (DebugCheckObject == null ? "null" : "not null")
+            //        + "\nCamera Registry: "
+            //        + CameraRegistry.PrintDebugDestroyedRegisteredObjectCheck()
+            //        + "\nPlanet Registry: "
+            //        + PlanetRegistry.PrintDebugDestroyedRegisteredObjectCheck()
+            //        + "\nUIManager is "
+            //        + (UIManager == null ? "null" : "not null"));
+            //GameObject OrreryCameraAfter
+            //    = GameObject.Find("Main Menu Background Camera(Clone)");
+            //Debug.Log(( OrreryCameraAfter == null ? "Could not find" : "Found")
+            //          + " the main menu background/orrery camera");
+            //UIManager.DebugLogRegistryStatus();
             // end debug
             UIManager.CameraTransition(CameraRoles.FixedUi
                                      | CameraRoles.MainMenuAndOrrery);
