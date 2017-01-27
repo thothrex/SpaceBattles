@@ -28,9 +28,14 @@ namespace SpaceBattles
         public float CurrentLogOuterMultiplier { private set; get; }
 
         // -- Methods --
-        public void Start ()
+        public void Awake ()
         {
+            Debug.Log("ScalePicker waking up");
             CurrentScaleOption = InitialScaleOption;
+            CurrentLinearScale = 0.0015f;
+            CurrentLogBase = 10.0f;
+            CurrentLogInnerMultiplier = 1.0f;
+            CurrentLogOuterMultiplier = 1.0f;
         }
 
         public void SetScale (Int32 input)

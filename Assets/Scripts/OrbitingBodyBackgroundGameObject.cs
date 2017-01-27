@@ -170,8 +170,17 @@ namespace SpaceBattles
         SetRelativeLogarithmicScaleExplicitly
             (double logBase, double innerMultiplier, double outerMultiplier)
         {
-            //Debug.Log("Setting relative scale explicitly to " + relativeScale);
+            //Debug.Log(
+            //    "Receiving log values: "
+            //    + "log base "
+            //    + logBase
+            //    + ", inner multiplier "
+            //    + innerMultiplier
+            //    + ", outer multiplier"
+            //    + outerMultiplier
+            //);
             double NewScale = outerMultiplier * Math.Log(Radius * innerMultiplier, logBase);
+            //Debug.Log("NewScale = " + NewScale);
             SetScale(NewScale);
             ExplicitScale = NewScale;
         }

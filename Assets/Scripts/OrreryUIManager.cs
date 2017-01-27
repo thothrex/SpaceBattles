@@ -42,7 +42,9 @@ namespace SpaceBattles
             switch (ScaleOption)
             {
                 case ScalePicker.ScaleOption.Linear:
-                    if (oem.shouldTriggerEvent(PlanetLinearScaleSet))
+                    if (oem.shouldTriggerEvent(PlanetLinearScaleSet)
+                    &&  ScalePicker.CurrentLinearScale != float.NaN
+                    &&  !float.IsInfinity(ScalePicker.CurrentLinearScale))
                     {
                         PlanetLinearScaleSet(
                             ScalePicker.CurrentLinearScale
@@ -50,8 +52,24 @@ namespace SpaceBattles
                     }
                     break;
                 case ScalePicker.ScaleOption.Logarithmic:
-                    if (oem.shouldTriggerEvent(PlanetLogarithmicScaleSet))
+                    if (oem.shouldTriggerEvent(PlanetLogarithmicScaleSet)
+                    && ScalePicker.CurrentLogBase != float.NaN
+                    && !float.IsInfinity(ScalePicker.CurrentLogBase)
+                    && ScalePicker.CurrentLogBase != 1
+                    && ScalePicker.CurrentLogInnerMultiplier != float.NaN
+                    && !float.IsInfinity(ScalePicker.CurrentLogInnerMultiplier)
+                    && ScalePicker.CurrentLogOuterMultiplier != float.NaN
+                    && !float.IsInfinity(ScalePicker.CurrentLogOuterMultiplier))
                     {
+                        //Debug.Log(
+                        //    "Passing on log values: "
+                        //    + "log base "
+                        //    + ScalePicker.CurrentLogBase
+                        //    + ", inner multiplier "
+                        //    + ScalePicker.CurrentLogInnerMultiplier
+                        //    + ", outer multiplier"
+                        //    + ScalePicker.CurrentLogOuterMultiplier
+                        //);
                         PlanetLogarithmicScaleSet(
                             ScalePicker.CurrentLogBase,
                             ScalePicker.CurrentLogInnerMultiplier,
