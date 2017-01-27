@@ -11,6 +11,7 @@ namespace SpaceBattles
         private OptionalEventModule oem = new OptionalEventModule();
         private Camera PlanetCamera = null;
         private InertialCameraController PlanetCameraController = null;
+        private readonly float ZoomButtonIncrementFactor = 0.02f;
 
         // -- Delegates --
         public delegate void ExplicitDateTimeSetHandler (DateTime newTime);
@@ -106,6 +107,17 @@ namespace SpaceBattles
             );
             Vector3 newCoords = PlanetCameraController.offset;
             newCoords.z = newZoom;
+            PlanetCameraController.offset = newCoords;
+        }
+
+        public void IncrementZoom (bool positive)
+        {
+            MyContract.RequireFieldNotNull(
+                PlanetCameraController, "PlanetCameraController"
+            );
+            Vector3 newCoords = PlanetCameraController.offset;
+            int sign = positive ? 1 : -1;
+            newCoords.z += (newCoords.z * ZoomButtonIncrementFactor * sign);
             PlanetCameraController.offset = newCoords;
         }
     }
