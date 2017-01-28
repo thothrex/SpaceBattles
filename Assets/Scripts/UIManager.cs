@@ -48,7 +48,7 @@ namespace SpaceBattles
         private bool InGameMenuVisible = false;
         private bool ship_select_menu_visible = false;
         private bool UITransitionsOnHold = false;
-        private UiInputState ui_state = UiInputState.MainMenu;
+        private UiInputState UiState = UiInputState.MainMenu;
         private UIElements UIElement_ALL;
         private GameObject DebugTextbox = null;
 
@@ -96,7 +96,7 @@ namespace SpaceBattles
         // -- enums --
         public enum PlayerConnectState { IDLE, SEARCHING_FOR_SERVER, JOINING_SERVER, CREATING_SERVER };
 
-        private enum UiInputState { InGame, MainMenu };
+        private enum UiInputState { InGame, MainMenu, Orrery };
 
         // -- properties --
         public OrreryManager OrreryManager
@@ -165,7 +165,7 @@ namespace SpaceBattles
 
         public void Update ()
         {
-            if (ui_state == UiInputState.InGame)
+            if (UiState == UiInputState.InGame)
             {
                 if (InputAdapter.ExitNetGameInput())
                 {
@@ -197,11 +197,16 @@ namespace SpaceBattles
                     );
                 }
             }
+            else if (UiState == UiInputState.Orrery)
+            {
+
+            }
+            // else UiState == main menu
         }
 
         public void FixedUpdate()
         {
-            if (ui_state == UiInputState.InGame)
+            if (UiState == UiInputState.InGame)
             {
                 float new_roll = InputAdapter.ReadRollInputValue();
                 float new_pitch = InputAdapter.ReadPitchInputValue();
@@ -346,6 +351,26 @@ namespace SpaceBattles
             {
                 UITransitionHistory.Clear();
             }
+
+            // Set input state
+            // There's a hard priority here so higher elements
+            // will take precedence
+
+            // if gameplay UI is active
+            if ((ActiveUIElements & UIElements.GameplayUI) > 0)
+            {
+                UiState = UiInputState.InGame;
+            }
+            // if orrery UI is active
+            else if ((ActiveUIElements & UIElements.OrreryUI) > 0)
+            {
+                UiState = UiInputState.Orrery;
+            }
+            // if main menu UI is active
+            else if ((ActiveUIElements & UIElements.MainMenu) > 0)
+            {
+                UiState = UiInputState.MainMenu;
+            }
         }
 
         public void TransitionUIElementsBacktrack ()
@@ -361,7 +386,7 @@ namespace SpaceBattles
 
         public void EnterMainMenuRoot ()
         {
-            ui_state = UiInputState.MainMenu;
+            UiState = UiInputState.MainMenu;
             // TODO: pull this debug text into the main menu manager
             if (PrintScreenSizeDebugText)
             {
@@ -400,7 +425,7 @@ namespace SpaceBattles
         public void EnteringMultiplayerGame ()
         {
             // TODO: change to start in ship selection
-            ui_state = UiInputState.InGame;
+            UiState = UiInputState.InGame;
             //TransitionToUIElements(
             //    UiElementTransitionType.Fresh,
             //    UIElements.GameplayUI
