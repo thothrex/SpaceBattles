@@ -29,8 +29,8 @@ namespace SpaceBattles
         {
             PlanetRegistry.RegisterObjects(Planets);
 
-            MapViewCameraWaypoint.position
-                = GenerateMainOrreryCameraPosition();
+            //MapViewCameraWaypoint.position
+            //    = GenerateMainOrreryCameraPosition();
             ChangePlanetsScale(Planets, Scale.Logarithmic);
             //PlanetRegistry
             //    .RetrieveGameObject((int)OrbitingBody.SUN)
