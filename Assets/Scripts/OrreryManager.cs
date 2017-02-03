@@ -76,6 +76,11 @@ namespace SpaceBattles
             );
         }
 
+        public Transform GetOrbitingBodyTransform (OrbitingBody target)
+        {
+            return PlanetRegistry[(int)target].transform;
+        }
+
         private Vector3 GenerateMainOrreryCameraPosition ()
         {
             double MinimumCameraHeight

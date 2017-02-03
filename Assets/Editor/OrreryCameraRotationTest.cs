@@ -21,11 +21,11 @@ namespace SpaceBattles
         NoYInputTest
             (float xinput, float radius = 1000)
         {
-            var ExpectedPosition = new Vector3(0, 0, radius);
+            var ExpectedPosition = new Vector3(0, radius, 0);
             Vector2 InputAngles = new Vector2(xinput, 0);
             Vector3 CalculatedPosition
                 = OrreryUIManager
-                 .CalculateNewCameraPosition(InputAngles, radius);
+                 .CalculateNewCameraOffset(InputAngles, radius);
             string ErrorMessage
                 = DifferingResultsErrorMessage(
                     CalculatedPosition.ToString(),
@@ -56,13 +56,13 @@ namespace SpaceBattles
         {
             Vector2 InputAngles = new Vector2(0, yinput);
             float YInputRadians = OrreryUIManager.ConvertToRadians(yinput);
-            float ExpectedZ = Convert.ToSingle(radius * Math.Cos(YInputRadians));
-            float ExpectedY = Convert.ToSingle(radius * Math.Sin(YInputRadians));
+            float ExpectedY = Convert.ToSingle(radius * Math.Cos(YInputRadians));
+            float ExpectedZ = Convert.ToSingle(radius * Math.Sin(YInputRadians));
             var ExpectedPosition = new Vector3(0, ExpectedY, ExpectedZ);
 
             Vector3 CalculatedPosition
                 = OrreryUIManager
-                 .CalculateNewCameraPosition(InputAngles, radius);
+                 .CalculateNewCameraOffset(InputAngles, radius);
             string ErrorMessage
                 = DifferingResultsErrorMessage(
                     CalculatedPosition.ToString(),
@@ -86,6 +86,40 @@ namespace SpaceBattles
                ErrorMessage
             );
         }
+
+        public void
+        XYInputTest
+            (Vector2 angleInput, Vector3 expectedPosition)
+        {
+            float radius = expectedPosition.magnitude;
+
+            Vector3 CalculatedPosition
+                = OrreryUIManager
+                 .CalculateNewCameraOffset(angleInput, radius);
+            string ErrorMessage
+                = DifferingResultsErrorMessage(
+                    CalculatedPosition.ToString(),
+                    expectedPosition.ToString(),
+                    ""
+                  );
+
+            Assert.LessOrEqual(
+                Math.Abs(CalculatedPosition.x - expectedPosition.x),
+                AcceptableFloatError,
+                ErrorMessage
+            );
+            Assert.LessOrEqual(
+               Math.Abs(CalculatedPosition.y - expectedPosition.y),
+               AcceptableFloatError,
+               ErrorMessage
+            );
+            Assert.LessOrEqual(
+               Math.Abs(CalculatedPosition.z - expectedPosition.z),
+               AcceptableFloatError,
+               ErrorMessage
+            );
+        }
+
         // --------------------------------------
 
         [Test] public void NoYInputX0Test()   { NoYInputTest(0);   }
@@ -108,5 +142,42 @@ namespace SpaceBattles
         [Test] public void NoXInputY315Test() { NoXInputTest(315); }
 
         // --------------------------------------
+
+        [Test]
+        public void X0Y90Test()
+        {
+            XYInputTest(new Vector2(0, 90), new Vector3(0, 0, 2));
+        }
+
+        [Test]
+        public void X45Y90Test()
+        {
+            XYInputTest(new Vector2(45, 90), new Vector3(1, 0, 1));
+        }
+
+        [Test] public void X90Y90Test()
+        {
+            XYInputTest(new Vector2(90, 90), new Vector3(2, 0, 0));
+        }
+
+        [Test]
+        public void X135Y90Test()
+        {
+            XYInputTest(new Vector2(135, 90), new Vector3(1, 0, -1));
+        }
+
+        [Test]
+        public void X180Y90Test()
+        {
+            XYInputTest(new Vector2(180, 90), new Vector3(0, 0, -2));
+        }
+
+
+        [Test]
+        public void X45Y45Test()
+        {
+            float RootHalf = Convert.ToSingle(Math.Sqrt(0.5));
+            XYInputTest(new Vector2(45, 45), new Vector3(RootHalf, 1, RootHalf));
+        }
     }
 }

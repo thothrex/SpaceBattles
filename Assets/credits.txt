@@ -6,6 +6,7 @@ Unity Editor Tweaks (different list mainly) 	by t0chas 		[https://gist.github.co
 Octahedron Sphere 				by Jasper Flick 	[http://catlikecoding.com/unity/tutorials/octahedron-sphere/]
 Saturn Texture 					by HellcatF6F		[http://hellcatf6f.deviantart.com/art/Saturn-Texture-3-2k-491970229]
 Neptune Texture 							[http://planetpixelemporium.com/neptune.html]
+Enum selection in Editor			by llamagod		[https://forum.unity3d.com/members/llamagod.945744/]
 
 Unity Packages
 --------------

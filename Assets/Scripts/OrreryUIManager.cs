@@ -27,7 +27,10 @@ namespace SpaceBattles
         public event ExplicitDateTimeSetHandler DateTimeSet;
         public event LinearScaleSetHandler PlanetLinearScaleSet;
         public event LogScaleSetHandler PlanetLogarithmicScaleSet;
-        
+
+        // -- Properties --
+        public OrreryManager OrreryManager { private get; set; }
+
         // -- Methods --
         /// <summary>
         /// 
@@ -38,7 +41,7 @@ namespace SpaceBattles
         /// <param name="desiredOrbitRadius"></param>
         /// <returns></returns>
         public static Vector3
-        CalculateNewCameraPosition
+        CalculateNewCameraOffset
             (Vector2 inputAngles, float desiredOrbitRadius)
         {
             //Debug.Log(
@@ -48,7 +51,7 @@ namespace SpaceBattles
 
             float DesiredXAxisRotation = ConvertToRadians(inputAngles.y);
             Vector3 NewPosition = new Vector3(0, 0, 0);
-            NewPosition.z
+            NewPosition.y
                 = Convert.ToSingle(Math.Cos(DesiredXAxisRotation))
                 * desiredOrbitRadius;
             float UpperRadius
@@ -64,12 +67,12 @@ namespace SpaceBattles
             // We use the existing z value as the new radius
             // of a projected circle from the old coordinates
             // onto the new plane.
-            float DesiredZAxisRotation = ConvertToRadians(inputAngles.x);
+            float DesiredYAxisRotation = ConvertToRadians(inputAngles.x);
             NewPosition.x
-                = Convert.ToSingle(Math.Sin(DesiredZAxisRotation))
+                = Convert.ToSingle(Math.Sin(DesiredYAxisRotation))
                 * UpperRadius;
-            NewPosition.y
-                = Convert.ToSingle(Math.Cos(DesiredZAxisRotation))
+            NewPosition.z
+                = Convert.ToSingle(Math.Cos(DesiredYAxisRotation))
                 * UpperRadius;
 
             return NewPosition;
@@ -194,38 +197,59 @@ namespace SpaceBattles
             if (PlanetCameraController != null
             &&  desiredAngles != LastRotation)
             {
-                Vector3 NewPosition
-                    = CalculateNewCameraPosition(
+                Vector3 CalculatedOffset
+                    = CalculateNewCameraOffset(
                         desiredAngles,
                         DesiredCameraOrbitRadius
                       );
-                PlanetCameraController.offset = NewPosition;
+                Vector3 NewOffset
+                    = PlanetCameraController
+                    .FollowTransform
+                    .InverseTransformDirection(CalculatedOffset);
+                
+                PlanetCameraController.offset = NewOffset;
                 ResetCameraTransform();
                 LastRotation = desiredAngles;
             }
         }
 
+        /// <summary>
+        /// For the Unity Editor to view,
+        /// SHOULD NOT BE USED in code
+        /// </summary>
+        /// <param name="newFocus"></param>
+        [EnumAction(typeof(OrbitingBody))]
+        public void SetPlanetFocus (int newFocus)
+        {
+            SetPlanetFocus((OrbitingBody)newFocus);
+        }
+        
+        public void SetPlanetFocus (OrbitingBody newFocus)
+        {
+            MyContract.RequireFieldNotNull(
+                PlanetCameraController, "PlanetCameraController"
+            );
+            MyContract.RequireFieldNotNull(
+                OrreryManager, "OrreryManager"
+            );
+            PlanetCameraController.FollowTransform
+                = OrreryManager.GetOrbitingBodyTransform(newFocus);
+            ResetCameraTransform();
+        }
+
         private void ResetCameraTransform ()
         {
-            Vector3 PCCDesiredPosition
-                    = PlanetCameraController.offset;
-            //Debug.Log(
-            //    "Desired Position: "
-            //    + PCCDesiredPosition
-            //);
-            Vector3 PCCTargetPosition
-                = PlanetCameraController.FollowTransform.position;
-            //Debug.Log(
-            //    "Target Position: "
-            //    + PCCTargetPosition
-            //);
-
             Vector3 RotationVector
-                = Vector3.Normalize(PCCTargetPosition - PCCDesiredPosition);
-            Quaternion Rotation = Quaternion.LookRotation(RotationVector, Vector3.forward);
-            Vector3 CalculatedEulerAngles = Rotation.eulerAngles;
-            //CalculatedEulerAngles.z -= 90;
+                = Vector3.Normalize(-PlanetCameraController.offset);
             
+            Quaternion LookAtTarget
+                = Quaternion.LookRotation(
+                    RotationVector,
+                    PlanetCameraController.FollowTransform.up
+                  );
+
+            Vector3 CalculatedEulerAngles = LookAtTarget.eulerAngles;
+
             PlanetCameraController.desiredEulerRotation = CalculatedEulerAngles;
         }
     }

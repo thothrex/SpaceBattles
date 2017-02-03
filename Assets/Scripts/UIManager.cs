@@ -277,6 +277,12 @@ namespace SpaceBattles
             MainMenuUIManager.SetPlayerConnectState(newState);
         }
 
+        public void SetOrreryManager (OrreryManager newOrreryManager)
+        {
+            OrreryManager = newOrreryManager;
+            OrreryUiManager.OrreryManager = newOrreryManager;
+        }
+
         public void CameraTransition (CameraRoles newActiveCameras)
         {
             // Deactivate cameras
@@ -436,6 +442,11 @@ namespace SpaceBattles
             //    UIElements.GameplayUI
             //);
             //CameraTransition(CameraRoles.FixedUi);
+        }
+
+        public void EnteringOrrery ()
+        {
+            UiState = UiInputState.Orrery;
         }
 
         public void playerShipCreated ()
