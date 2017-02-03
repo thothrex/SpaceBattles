@@ -134,7 +134,7 @@ namespace SpaceBattles
                     = CnControls
                     .CnInputManager
                     .GetAxis(OrreryOrbitRotationXAxisName);
-                Debug.Log("Starting mouse drag");
+                //Debug.Log("Starting mouse drag");
             }
             // Check if we're exiting a mouse drag
             else if (InMouseDrag
@@ -143,7 +143,7 @@ namespace SpaceBattles
                     .GetButton(OrreryOrbitStartRotationButtonName))
             {
                 InMouseDrag = false;
-                Debug.Log("Ending mouse drag");
+                //Debug.Log("Ending mouse drag");
             }
 
             // Read drag values
