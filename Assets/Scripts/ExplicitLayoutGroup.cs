@@ -22,10 +22,17 @@ namespace SpaceBattles
             {
                 GameObject target = element.target;
                 RectTransform target_transform = target.GetComponent<RectTransform>();
-                target.SetActive(element.visible);
+                if (element.ChangeVisibility)
+                {
+                    target.SetActive(element.visible);
+                }
                 if (element.do_anchor_max_adjustment)
                 {
                     target_transform.anchorMax = element.NewAnchorMax;
+                }
+                if (element.DoAnchorMinAdjustment)
+                {
+                    target_transform.anchorMin = element.NewAnchorMin;
                 }
                 if (element.do_layout_group_alignment)
                 {

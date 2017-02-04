@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SpaceBattles
@@ -8,6 +9,9 @@ namespace SpaceBattles
         // -- Fields --
         public DateTimePicker DateTimePicker;
         public ScalePicker ScalePicker;
+        public ExplicitLayoutGroup DesktopLayout;
+        public ExplicitLayoutGroup TabletLayout;
+        public ExplicitLayoutGroup MobileLayout;
 
         private readonly float ZoomButtonIncrementFactor = 0.02f;
         private readonly float FullRotation = Convert.ToSingle(Math.PI * 2);
@@ -16,7 +20,6 @@ namespace SpaceBattles
         private InertialCameraController PlanetCameraController = null;
         private Vector2 LastRotation = new Vector2(0, 0);
         private float DesiredCameraOrbitRadius = 4000;
-        private Vector2 DesiredAngles;
 
         // -- Delegates --
         public delegate void ExplicitDateTimeSetHandler (DateTime newTime);
@@ -224,6 +227,10 @@ namespace SpaceBattles
             SetPlanetFocus((OrbitingBody)newFocus);
         }
         
+        /// <summary>
+        /// This is fine to use in code
+        /// </summary>
+        /// <param name="newFocus"></param>
         public void SetPlanetFocus (OrbitingBody newFocus)
         {
             MyContract.RequireFieldNotNull(
@@ -236,6 +243,25 @@ namespace SpaceBattles
                 = OrreryManager.GetOrbitingBodyTransform(newFocus);
             ResetCameraTransform();
         }
+
+        public void SetLayoutToMobile ()
+        {
+            Debug.Log("OrrerUIManager: changing layout to mobile");
+            MobileLayout.applyLayout();
+        }
+
+        public void SetLayoutToTablet()
+        {
+            Debug.Log("OrrerUIManager: changing layout to tablet");
+            TabletLayout.applyLayout();
+        }
+
+        public void SetLayoutToDesktop()
+        {
+            Debug.Log("OrrerUIManager: changing layout to desktop");
+            DesktopLayout.applyLayout();
+        }
+
 
         private void ResetCameraTransform ()
         {

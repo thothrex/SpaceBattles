@@ -9,18 +9,25 @@ namespace SpaceBattles
     [CustomPropertyDrawer(typeof(ExplicitLayoutElement))]
     public class ExplicitLayoutElementDrawer : PropertyDrawer
     {
-        private const float NUM_PROPERTIES = 5.0f;
+        private const float NUM_PROPERTIES = 6.0f;
         private const float PROPERTY_HEIGHT = 20.0f;
         private const float FULL_HEIGHT
             = (NUM_PROPERTIES + 1.0f) * PROPERTY_HEIGHT; // +1 for the foldout
         private const float ARROW_BUTTON_WIDTH = 20.0f;
         private const float TICKBOX_WIDTH = 20.0f;
 
-        private GUIContent name_label       = new GUIContent("Element Name");
-        private GUIContent target_label     = new GUIContent("Element Game Object");
-        private GUIContent anchor_max_label = new GUIContent("Anchor Max");
-        private GUIContent visible_label    = new GUIContent("Element Visible");
-        private GUIContent align_label      = new GUIContent("Layout Group Alignment");
+        private GUIContent name_label
+            = new GUIContent("Element Name");
+        private GUIContent target_label
+            = new GUIContent("Element Game Object");
+        private GUIContent AnchorMinLabel
+            = new GUIContent("Anchor Min");
+        private GUIContent anchor_max_label
+            = new GUIContent("Anchor Max");
+        private GUIContent ResultantVisibilityLabel
+            = new GUIContent("Element Visible");
+        private GUIContent align_label
+            = new GUIContent("Layout Group Alignment");
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
@@ -53,7 +60,13 @@ namespace SpaceBattles
                     = property.FindPropertyRelative("do_anchor_max_adjustment");
                 SerializedProperty anchor_max
                     = property.FindPropertyRelative("NewAnchorMax");
-                SerializedProperty visible
+                SerializedProperty DoAnchorMinAdjustment
+                    = property.FindPropertyRelative("DoAnchorMinAdjustment");
+                SerializedProperty AnchorMin
+                    = property.FindPropertyRelative("NewAnchorMin");
+                SerializedProperty ChangeVisibility
+                    = property.FindPropertyRelative("ChangeVisibility");
+                SerializedProperty ResultantVisibility
                     = property.FindPropertyRelative("visible");
                 SerializedProperty do_align
                     = property.FindPropertyRelative("do_layout_group_alignment");
@@ -67,12 +80,21 @@ namespace SpaceBattles
                     = generate_property_rect(position, 1);
                 Rect target_rect
                     = generate_property_rect(position, 2);
-                Rect visible_rect
+                Rect FullVisibilityRect
                     = generate_property_rect(position, 3);
-                Rect full_anchor_max_rect
+                Rect FullAnchorMinRect
                     = generate_property_rect(position, 4);
-                Rect full_align_rect
+                Rect full_anchor_max_rect
                     = generate_property_rect(position, 5);
+                Rect full_align_rect
+                    = generate_property_rect(position, 6);
+
+                Rect ChangeVisbilityRect
+                    = new Rect(FullVisibilityRect.x, FullVisibilityRect.y,
+                              TICKBOX_WIDTH, FullVisibilityRect.height);
+                Rect ResultantVisibilityRect
+                    = new Rect(FullVisibilityRect.x + TICKBOX_WIDTH, FullVisibilityRect.y,
+                               FullVisibilityRect.width - TICKBOX_WIDTH, FullVisibilityRect.height);
 
                 Rect do_align_rect
                     = new Rect(full_align_rect.x, full_align_rect.y,
@@ -81,13 +103,20 @@ namespace SpaceBattles
                     = new Rect(full_align_rect.x + TICKBOX_WIDTH, full_align_rect.y,
                                full_align_rect.width - TICKBOX_WIDTH, full_align_rect.height);
 
+                Rect DoAnchorMinRect
+                    = new Rect(FullAnchorMinRect.x, FullAnchorMinRect.y,
+                              TICKBOX_WIDTH, FullAnchorMinRect.height);
+                Rect AnchorMinRect
+                    = new Rect(FullAnchorMinRect.x + TICKBOX_WIDTH, FullAnchorMinRect.y,
+                               FullAnchorMinRect.width - TICKBOX_WIDTH, FullAnchorMinRect.height);
+
                 Rect do_anchor_max_rect
                     = new Rect(full_anchor_max_rect.x, full_anchor_max_rect.y,
                               TICKBOX_WIDTH, full_anchor_max_rect.height);
                 Rect anchor_max_rect
                     = new Rect(full_anchor_max_rect.x + TICKBOX_WIDTH, full_anchor_max_rect.y,
                                full_anchor_max_rect.width - TICKBOX_WIDTH, full_anchor_max_rect.height);
-
+                
                 //EditorGUI.BeginProperty(position, GUIContent.none, property);
                 property.isExpanded
                     = EditorGUI.Foldout(foldout_rect, property.isExpanded, GUIContent.none);
@@ -97,9 +126,32 @@ namespace SpaceBattles
                 EditorGUI.ObjectField(
                     target_rect, target, target_label
                 );
-                visible.boolValue = EditorGUI.Toggle(
-                    visible_rect, visible_label, visible.boolValue
+
+                ChangeVisibility.boolValue = EditorGUI.Toggle(
+                    ChangeVisbilityRect,
+                    GUIContent.none,
+                    ChangeVisibility.boolValue
                 );
+                EditorGUI.BeginDisabledGroup(!ChangeVisibility.boolValue);
+                ResultantVisibility.boolValue = EditorGUI.Toggle(
+                    ResultantVisibilityRect,
+                    ResultantVisibilityLabel,
+                    ResultantVisibility.boolValue
+                );
+                EditorGUI.EndDisabledGroup();
+
+                DoAnchorMinAdjustment.boolValue = EditorGUI.Toggle(
+                    DoAnchorMinRect,
+                    GUIContent.none,
+                    DoAnchorMinAdjustment.boolValue
+                );
+                EditorGUI.BeginDisabledGroup(!DoAnchorMinAdjustment.boolValue);
+                AnchorMin.vector2Value = EditorGUI.Vector2Field(
+                    AnchorMinRect,
+                    AnchorMinLabel,
+                    AnchorMin.vector2Value
+                );
+                EditorGUI.EndDisabledGroup();
 
                 do_anchor_max_adjustment.boolValue = EditorGUI.Toggle(
                     do_anchor_max_rect,

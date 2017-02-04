@@ -252,9 +252,9 @@ namespace SpaceBattles
                 // trigger this object's largest breakpoint
                 var current_object_breakpoints
                     = trigger_enumerator.Current.Value;
-                Debug.Log("Invoking breakpoint at value "
-                         + object_largest_triggered_breakpoint);
-                Debug.Log(printTriggers(breakpoints));
+                //Debug.Log("Invoking breakpoint at value "
+                //         + object_largest_triggered_breakpoint);
+                //Debug.Log(printTriggers(breakpoints));
                 if (object_largest_triggered_function != null)
                 {
                     object_largest_triggered_function.Invoke();
