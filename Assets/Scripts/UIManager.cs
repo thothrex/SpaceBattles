@@ -197,15 +197,9 @@ namespace SpaceBattles
                     );
                 }
             }
-            else if (UiState == UiInputState.Orrery)
-            {
-                if (OrreryUiManager != null)
-                {
-                    OrreryUiManager.RotateCamera(
-                        InputAdapter.ReadOrreryCameraOffsetEulerRotationValue()
-                    );
-                }
-            }
+            //else if (UiState == UiInputState.Orrery)
+            //{
+            //}
             // else UiState == main menu
         }
 

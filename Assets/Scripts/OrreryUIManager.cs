@@ -12,8 +12,8 @@ namespace SpaceBattles
         public ExplicitLayoutGroup DesktopLayout;
         public ExplicitLayoutGroup TabletLayout;
         public ExplicitLayoutGroup MobileLayout;
-
-        private readonly float ZoomButtonIncrementFactor = 0.02f;
+        public float ZoomButtonIncrementFactor = 0.1f;
+        
         private readonly float FullRotation = Convert.ToSingle(Math.PI * 2);
         private OptionalEventModule oem = new OptionalEventModule();
         private Camera PlanetCamera = null;
@@ -169,9 +169,7 @@ namespace SpaceBattles
                 PlanetCameraController, "PlanetCameraController"
             );
             DesiredCameraOrbitRadius = newZoom;
-
-            //PlanetCameraController.offset.z = DesiredCameraOrbitRadius;
-            ResetCameraTransform();
+            ResetCameraOffset();
         }
 
         public void IncrementZoom (bool positive)
@@ -183,9 +181,8 @@ namespace SpaceBattles
             int sign = positive ? 1 : -1;
             DesiredCameraOrbitRadius
                 += (DesiredCameraOrbitRadius * ZoomButtonIncrementFactor * sign);
-
-            //PlanetCameraController.offset.z = DesiredCameraOrbitRadius;
-            ResetCameraTransform();
+            
+            ResetCameraOffset();
         }
 
         /// <summary>
@@ -200,20 +197,25 @@ namespace SpaceBattles
             if (PlanetCameraController != null
             &&  desiredAngles != LastRotation)
             {
-                Vector3 CalculatedOffset
-                    = CalculateNewCameraOffset(
-                        desiredAngles,
-                        DesiredCameraOrbitRadius
-                      );
-                Vector3 NewOffset
-                    = PlanetCameraController
-                    .FollowTransform
-                    .InverseTransformDirection(CalculatedOffset);
-                
+                Vector3 NewOffset = CalculateNewOffset(desiredAngles);
                 PlanetCameraController.offset = NewOffset;
-                ResetCameraTransform();
+                ResetCameraRotation();
                 LastRotation = desiredAngles;
             }
+        }
+
+        private Vector3 CalculateNewOffset (Vector2 rotationAngles)
+        {
+            Vector3 CalculatedOffset
+                = CalculateNewCameraOffset(
+                    rotationAngles,
+                    DesiredCameraOrbitRadius
+                );
+            Vector3 NewOffset
+                = PlanetCameraController
+                .FollowTransform
+                .InverseTransformDirection(CalculatedOffset);
+            return NewOffset;
         }
 
         /// <summary>
@@ -241,7 +243,7 @@ namespace SpaceBattles
             );
             PlanetCameraController.FollowTransform
                 = OrreryManager.GetOrbitingBodyTransform(newFocus);
-            ResetCameraTransform();
+            ResetCamera();
         }
 
         public void SetLayoutToMobile ()
@@ -263,7 +265,7 @@ namespace SpaceBattles
         }
 
 
-        private void ResetCameraTransform ()
+        private void ResetCameraRotation ()
         {
             Vector3 RotationVector
                 = Vector3.Normalize(-PlanetCameraController.offset);
@@ -277,6 +279,18 @@ namespace SpaceBattles
             Vector3 CalculatedEulerAngles = LookAtTarget.eulerAngles;
 
             PlanetCameraController.desiredEulerRotation = CalculatedEulerAngles;
+        }
+
+        private void ResetCameraOffset ()
+        {
+            Vector3 NewOffset = CalculateNewOffset(LastRotation);
+            PlanetCameraController.offset = NewOffset;
+        }
+
+        private void ResetCamera ()
+        {
+            ResetCameraOffset();
+            ResetCameraRotation();
         }
     }
 }
