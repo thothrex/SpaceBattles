@@ -248,19 +248,19 @@ namespace SpaceBattles
 
         public void SetLayoutToMobile ()
         {
-            Debug.Log("OrrerUIManager: changing layout to mobile");
+            //Debug.Log("OrrerUIManager: changing layout to mobile");
             MobileLayout.applyLayout();
         }
 
         public void SetLayoutToTablet()
         {
-            Debug.Log("OrrerUIManager: changing layout to tablet");
+            //Debug.Log("OrrerUIManager: changing layout to tablet");
             TabletLayout.applyLayout();
         }
 
         public void SetLayoutToDesktop()
         {
-            Debug.Log("OrrerUIManager: changing layout to desktop");
+            //Debug.Log("OrrerUIManager: changing layout to desktop");
             DesktopLayout.applyLayout();
         }
 

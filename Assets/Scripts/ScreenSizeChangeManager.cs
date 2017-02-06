@@ -89,23 +89,23 @@ namespace SpaceBattles
         /// </summary>
         public void OnScreenSizeChange()
         {
-            Debug.Log("Manager received a size change event");
-            Debug.Log("Manager is: "
-                    + (this.isActiveAndEnabled ? "not " : "")
-                    + "ActiveAndEnabled");
-            Debug.Log("Manager is: "
-                    + (IsInternal ? "not " : "")
-                    + "Internal");
-            Debug.Log("FixedUICamera is: "
-                    + (FixedUICamera.isActiveAndEnabled ? "not " : "")
-                    + "ActiveAndEnabled");
+            //Debug.Log("Manager received a size change event");
+            //Debug.Log("Manager is: "
+            //        + (this.isActiveAndEnabled ? "not " : "")
+            //        + "ActiveAndEnabled");
+            //Debug.Log("Manager is: "
+            //        + (IsInternal ? "not " : "")
+            //        + "Internal");
+            //Debug.Log("FixedUICamera is: "
+            //        + (FixedUICamera.isActiveAndEnabled ? "not " : "")
+            //        + "ActiveAndEnabled");
             if (this.isActiveAndEnabled
             &&  !IsInternal
             &&  FixedUICamera.isActiveAndEnabled)
             {
                 Rect rectangle = FixedUICamera.pixelRect;
-                Debug.Log("Triggering screen size change with camera rect: "
-                        + rectangle.ToString());
+                //Debug.Log("Triggering screen size change with camera rect: "
+                //        + rectangle.ToString());
                 ScreenResized.Invoke(rectangle);
             }
         }
@@ -116,12 +116,12 @@ namespace SpaceBattles
         /// <param name="new_size"></param>
         public void OnScreenSizeChange(Rect new_size)
         {
-            Debug.Log("Manager received an internal size change event");
+            //Debug.Log("Manager received an internal size change event");
             if (this.isActiveAndEnabled
             &&  IsInternal)
             {
-                Debug.Log("Triggering screen size change with changed rect: "
-                        + new_size.ToString());
+                //Debug.Log("Triggering screen size change with changed rect: "
+                //        + new_size.ToString());
                 ScreenResized.Invoke(new_size);
             }
         }
