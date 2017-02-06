@@ -48,7 +48,7 @@ namespace SpaceBattles
         private bool InGameMenuVisible = false;
         private bool ship_select_menu_visible = false;
         private bool UITransitionsOnHold = false;
-        private UiInputState ui_state = UiInputState.MainMenu;
+        private UiInputState UiState = UiInputState.MainMenu;
         private UIElements UIElement_ALL;
         private GameObject DebugTextbox = null;
 
@@ -96,7 +96,7 @@ namespace SpaceBattles
         // -- enums --
         public enum PlayerConnectState { IDLE, SEARCHING_FOR_SERVER, JOINING_SERVER, CREATING_SERVER };
 
-        private enum UiInputState { InGame, MainMenu };
+        private enum UiInputState { InGame, MainMenu, Orrery };
 
         // -- properties --
         public OrreryManager OrreryManager
@@ -126,7 +126,6 @@ namespace SpaceBattles
                 InitialiseManagerFields();
                 InitialiseGameplayUi();
                 InitialiseSettingsMenu();
-                InitialiseOrreryUi();
 
                 EventSwitchboard Switchboard
                     = GetComponent<EventSwitchboard>();
@@ -166,7 +165,7 @@ namespace SpaceBattles
 
         public void Update ()
         {
-            if (ui_state == UiInputState.InGame)
+            if (UiState == UiInputState.InGame)
             {
                 if (InputAdapter.ExitNetGameInput())
                 {
@@ -198,11 +197,15 @@ namespace SpaceBattles
                     );
                 }
             }
+            //else if (UiState == UiInputState.Orrery)
+            //{
+            //}
+            // else UiState == main menu
         }
 
         public void FixedUpdate()
         {
-            if (ui_state == UiInputState.InGame)
+            if (UiState == UiInputState.InGame)
             {
                 float new_roll = InputAdapter.ReadRollInputValue();
                 float new_pitch = InputAdapter.ReadPitchInputValue();
@@ -247,6 +250,16 @@ namespace SpaceBattles
             }
         }
 
+        public void InitialiseOrreryUi()
+        {
+            OrreryUiManager.DateTimeSet += OnOrreryDateTimeInput;
+            OrreryUiManager.PlanetLinearScaleSet += OnOrreryLinearScaleInput;
+            OrreryUiManager.PlanetLogarithmicScaleSet += OnOrreryLogarithmicScaleInput;
+            OrreryUiManager.ProvidePlanetCamera(
+                CameraRegistry[(int)CameraRoles.MainMenuAndOrrery]
+            );
+        }
+
         public void SetCurrentPlayerHealth(double new_value)
         {
             //Debug.Log("UI Manager updating local player health");
@@ -256,6 +269,12 @@ namespace SpaceBattles
         public void SetPlayerConnectState(PlayerConnectState newState)
         {
             MainMenuUIManager.SetPlayerConnectState(newState);
+        }
+
+        public void SetOrreryManager (OrreryManager newOrreryManager)
+        {
+            OrreryManager = newOrreryManager;
+            OrreryUiManager.OrreryManager = newOrreryManager;
         }
 
         public void CameraTransition (CameraRoles newActiveCameras)
@@ -337,6 +356,26 @@ namespace SpaceBattles
             {
                 UITransitionHistory.Clear();
             }
+
+            // Set input state
+            // There's a hard priority here so higher elements
+            // will take precedence
+
+            // if gameplay UI is active
+            if ((ActiveUIElements & UIElements.GameplayUI) > 0)
+            {
+                UiState = UiInputState.InGame;
+            }
+            // if orrery UI is active
+            else if ((ActiveUIElements & UIElements.OrreryUI) > 0)
+            {
+                UiState = UiInputState.Orrery;
+            }
+            // if main menu UI is active
+            else if ((ActiveUIElements & UIElements.MainMenu) > 0)
+            {
+                UiState = UiInputState.MainMenu;
+            }
         }
 
         public void TransitionUIElementsBacktrack ()
@@ -352,7 +391,7 @@ namespace SpaceBattles
 
         public void EnterMainMenuRoot ()
         {
-            ui_state = UiInputState.MainMenu;
+            UiState = UiInputState.MainMenu;
             // TODO: pull this debug text into the main menu manager
             if (PrintScreenSizeDebugText)
             {
@@ -391,12 +430,17 @@ namespace SpaceBattles
         public void EnteringMultiplayerGame ()
         {
             // TODO: change to start in ship selection
-            ui_state = UiInputState.InGame;
+            UiState = UiInputState.InGame;
             //TransitionToUIElements(
             //    UiElementTransitionType.Fresh,
             //    UIElements.GameplayUI
             //);
             //CameraTransition(CameraRoles.FixedUi);
+        }
+
+        public void EnteringOrrery ()
+        {
+            UiState = UiInputState.Orrery;
         }
 
         public void playerShipCreated ()
@@ -492,11 +536,21 @@ namespace SpaceBattles
             //         .Key);
         }
 
-        public void SetOrreryDateTimeTrigger (DateTime newTime)
+        public void OnOrreryDateTimeInput (DateTime newTime)
+            { OrreryManager.SetExplicitDateTime(newTime); }
+
+        public void OnOrreryLinearScaleInput (float scaleMultiplier)
+            { OrreryManager.SetLinearScale(scaleMultiplier); }
+
+        public void
+        OnOrreryLogarithmicScaleInput
+            (float logBase, float innerMultiplier, float outerMultiplier)
         {
-            OrreryManager.SetExplicitDateTime(newTime);
+            OrreryManager.SetLogarithmicScale(
+                logBase, innerMultiplier, outerMultiplier
+            );
         }
-        
+
         public void FadeCamera (bool fadeOut, Action fadeCallback)
         {
             if (fadeOut)
@@ -764,11 +818,6 @@ namespace SpaceBattles
                 .ScreenResizedInternal
                 .AddListener(Fader.OnScreenSizeChange);
             Fader.OnScreenSizeChange(PlayerScreenCanvas.GetComponent<RectTransform>().rect);
-        }
-
-        private void InitialiseOrreryUi()
-        {
-            OrreryUiManager.DateTimeSet += SetOrreryDateTimeTrigger;
         }
 
         private void InitialiseSettingsMenu()

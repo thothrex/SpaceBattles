@@ -149,14 +149,38 @@ namespace SpaceBattles
         }
 
         /// <summary>
-        /// Sets the obrbiting body's size relative to its radius
+        /// Sets the orbiting body's size relative to its radius
         /// i.e. a true scaling of the orbiting body
         /// </summary>
         /// <param name="relativeScale"></param>
-        public void SetRelativeScaleExplicitly (double relativeScale)
+        public void SetRelativeLinearScaleExplicitly (double relativeScale)
         {
             //Debug.Log("Setting relative scale explicitly to " + relativeScale);
             double NewScale = relativeScale * Radius;
+            SetScale(NewScale);
+            ExplicitScale = NewScale;
+        }
+
+        /// <summary>
+        /// Sets the orbiting body's size relative to its radius
+        /// i.e. a true scaling of the orbiting body
+        /// </summary>
+        /// <param name="relativeScale"></param>
+        public void
+        SetRelativeLogarithmicScaleExplicitly
+            (double logBase, double innerMultiplier, double outerMultiplier)
+        {
+            //Debug.Log(
+            //    "Receiving log values: "
+            //    + "log base "
+            //    + logBase
+            //    + ", inner multiplier "
+            //    + innerMultiplier
+            //    + ", outer multiplier"
+            //    + outerMultiplier
+            //);
+            double NewScale = outerMultiplier * Math.Log(Radius * innerMultiplier, logBase);
+            //Debug.Log("NewScale = " + NewScale);
             SetScale(NewScale);
             ExplicitScale = NewScale;
         }

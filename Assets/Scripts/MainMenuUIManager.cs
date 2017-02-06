@@ -46,7 +46,7 @@ namespace SpaceBattles
             Debug.Log("Setting explicit background earth scale");
             BackgroundOrbitalBody
                 .GetComponent<OrbitingBodyBackgroundGameObject>()
-                .SetRelativeScaleExplicitly(BackgroundOrbitalBodyScale);
+                .SetRelativeLinearScaleExplicitly(BackgroundOrbitalBodyScale);
         }
 
         public void Update ()
@@ -126,18 +126,14 @@ namespace SpaceBattles
         public void setLayoutToMobile ()
         {
             MyContract.RequireFieldNotNull(MobileLayout, "Mobile Layout");
-
-            Debug.Log("MainMenuManager setting layout to mobile");
-
+            //Debug.Log("MainMenuManager setting layout to mobile");
             target_layout = MenuLayout.Mobile;
         }
 
         public void setLayoutToDesktop ()
         {
             MyContract.RequireFieldNotNull(DesktopLayout, "Desktop Layout");
-
-            Debug.Log("MainMenuManager setting layout to desktop");
-
+            //Debug.Log("MainMenuManager setting layout to desktop");
             target_layout = MenuLayout.Desktop;
         }
 

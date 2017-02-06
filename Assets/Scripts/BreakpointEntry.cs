@@ -55,10 +55,10 @@ namespace SpaceBattles
                 MyContract.RequireArgumentNotNull(
                     callback_instance, "callback_instance"
                 );
-                Debug.Log("Invoking delegate function "
-                         + handler_function_name
-                         + " | "
-                         + callback_method.Name);
+                //Debug.Log("Invoking delegate function "
+                //         + handler_function_name
+                //         + " | "
+                //         + callback_method.Name);
                 try
                 {
                     callback_method.Invoke(callback_instance, null);

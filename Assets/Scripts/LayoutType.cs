@@ -8,6 +8,7 @@ namespace SpaceBattles
     public enum LayoutType
     {
         DESKTOP,
+        TABLET,
         MOBILE
     }
 }
