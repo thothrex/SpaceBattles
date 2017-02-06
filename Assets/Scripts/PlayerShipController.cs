@@ -26,8 +26,11 @@ namespace SpaceBattles
         public float engine_power;
         public float rotation_power;
         [Tooltip("The speed of the ship's pitch will be multiplied "
-                +"by this factor after all other calculations")]
+                + "by this factor after all other calculations")]
         public float pitch_fudge_factor = 1.0f;
+        [Header("Gameplay Properties")]
+        [Tooltip("In Seconds")]
+        public float WeaponCooldown;
         [Header("Graphical Objects")]
         public GameObject phaser_bolt_prefab;
         [Header("Gameplay Objects")]
@@ -44,6 +47,7 @@ namespace SpaceBattles
         /// </summary>
         public PlayerIdentifier owner = null;
 
+        [SyncVar] private double Health;
         private Vector3 acceleration_direction; // in LOCAL coordinates
         private bool accelerating = false;
         private bool braking = false;
@@ -54,10 +58,10 @@ namespace SpaceBattles
         private SpaceShipClass CurrentSpaceshipClass = SpaceShipClass.NONE;
         private Rigidbody physics_body;
         private OptionalEventModule oem = null;
-        [SyncVar] private double Health;
-
         private object DeathLock = new object();
         private bool IsDead = false;
+        public TimeSpan WeaponCD;
+        private DateTime TimeLastWeaponWasShot = DateTime.MinValue;
 
         // -- Delegates --
         public delegate void LocalPlayerStartHandler();
@@ -89,6 +93,7 @@ namespace SpaceBattles
         {
             // init health
             Health = MAX_HEALTH;
+            WeaponCD = TimeSpan.FromSeconds(WeaponCooldown);
         }
 
         override
@@ -173,25 +178,32 @@ namespace SpaceBattles
         [Command]
         public void CmdFirePhaser()
         {
-            // Create the bolt locally
-            GameObject Bolt = (GameObject)Instantiate(
-                 phaser_bolt_prefab,
-                 projectile_spawn_location.position,
-                 transform.rotation);
+            TimeSpan TimeElapsedSinceLastWeaponShot
+                = DateTime.Now - TimeLastWeaponWasShot;
+            if (TimeElapsedSinceLastWeaponShot > WeaponCD)
+            {
+                // Create the bolt locally
+                GameObject Bolt = (GameObject)Instantiate(
+                     phaser_bolt_prefab,
+                     projectile_spawn_location.position,
+                     transform.rotation);
 
-            Projectile BoltController
-                = Bolt.GetComponent<Projectile>();
-            MyContract.RequireFieldNotNull(BoltController, "BoltController");
-            MyContract.RequireFieldNotNull(owner, "owner");
-            BoltController.shooter = owner;
+                Projectile BoltController
+                    = Bolt.GetComponent<Projectile>();
+                MyContract.RequireFieldNotNull(BoltController, "BoltController");
+                MyContract.RequireFieldNotNull(owner, "owner");
+                BoltController.shooter = owner;
 
-            Bolt.GetComponent<Rigidbody>()
-                .velocity = (PHASER_BOLT_FORCE * Bolt.transform.forward);
+                Bolt.GetComponent<Rigidbody>()
+                    .velocity = (PHASER_BOLT_FORCE * Bolt.transform.forward);
 
-            // Spawn the bullet on the clients
-            NetworkServer.Spawn(Bolt);
-            // Set self-destruct timer
-            Destroy(Bolt, 2.0f);
+                // Spawn the bullet on the clients
+                NetworkServer.Spawn(Bolt);
+                // Set self-destruct timer
+                Destroy(Bolt, 2.0f);
+                TimeLastWeaponWasShot = DateTime.Now;
+            }
+            // else just ignore/drop this request
         }
         /// <summary>
         /// I would expand this to include a new parameter
