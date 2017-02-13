@@ -8,11 +8,11 @@ namespace SpaceBattles
         public GameplayInputAdapterAndroid ()
         {
             // set default values
-            VirtualJoystickEnabled = false;
-
-            // testing
-            InvertPitchControls = true;
-            InvertRollControls = false;
+            VirtualJoystickEnabled  = true;
+            AccelerateButtonEnabled = false;
+            FireButtonEnabled       = true;
+            InvertPitchControls     = true;
+            InvertRollControls      = false;
         }
 
         override

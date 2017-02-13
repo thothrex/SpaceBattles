@@ -10,9 +10,12 @@ namespace SpaceBattles
         // -- Fields --
         public UIBarManager LocalPlayerHealthBar;
         public List<GameObject> SubComponents;
-        
+
+        private static readonly string ActivateUIElementConditionDescription
+            = "is equal to Accelerate button, fire button or virtual joystick";
         private UIRegistry ComponentRegistry
             = new UIRegistry();
+        private UIElements ActiveElements = UIElements.None;
 
         // -- Methods --
 
@@ -35,22 +38,52 @@ namespace SpaceBattles
 
         public void ActivateVirtualJoystick (bool joystickActive)
         {
-            GameObject Joystick
-                = ComponentRegistry[(int)UIElements.VirtualJoystick];
-            GameObject AccelerateButton
-                = ComponentRegistry[(int)UIElements.AccelerateButton];
+            Debug.Log(
+                "Setting virtual joystick "
+                + (joystickActive ? "active" : "inactive")
+            );
+            ActivateUIElement(UIElements.VirtualJoystick, joystickActive);
+        }
 
-            MyContract.RequireFieldNotNull(Joystick,
-                                          "Joystick Component");
-            MyContract.RequireFieldNotNull(AccelerateButton,
-                                           "Accelerate Button Component");
+        public void ActivateAccelerateButton (bool buttonActive)
+        {
+            Debug.Log(
+                "Setting accelerate button "
+                + (buttonActive ? "active" : "inactive")
+            );
+            ActivateUIElement(UIElements.AccelerateButton, buttonActive);
+        }
 
-            Joystick.SetActive(joystickActive);
-            Joystick.GetComponent<Image>().raycastTarget
-                = joystickActive;
-            AccelerateButton.SetActive(!joystickActive);
-            AccelerateButton.GetComponentInChildren<Image>().raycastTarget
-                = !joystickActive;
+        public void ActivateFireButton(bool buttonActive)
+        {
+            Debug.Log(
+                "Setting fire button "
+                + (buttonActive ? "active" : "inactive")
+            );
+            ActivateUIElement(UIElements.FireButton, buttonActive);
+        }
+
+        private void ActivateUIElement (UIElements elementsToActivate, bool active)
+        {
+            MyContract.RequireArgument(
+                   elementsToActivate == UIElements.AccelerateButton
+                || elementsToActivate == UIElements.VirtualJoystick
+                || elementsToActivate == UIElements.FireButton
+                ,
+                   ActivateUIElementConditionDescription,
+                   "elementsToActivate"
+            );
+            GameObject go
+                = ComponentRegistry[(int)elementsToActivate];
+            MyContract.RequireFieldNotNull(
+                go, elementsToActivate.ToString()
+            );
+            
+            go.SetActive(active);
+            foreach (Image i in go.GetComponentsInChildren<Image>())
+            {
+                i.raycastTarget = active;
+            }
         }
     }
 }

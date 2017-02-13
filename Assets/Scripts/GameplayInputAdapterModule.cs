@@ -7,6 +7,8 @@ namespace SpaceBattles
     {
         // -- Fields --
         public bool VirtualJoystickEnabled      { set; get; }
+        public bool AccelerateButtonEnabled     { set; get; }
+        public bool FireButtonEnabled           { set; get; }
         public bool InvertPitchControls         { set; private get; }
         public bool InvertRollControls          { set; private get; }
         public string AccelerateButtonName      { set; private get; }
