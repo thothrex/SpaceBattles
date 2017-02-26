@@ -8,10 +8,11 @@ namespace SpaceBattles
         public GameplayInputAdapterPc ()
         {
             // set default values
-            // testing
-            VirtualJoystickEnabled = true;
-            InvertPitchControls    = true;
-            InvertRollControls     = false;
+            VirtualJoystickEnabled  = false;
+            AccelerateButtonEnabled = false;
+            FireButtonEnabled       = false;
+            InvertPitchControls     = true;
+            InvertRollControls      = false;
         }
         
         override

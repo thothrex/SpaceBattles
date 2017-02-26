@@ -7,74 +7,123 @@ namespace SpaceBattles
 {
     public class SettingsMenuUIManager : MonoBehaviour
     {
-        public bool editor_virtual_joystick_initial_state;
-        public List<EasyTween> joystick_button_tweens;
-        public List<EasyTween> joystick_button_antitweens;
-        public MyWaypointMover joystick_button_mover;
+        public ToggleSettingManager VirtualJoystickSetting;
+        public ToggleSettingManager AccelerateButtonSetting;
+        public ToggleSettingManager FireButtonSetting;
 
-        private bool virtual_joystick_state;
-        private bool done_init = false;
         private OptionalEventModule oem = new OptionalEventModule();
+        private HashSet<UIElements> ActiveUIElements
+            = new HashSet<UIElements>();
         
         // -- delegates --
-        public delegate void virtualJoystickSettingHandler(bool enabled);
+        public delegate void UIElementSettingHandler(bool enabled);
 
         // -- events --
         public UnityEvent ExitSettingsMenuEvent;
-        public event virtualJoystickSettingHandler VirtualJoystickSetEvent;
+        public event UIElementSettingHandler VirtualJoystickSetEvent;
+        public event UIElementSettingHandler AccelerateButtonSet;
+        public event UIElementSettingHandler FireButtonSet;
+
+        // -- enums --
+        public enum Setting { AccelerateButton, FireButton, VirtualJoystick}
+
+        // -- Methods --
 
         public void Start ()
         {
-            ensureInit();
+            MyContract.RequireFieldNotNull(
+                AccelerateButtonSetting,
+                "AccelerateButtonSetting"
+            );
+            MyContract.RequireFieldNotNull(
+                FireButtonSetting,
+                "FireButtonSetting"
+            );
+            MyContract.RequireFieldNotNull(
+                VirtualJoystickSetting,
+                "VirtualJoystickSetting"
+            );
+
+            AccelerateButtonSetting.ToggleSet
+                += PropagateAccelerateButtonSet;
+            FireButtonSetting.ToggleSet
+                += PropagateFireButtonSet;
+            VirtualJoystickSetting.ToggleSet
+                += PropagateJoystickSet;
         }
 
-        public void exitSettingsMenu ()
+        public void ExitSettingsMenu ()
         {
             ExitSettingsMenuEvent.Invoke();
         }
 
+        public void ToggleAccelerateButton()
+        {
+            MyContract.RequireFieldNotNull(
+                AccelerateButtonSetting,
+                "AccelerateButtonSetting"
+            );
+            AccelerateButtonSetting.Toggle();
+        }
+
+        public void ToggleFireButton()
+        {
+            MyContract.RequireFieldNotNull(
+                FireButtonSetting,
+                "FireButtonSetting"
+            );
+            FireButtonSetting.Toggle();
+        }
+
         public void toggleVirtualJoystick ()
         {
-            virtual_joystick_state = !virtual_joystick_state;
-            var handler = VirtualJoystickSetEvent;
-            if (oem.shouldTriggerEvent(handler))
-            {
-                handler(virtual_joystick_state);
-            }
+            MyContract.RequireFieldNotNull(
+                VirtualJoystickSetting,
+                "VirtualJoystickSetting"
+            );
+            VirtualJoystickSetting.Toggle();
         }
-
+        
         public void DisplayVirtualJoystickButtonState (bool on)
         {
-            MyContract.RequireFieldNotNull(joystick_button_mover,
-                                           "joystick_button_mover");
-
-            Debug.Log("Current joystick state: " + virtual_joystick_state.ToString());
-            Debug.Log("Setting joystick state "
-                    + (on ? "on" : "off"));
-            ensureInit();
-            if (on != virtual_joystick_state)
-            {
-                foreach (EasyTween et in joystick_button_tweens)
-                {
-                    et.OpenCloseObjectAnimation();
-                }
-                foreach (EasyTween at in joystick_button_antitweens)
-                {
-                    at.OpenCloseObjectAnimation();
-                }
-            }
-            joystick_button_mover.setMoveState(on);
-            virtual_joystick_state = on;
+            MyContract.RequireFieldNotNull(
+                VirtualJoystickSetting,
+                "VirtualJoystickSetting"
+            );
+            VirtualJoystickSetting.SetInitialToggleGraphicState(on);
         }
 
-        private void ensureInit()
+        public void DisplayFireButtonState (bool on)
         {
-            if (!done_init)
-            {
-                Debug.Log("initialising settings menu from editor values");
-                virtual_joystick_state = editor_virtual_joystick_initial_state;
-                done_init = true;
-            }
+            MyContract.RequireFieldNotNull(
+                FireButtonSetting,
+                "FireButtonSetting"
+            );
+            FireButtonSetting.SetInitialToggleGraphicState(on);
+        }
+
+        public void DisplayAccelerateButtonState (bool on)
+        {
+            MyContract.RequireFieldNotNull(
+                AccelerateButtonSetting,
+                "AccelerateButtonSetting"
+            );
+            AccelerateButtonSetting.SetInitialToggleGraphicState(on);
+        }
+
+        private void PropagateJoystickSet (bool on)
+        {
+            VirtualJoystickSetEvent.Invoke(on);
+        }
+
+        private void PropagateAccelerateButtonSet(bool on)
+        {
+            AccelerateButtonSet.Invoke(on);
+        }
+
+        private void PropagateFireButtonSet(bool on)
+        {
+            FireButtonSet.Invoke(on);
         }
     }  
 }

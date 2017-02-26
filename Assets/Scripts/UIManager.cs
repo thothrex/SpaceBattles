@@ -420,6 +420,12 @@ namespace SpaceBattles
             SettingsMenuManager.DisplayVirtualJoystickButtonState(
                 InputAdapter.VirtualJoystickEnabled
             );
+            SettingsMenuManager.DisplayAccelerateButtonState(
+                InputAdapter.AccelerateButtonEnabled
+            );
+            SettingsMenuManager.DisplayFireButtonState(
+                InputAdapter.FireButtonEnabled
+            );
         }
 
         public void ExitSettingsMenu ()
@@ -690,8 +696,6 @@ namespace SpaceBattles
             InputAdapter = new GameplayInputAdapterAndroid();
 #endif
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-            // testing
-            //InputAdapter = new GameplayInputAdapterAndroid();
             InputAdapter = new GameplayInputAdapterPc();
 #endif
 
@@ -785,6 +789,18 @@ namespace SpaceBattles
             GameplayUiManager.ActivateVirtualJoystick(enabled);
         }
 
+        private void OnFireButtonEnabled(bool enabled)
+        {
+            InputAdapter.FireButtonEnabled = enabled;
+            GameplayUiManager.ActivateFireButton(enabled);
+        }
+
+        private void OnAccelerateButtonEnabled(bool enabled)
+        {
+            InputAdapter.AccelerateButtonEnabled = enabled;
+            GameplayUiManager.ActivateAccelerateButton(enabled);
+        }
+
         private void InitialiseDebugTextUiObject()
         {
             DebugTextbox = ComponentRegistry[(int)UIElements.DebugOutput];
@@ -822,7 +838,12 @@ namespace SpaceBattles
 
         private void InitialiseSettingsMenu()
         {
-            SettingsMenuManager.VirtualJoystickSetEvent += OnVirtualJoystickEnabled;
+            SettingsMenuManager.VirtualJoystickSetEvent
+                += OnVirtualJoystickEnabled;
+            SettingsMenuManager.AccelerateButtonSet
+                += OnAccelerateButtonEnabled;
+            SettingsMenuManager.FireButtonSet
+                += OnFireButtonEnabled;
         }
 
         private void InitialiseGameplayUi()
@@ -831,6 +852,12 @@ namespace SpaceBattles
             InitialiseInputAdapter();
             GameplayUiManager.ActivateVirtualJoystick(
                 InputAdapter.VirtualJoystickEnabled
+            );
+            GameplayUiManager.ActivateFireButton(
+                InputAdapter.FireButtonEnabled
+            );
+            GameplayUiManager.ActivateAccelerateButton(
+                InputAdapter.AccelerateButtonEnabled
             );
         }
 
