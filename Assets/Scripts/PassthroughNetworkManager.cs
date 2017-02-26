@@ -18,6 +18,7 @@ namespace SpaceBattles
     /// </summary>
     public class PassthroughNetworkManager : NetworkManager
     {
+        // -- Fields --
         public const string NO_NETBEHAVIOUR_ERRMSG
             = "player object does not have a network behaviour";
         /// <summary>
@@ -27,11 +28,11 @@ namespace SpaceBattles
         public GameObject player_prefab;
         private OptionalEventModule oem;
 
-        // Delegates
+        // -- Delegates --
         public delegate void LocalPlayerStartHandler (NetworkedPlayerController IPC);
         public delegate void PlayerDisconnectedHandler (PlayerIdentifier pID);
 
-        // Events
+        // -- Events --
         public event LocalPlayerStartHandler    LocalPlayerStarted;
         /// <summary>
         /// Called when this client is disconnected from the server
@@ -42,6 +43,15 @@ namespace SpaceBattles
         /// </summary>
         public event PlayerDisconnectedHandler  PlayerDisconnected;
 
+        // -- Properties --
+        public bool FinishedLoading { get; private set; }
+
+        // -- Methods --
+        public void Awake ()
+        {
+            FinishedLoading = false;
+        }
+
         public void Start ()
         {
             Debug.Log("player controller spawn handler registered");
@@ -51,6 +61,7 @@ namespace SpaceBattles
                                        playerControllerDespawnHandler);
             oem = new OptionalEventModule();
             oem.AllowNoEventListeners = false;
+            FinishedLoading = true;
         }
 
         override

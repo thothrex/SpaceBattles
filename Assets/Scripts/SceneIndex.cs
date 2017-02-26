@@ -9,9 +9,10 @@ namespace SpaceBattles
     /// </summary>
     public enum SceneIndex
     {
-        MainMenu = 0,
-        MultiplayerGame = 1,
-        Orrery = 2
+        Loading = 0,
+        MainMenu = 1,
+        MultiplayerGame = 2,
+        Orrery = 3
     }
 
     public static class SceneIndexExtensions
@@ -20,6 +21,8 @@ namespace SpaceBattles
         {
             switch (sceneIndex)
             {
+                case SceneIndex.Loading:
+                    return "LoadGameScene";
                 case SceneIndex.MainMenu:
                     return "MainMenu";
                 case SceneIndex.MultiplayerGame:

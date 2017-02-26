@@ -109,6 +109,8 @@ namespace SpaceBattles
             }
         }
 
+        public bool FinishedLoading { get; private set; }
+
         //Awake is always called before any Start functions
         public void Awake()
         {
@@ -119,11 +121,12 @@ namespace SpaceBattles
             {
                 //if not, set instance to this & do first load operations
                 instance = this;
+                FinishedLoading = false;
                 //Sets this to not be destroyed when reloading scene
                 UnityEngine.Object.DontDestroyOnLoad(gameObject);
                 UnityEngine.Object.DontDestroyOnLoad(this);
                 Debug.Log("Program instance manager prevented from being destroyed on load");
-
+                
                 UI_manager_obj = GameObject.Instantiate(UI_manager_prefab);
                 UIManager = UI_manager_obj.GetComponent<UIManager>();
                 // TODO: Let player choose ship class
@@ -160,14 +163,19 @@ namespace SpaceBattles
             Camera MainMenuAndOrreryCamera
                 = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery];
             UIManager.ProvideCamera(MainMenuAndOrreryCamera);
-
+            
+            bool Initialised = NetworkDiscoverer.Initialize();
+            if (!Initialised)
+            {
+                throw new Exception("NetworkDiscoverer failed to Initialise");
+            }
             NetworkDiscoverer.ServerDetected
                 += new PassthroughNetworkDiscovery
                       .ServerDetectedEventHandler(OnServerDetected);
-            NetworkDiscoverer.Initialize();
 
             NetworkManager.LocalPlayerStarted += LocalPlayerControllerCreatedHandler;
             NetworkManager.ClientDisconnected += OnClientDisconnect;
+            FinishedLoading = true;
         }
 
         /// <summary>
@@ -424,6 +432,12 @@ namespace SpaceBattles
             // Relies on the below coroutine
             // checking the lock states appropriately
             StartCoroutine(PlayGameCoroutine());
+            // This Initialize() needs to be here, but it should have been
+            // covered in the Start() function already.
+            // This shouldn't be here but it needs to be
+            // so I'm leaving both calls in for now.
+            // TODO: Investigate this
+            NetworkDiscoverer.Initialize();
             NetworkDiscoverer.StartAsClient();
         }
 
