@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace SpaceBattles
 {
@@ -12,14 +13,16 @@ namespace SpaceBattles
         public ExplicitLayoutGroup DesktopLayout;
         public ExplicitLayoutGroup TabletLayout;
         public ExplicitLayoutGroup MobileLayout;
+        public List<Slider> ZoomSliders;
         public float ZoomButtonIncrementFactor = 0.1f;
+        public static readonly float InitialZoom = 350;
         
         private readonly float FullRotation = Convert.ToSingle(Math.PI * 2);
         private OptionalEventModule oem = new OptionalEventModule();
         private Camera PlanetCamera = null;
         private InertialCameraController PlanetCameraController = null;
         private Vector2 LastRotation = new Vector2(0, 0);
-        private float DesiredCameraOrbitRadius = 4000;
+        private float DesiredCameraOrbitRadius;
 
         // -- Delegates --
         public delegate void ExplicitDateTimeSetHandler (DateTime newTime);
@@ -84,6 +87,17 @@ namespace SpaceBattles
         public static float ConvertToRadians(float degrees)
         {
             return Convert.ToSingle(degrees * (Math.PI / 180.0));
+        }
+
+        public void Awake ()
+        {
+            DesiredCameraOrbitRadius = InitialZoom;
+        }
+
+        public void Start ()
+        {
+            ResetCamera();
+            ResetSliders();
         }
 
         public void BroadcastNewDateTime ()
@@ -177,11 +191,12 @@ namespace SpaceBattles
             MyContract.RequireFieldNotNull(
                 PlanetCameraController, "PlanetCameraController"
             );
-            
+
             int sign = positive ? 1 : -1;
             DesiredCameraOrbitRadius
                 += (DesiredCameraOrbitRadius * ZoomButtonIncrementFactor * sign);
-            
+            ResetSliders();
+
             ResetCameraOffset();
         }
 
@@ -206,6 +221,9 @@ namespace SpaceBattles
 
         private Vector3 CalculateNewOffset (Vector2 rotationAngles)
         {
+            MyContract.RequireFieldNotNull(
+                PlanetCameraController, "PlanetCameraController"
+            );
             Vector3 CalculatedOffset
                 = CalculateNewCameraOffset(
                     rotationAngles,
@@ -291,6 +309,17 @@ namespace SpaceBattles
         {
             ResetCameraOffset();
             ResetCameraRotation();
+        }
+
+        /// <summary>
+        /// Keep sliders up-to-date
+        /// </summary>
+        private void ResetSliders()
+        {
+            foreach (Slider s in ZoomSliders)
+            {
+                s.value = DesiredCameraOrbitRadius;
+            }
         }
     }
 }
