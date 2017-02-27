@@ -21,6 +21,21 @@ namespace SpaceBattles
             GenericRegisterFromList(prefabs, true, Callback);
         }
 
+        public void
+        InitialiseAndRegisterUiPrefabs
+            (List<GameObject> prefabs,
+             IScreenSizeBreakpointRegister register,
+             RectTransform parentTransform)
+        {
+            InitialisationDelegate Callback
+                = CreateFreshUIComponentSetupCallback(
+                    parentTransform,
+                    prefabs,
+                    CreateBreakpointRegistrationCallback(register)
+                );
+            GenericRegisterFromList(prefabs, true, Callback);
+        }
+
         /// <summary>
         /// Expects GameObjects which have already been instantiated
         /// e.g. ones which are part of the same prefab as the parent.
@@ -52,7 +67,14 @@ namespace SpaceBattles
                 "is expected type",
                 "ManagerType: " + typeof(ManagerType).Name
             );
-            
+
+            MyContract.RequireField
+           (
+               this.Contains(element),
+               "contains the element " + element.ToString(),
+               "RegisteredObjects"
+            );
+
             ManagerType Manager
                 = RegisteredObjects[(int)element].GetComponent<ManagerType>();
             MyContract.RequireFieldNotNull(

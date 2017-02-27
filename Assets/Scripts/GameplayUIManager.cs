@@ -13,8 +13,7 @@ namespace SpaceBattles
 
         private static readonly string ActivateUIElementConditionDescription
             = "is equal to Accelerate button, fire button or virtual joystick";
-        private UIRegistry ComponentRegistry
-            = new UIRegistry();
+        private UIRegistry ComponentRegistry = new UIRegistry();
         private UIElements ActiveElements = UIElements.None;
 
         // -- Methods --
@@ -61,6 +60,12 @@ namespace SpaceBattles
                 + (buttonActive ? "active" : "inactive")
             );
             ActivateUIElement(UIElements.FireButton, buttonActive);
+            // TODO: Make the click interceptor its own thing
+            // Need to make 'choose one' UI elements first though
+            // otherwise we still run into the issue where
+            // these two can both be active together,
+            // which is not what we want.
+            ActivateUIElement(UIElements.ClickInterceptor, !buttonActive);
         }
 
         private void ActivateUIElement (UIElements elementsToActivate, bool active)
@@ -69,6 +74,7 @@ namespace SpaceBattles
                    elementsToActivate == UIElements.AccelerateButton
                 || elementsToActivate == UIElements.VirtualJoystick
                 || elementsToActivate == UIElements.FireButton
+                || elementsToActivate == UIElements.ClickInterceptor
                 ,
                    ActivateUIElementConditionDescription,
                    "elementsToActivate"
