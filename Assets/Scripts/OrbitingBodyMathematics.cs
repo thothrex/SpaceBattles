@@ -23,6 +23,7 @@ namespace SpaceBattles
         static public readonly double FULL_ROTATION_ANGLE = 2 * Math.PI; // radians
         static public readonly double ACCEPTABLE_ECCENTRIC_ANOMALY_ERROR = 0.0001;
 
+        private static readonly int EccentricAnomalyCalculationIterations = 100;
         // Primary orbital elements
         private double semi_major_axis; // 10^6km
         private double eccentricity;
@@ -111,16 +112,18 @@ namespace SpaceBattles
         /// <param name="mass"></param>
         /// <param name="rotation_period"></param>
         /// <param name="time_last_at_original_rotation"></param>
-        public OrbitingBodyMathematics(double semi_major_axis,
-                             double eccentricity,
-                             DateTime time_last_at_periapsis,
-                             double inclination,
-                             double longitude_of_ascending_node,
-                             double longitude_of_periapsis, // argument_of_periapsis
-                             double mass,
-                             uint rotation_period,
-                             DateTime time_last_at_original_rotation,
-                             Vector3 default_rotation_tilt_euler_angle)
+        public OrbitingBodyMathematics(
+            double semi_major_axis,
+            double eccentricity,
+            DateTime time_last_at_periapsis,
+            double inclination,
+            double longitude_of_ascending_node,
+            double longitude_of_periapsis, // argument_of_periapsis
+            double mass,
+            uint rotation_period,
+            DateTime time_last_at_original_rotation,
+            Vector3 default_rotation_tilt_euler_angle
+        )
         {
             this.semi_major_axis = semi_major_axis;
             this.eccentricity = eccentricity;
@@ -159,15 +162,17 @@ namespace SpaceBattles
         /// <param name="orbiting_target_mass"></param>
         /// <param name="rotation_period"></param>
         /// <param name="time_last_at_original_rotation"></param>
-        public OrbitingBodyMathematics(double semi_major_axis,
-                            double eccentricity,
-                            DateTime time_last_at_periapsis,
-                            double inclination,
-                            double longitude_of_ascending_node,
-                            double longitude_of_periapsis, // argument_of_periapsis
-                            double mass,
-                            OrbitingBodyMathematics orbiting_target,
-                            double orbiting_target_mass)
+        public OrbitingBodyMathematics(
+            double semi_major_axis,
+            double eccentricity,
+            DateTime time_last_at_periapsis,
+            double inclination,
+            double longitude_of_ascending_node,
+            double longitude_of_periapsis, // argument_of_periapsis
+            double mass,
+            OrbitingBodyMathematics orbiting_target,
+            double orbiting_target_mass
+        )
         {
             this.semi_major_axis = semi_major_axis;
             this.eccentricity = eccentricity;
@@ -200,7 +205,9 @@ namespace SpaceBattles
         }
 
         /// <summary>
-        /// (my best guess) calculates the current angle from the periapsis 
+        /// Calculates the current angle from the periapsis
+        /// if the orbit were circular
+        /// (current "progress" of the orbit, as an angle)
         /// https://en.wikipedia.org/wiki/Mean_anomaly
         /// </summary>
         /// <param name="current_time"></param>
@@ -266,26 +273,43 @@ namespace SpaceBattles
 
         public Vector3 current_location(DateTime current_time)
         {
-            double E = eccentric_anomaly(current_time, 100);
+            // -- Foundational value --
+            double E
+                = eccentric_anomaly(
+                    current_time,
+                    EccentricAnomalyCalculationIterations
+                );
+            // -- Calculate values in the plane of the orbit
             double x_in_plane = semi_major_axis * (Math.Cos(E) - eccentricity);
             double y_in_plane
                 = semi_major_axis
                 * (Math.Sqrt(1.0 - Math.Pow(eccentricity, 2)) * Math.Sin(E));
 
+            // -- Convert rectangular planar coordinates to orbital values
             // v = true anomaly
             double v = Math.Atan2(y_in_plane, x_in_plane);
             // r = distance from centre
-            double r = Math.Sqrt(Math.Pow(x_in_plane, 2) + Math.Pow(y_in_plane, 2));
+            double r
+                = Math.Sqrt(Math.Pow(x_in_plane, 2)
+                + Math.Pow(y_in_plane, 2));
+
+            // -- Gather values
             double N = longitude_of_ascending_node * DEG_TO_RAD;
-            double i = inclination * DEG_TO_RAD; // i = inclination to ecliptic from degrees
+            // i = inclination to ecliptic from degrees
+            double i = inclination * DEG_TO_RAD; 
             double w = argument_of_periapsis * DEG_TO_RAD;
 
+            // -- Gather more values
+            // -- Only gathered for optimisation,
+            // -- they're used multiple times so may as well re-use them
             double sinvw = Math.Sin(v + w);
             double sinN = Math.Sin(N);
             double cosN = Math.Cos(N);
             double cosvw = Math.Cos(v + w);
             double cosi = Math.Cos(i);
 
+            // -- Convert orbit plane co-ordinates to
+            // -- solar-system plane co-ordinates
             // centred coordinates around system being used elsewhere
             // typically heliocentric, but could be terracentric for the moon
             double centred_x = r * (cosN * cosvw - sinN * sinvw * cosi);
@@ -449,6 +473,35 @@ namespace SpaceBattles
             //Debug.Log("Last time facing the sun: " + last_earth_facing_the_sun);
             Vector3 earth_position_when_facing_the_sun
                 = return_maths.current_location(last_earth_facing_the_sun);
+            DateTime last_time_facing_stellar_north
+                = CaclulateLastTimeFacingStellarNorth(
+                    earth_rotation_period,
+                    last_earth_facing_the_sun,
+                    earth_position_when_facing_the_sun
+                );
+
+            return_maths.time_last_at_original_rotation = last_time_facing_stellar_north;
+            return_maths.rotation_period = earth_rotation_period;
+            return_maths.default_rotation_tilt_euler_angle
+                = new Vector3(-23.4f, 180.0f, 0);
+            return_maths.rotation_elements_set = true;
+
+            return return_maths;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="earth_rotation_period">Sidereal period</param>
+        /// <param name="last_earth_facing_the_sun"></param>
+        /// <param name="earth_position_when_facing_the_sun"></param>
+        /// <returns></returns>
+        private static DateTime
+        CaclulateLastTimeFacingStellarNorth
+            (double earth_rotation_period,
+             DateTime last_earth_facing_the_sun,
+             Vector3 earth_position_when_facing_the_sun)
+        {
             Vector2 earth_pos_2d
                 = new Vector2(earth_position_when_facing_the_sun.x,
                               earth_position_when_facing_the_sun.y);
@@ -461,18 +514,11 @@ namespace SpaceBattles
             double progress_decimal
                 = earth_stellar_angle_when_facing_the_sun / 360.0;
             double time_until_up_facing
-                = progress_decimal * earth_rotation_period;
+                = (1 - progress_decimal) * earth_rotation_period;
             DateTime last_time_facing_stellar_north
                 = last_earth_facing_the_sun.AddSeconds(time_until_up_facing);
             //Debug.Log("Last time facing stellar north:" + last_time_facing_stellar_north);
-
-            return_maths.time_last_at_original_rotation = last_time_facing_stellar_north;
-            return_maths.rotation_period = earth_rotation_period;
-            return_maths.default_rotation_tilt_euler_angle
-                = new Vector3(-23.4f, 180.0f, 0);
-            return_maths.rotation_elements_set = true;
-
-            return return_maths;
+            return last_time_facing_stellar_north;
         }
 
         public static OrbitingBodyMathematics generate_moon(OrbitingBodyMathematics earth)

@@ -13,6 +13,8 @@ namespace SpaceBattles
             FireButtonEnabled       = false;
             InvertPitchControls     = true;
             InvertRollControls      = false;
+            FPSCounterEnabled       = false;
+            NetworkTesterEnabled    = false;
         }
         
         override

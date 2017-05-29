@@ -99,41 +99,45 @@ namespace SpaceBattles
                      double expected_latitude,
                      double expected_distance)
         {
+            string expected_string
+                = "\nExpected: longitude " + expected_longitude.ToString("F5")
+                + " degrees, latitude " + expected_latitude.ToString("F5")
+                + " degrees, distance " + expected_distance.ToString("F5");
             Vector3 coordinates = planet.current_location(test_time);
             Vector3 longlatdist = planet.current_longlatdist(test_time);
 
-            Console.Write(coordinates.ToString());
-            Console.Write(longlatdist.ToString());
+            Console.Write(coordinates.ToString("E"));
+            Console.Write(longlatdist.ToString("F5"));
 
             double longitude_error = Math.Abs(longlatdist.x - expected_longitude);
             double acceptable_longitude_error = 0.05;
             string longitude_error_message = differing_results_error_message(
-                Convert.ToString(expected_longitude),
                 Convert.ToString(longlatdist.x),
+                Convert.ToString(expected_longitude),
                 "degrees"
             );
             Assert.LessOrEqual(longitude_error, acceptable_longitude_error,
-                               "Longitude Error: " + longitude_error_message);
+                               "Longitude Error: " + longitude_error_message + expected_string);
 
             double latitude_error = Math.Abs(longlatdist.y - expected_latitude);
             double acceptable_latitude_error = 0.01;
             string latitude_error_message = differing_results_error_message(
-                Convert.ToString(expected_latitude),
                 Convert.ToString(longlatdist.y),
+                Convert.ToString(expected_latitude),
                 "degrees"
             );
             Assert.LessOrEqual(latitude_error, acceptable_latitude_error,
-                               "Latitude Error: " + latitude_error_message);
+                               "Latitude Error: " + latitude_error_message + expected_string);
 
             double distance_error = Math.Abs(longlatdist.z - expected_distance);
             double acceptable_distance_error = 0.00001;
             string distance_error_message = differing_results_error_message(
-                Convert.ToString(expected_distance),
                 Convert.ToString(longlatdist.z),
+                Convert.ToString(expected_distance),
                 "AU"
             );
             Assert.LessOrEqual(distance_error, acceptable_distance_error,
-                               "Distance Error: " + distance_error_message);
+                               "Distance Error: " + distance_error_message + expected_string);
         }
 
         /// <summary>

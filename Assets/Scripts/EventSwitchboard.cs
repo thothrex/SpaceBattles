@@ -77,12 +77,12 @@ namespace SpaceBattles
 
                 SourceEvent.AddListener(OnSwitchTriggered);
 
-                Debug.Log("Connecting Source "
-                         + CordCircuit.SourceObjectRegistryKey
-                         + "\t" + CordCircuit.SourceMonoBehaviourTypeName
-                         + "\t" + CordCircuit.SourceUnityEventName
-                         + "\nTo target: "
-                         + CordCircuit.RearJackName);
+                //Debug.Log("Connecting Source "
+                //         + CordCircuit.SourceObjectRegistryKey
+                //         + "\t" + CordCircuit.SourceMonoBehaviourTypeName
+                //         + "\t" + CordCircuit.SourceUnityEventName
+                //         + "\nTo target: "
+                //         + CordCircuit.RearJackName);
             }
         }
 

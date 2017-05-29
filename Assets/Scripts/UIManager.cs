@@ -41,7 +41,8 @@ namespace SpaceBattles
         public GameObject ScreenFadeImageHost;
 
         //public Vector3 player_centred_UI_offset;
-        
+
+        private readonly int MinimumTargetFPS = 9;
         private float input_roll = 0.0f;
         private float input_pitch = 0.0f;
         private bool UiObjectsInstantiated = false;
@@ -64,6 +65,7 @@ namespace SpaceBattles
 
         private GameplayInputAdapterModule InputAdapter = null;
         private UIElements ActiveUIElements = UIElements.None;
+        private UIElements PersistentUIElements = UIElements.None;
         private CameraRoles ActiveCameras = CameraRoles.None;
         private Stack<UIElements> UITransitionHistory
             = new Stack<UIElements>();
@@ -74,12 +76,16 @@ namespace SpaceBattles
         private CameraRegistry CameraRegistry
             = new CameraRegistry();
 
+        // DEBUG
+        private DateTime DebugInitialTime;
+
         // -- delegates --
         public delegate void enterOrreryEventHandler();
         public delegate void exitNetworkGameInputEventHandler ();
         public delegate void exitProgramInputEventHandler ();
         public delegate void rollInputEventHandler (float roll_input);
         public delegate void pitchInputEventHandler (float pitch_input);
+        public delegate void CameraEventHandler (CameraRoles role);
 
         // -- events --
         [HideInInspector]
@@ -92,6 +98,7 @@ namespace SpaceBattles
         public UnityEvent PlayGameButtonPress;
         public event rollInputEventHandler RollInputEvent;
         public event pitchInputEventHandler PitchInputEvent;
+        public event CameraEventHandler CameraDestroyed;
 
         // -- enums --
         public enum PlayerConnectState { IDLE, SEARCHING_FOR_SERVER, JOINING_SERVER, CREATING_SERVER };
@@ -144,6 +151,9 @@ namespace SpaceBattles
                     { InitialiseDebugTextUiObject(); }
 
                 UiObjectsInstantiated = true;
+
+                // DEBUG
+                DebugInitialTime = DateTime.Now;
             }
         }
 
@@ -200,7 +210,14 @@ namespace SpaceBattles
             //else if (UiState == UiInputState.Orrery)
             //{
             //}
-            // else UiState == main menu
+            else if (UiState == UiInputState.MainMenu)
+            {
+                if (DateTime.Now - DebugInitialTime > TimeSpan.FromSeconds(1))
+                {
+                    DebugInitialTime = DateTime.Now + TimeSpan.FromSeconds(10);
+                    DebugCheckMainMenuCamera();
+                }
+            }
         }
 
         public void FixedUpdate()
@@ -319,7 +336,6 @@ namespace SpaceBattles
             // Add current active elements as a new history element
             if (transitionType == UiElementTransitionType.Tracked)
             {
-                
                 UITransitionHistory.Push(ActiveUIElements);
             }
 
@@ -328,7 +344,9 @@ namespace SpaceBattles
             || transitionType == UiElementTransitionType.Tracked)
             {
                 //Debug.Log("TransitionToUIElements hiding elements " + ActiveUIElements);
-                showUIElementFromFlags(false, ActiveUIElements);
+                // Avoid deactivating persistent elements
+                UIElements ElementsToDeactivate = ActiveUIElements;
+                showUIElementFromFlags(false, ElementsToDeactivate);
                 ActiveUIElements = UIElements.None;
             }
 
@@ -384,13 +402,14 @@ namespace SpaceBattles
                                     "has at least one entry",
                                     "UITransitionHistory");
             UIElements PreviousState = UITransitionHistory.Pop();
-            showUIElementFromFlags(false, ActiveUIElements);
+            showUIElementFromFlags(false, ActiveUIElements & ~PersistentUIElements);
             showUIElementFromFlags(true, PreviousState);
             ActiveUIElements = PreviousState;
         }
 
         public void EnterMainMenuRoot ()
         {
+            Debug.Log("Entering Main Menu");
             UiState = UiInputState.MainMenu;
             // TODO: pull this debug text into the main menu manager
             if (PrintScreenSizeDebugText)
@@ -403,7 +422,11 @@ namespace SpaceBattles
             );
             CameraTransition(CameraRoles.MainMenuAndOrrery
                            | CameraRoles.FixedUi);
+
+            DebugCheckMainMenuCamera();
         }
+
+        
 
         public void EnterSettingsMenu ()
         {
@@ -426,6 +449,18 @@ namespace SpaceBattles
             SettingsMenuManager.DisplayFireButtonState(
                 InputAdapter.FireButtonEnabled
             );
+            SettingsMenuManager.DisplayFrameRateCapState(
+                InputAdapter.FrameRateCap
+            );
+            SettingsMenuManager.DisplayFPSCounterButtonState(
+                InputAdapter.FPSCounterEnabled
+            );
+            SettingsMenuManager.DisplayNetworkTesterVisibilityState(
+                InputAdapter.NetworkTesterEnabled
+            );
+            SettingsMenuManager.DisplayPingDisplayVisibilityState(
+                InputAdapter.PingCounterEnabled
+            );
         }
 
         public void ExitSettingsMenu ()
@@ -433,8 +468,9 @@ namespace SpaceBattles
             TransitionUIElementsBacktrack();
         }
 
-        public void EnteringMultiplayerGame ()
+        public void EnteringMultiplayerGame (string hostIP)
         {
+            Debug.Log("Entering Multiplayer Game");
             // TODO: change to start in ship selection
             UiState = UiInputState.InGame;
             //TransitionToUIElements(
@@ -442,6 +478,15 @@ namespace SpaceBattles
             //    UIElements.GameplayUI
             //);
             //CameraTransition(CameraRoles.FixedUi);
+            if ((ActiveUIElements & UIElements.PingDisplay) > 0)
+            {
+                Debug.Log("Activating Ping Tester");
+                PingTester PingTester
+                    = ComponentRegistry
+                    .RetrieveManager<PingTester>(UIElements.PingDisplay);
+                PingTester.TestingIPAddress = hostIP;
+                PingTester.ShouldTest = true;
+            }
         }
 
         public void EnteringOrrery ()
@@ -528,8 +573,9 @@ namespace SpaceBattles
             CameraRegistry.InitialiseAndRegisterGenericPrefabs(CameraPrefabs);
             SSCManager.FixedUICamera
                 = CameraRegistry[(int)CameraRoles.FixedUi];
-            Debug.Log("Fixed UI Camera for the SSCManager has been set");
+            //Debug.Log("Fixed UI Camera for the SSCManager has been set");
         }
+
         public void ProvideCamera (Camera camera)
         {
             List<Camera> NewCameraList
@@ -750,10 +796,10 @@ namespace SpaceBattles
                 }
                 else
                 {
-                    Debug.LogWarning("Attempting to "
-                                   + (show ? "show" : "hide")
-                                   + " an uninitialised UI element: "
-                                   + Element.ToString());
+                    //Debug.LogWarning("Attempting to "
+                    //               + (show ? "show" : "hide")
+                    //               + " an uninitialised UI element: "
+                    //               + Element.ToString());
                 }
             }
         }
@@ -801,6 +847,67 @@ namespace SpaceBattles
             GameplayUiManager.ActivateAccelerateButton(enabled);
         }
 
+        private void OnPingCounterVisibilitySet (bool visible)
+        {
+            InputAdapter.PingCounterEnabled = visible;
+            SetPersistentElementEnabled(visible, UIElements.PingDisplay);
+            if (UiState == UiInputState.InGame)
+            {
+                PingTester PingTester
+                    = ComponentRegistry
+                    .RetrieveManager<PingTester>(UIElements.PingDisplay);
+                PingTester.ShouldTest = visible;
+            }
+        }
+
+        private void OnFPSCounterVisibilitySet (bool visible)
+        {
+            InputAdapter.FPSCounterEnabled = visible;
+            SetPersistentElementEnabled(visible, UIElements.FPSCounter);
+        }
+
+        private void OnNetworkTestingUIVisibilitySet (bool visible)
+        {
+            InputAdapter.NetworkTesterEnabled = visible;
+            SetPersistentElementEnabled(visible, UIElements.NetworkTester);
+        }
+
+        private void OnFrameRateCapSet(int newCap)
+        {
+            // UI can sometimes advertise a very low frame rate temporarily
+            // (while the user is typing)
+            // which makes the game stutter due to the capped frame-rate
+            // (i.e. low FPS makes the game look bad)
+            // so for now we just ignore very low inputs
+            if (newCap > MinimumTargetFPS)
+            {
+                InputAdapter.FrameRateCap = newCap;
+                Application.targetFrameRate = newCap;
+            }
+        }
+
+        private void
+        SetPersistentElementEnabled
+            (bool enabled, UIElements element)
+        {
+            if (enabled)
+            {
+                PersistentUIElements |= element;
+                TransitionToUIElements(
+                    UiElementTransitionType.Additive,
+                    element
+                );
+            }
+            else
+            {
+                PersistentUIElements &= ~element;
+                TransitionToUIElements(
+                    UiElementTransitionType.Subtractive,
+                    element
+                );
+            }
+        }
+
         private void InitialiseDebugTextUiObject()
         {
             DebugTextbox = ComponentRegistry[(int)UIElements.DebugOutput];
@@ -844,6 +951,14 @@ namespace SpaceBattles
                 += OnAccelerateButtonEnabled;
             SettingsMenuManager.FireButtonSet
                 += OnFireButtonEnabled;
+            SettingsMenuManager.FrameRateCapSet
+                += OnFrameRateCapSet;
+            SettingsMenuManager.FPSCounterVisibilitySet
+                += OnFPSCounterVisibilitySet;
+            SettingsMenuManager.NetworkTesterVisibilitySet
+                += OnNetworkTestingUIVisibilitySet;
+            SettingsMenuManager.PingDisplayVisibilitySet
+                += OnPingCounterVisibilitySet;
         }
 
         private void InitialiseGameplayUi()
@@ -887,6 +1002,26 @@ namespace SpaceBattles
                 = ComponentRegistry
                 .RetrieveManager<OrreryUIManager>
                     (UIElements.OrreryUI);
+        }
+
+        private void DebugCheckMainMenuCamera()
+        {
+            // DEBUG 
+            Debug.Log("Cameras should be on");
+            Camera MainMenuCamera = CameraRegistry[CameraRoles.MainMenuAndOrrery];
+
+            //MyContract.RequireArgumentNotNull(MainMenuCamera, "Main Menu Camera");
+            if (MainMenuCamera == null)
+            {
+                var e = CameraDestroyed;
+                if (e != null)
+                {
+                    e.Invoke(CameraRoles.MainMenuAndOrrery);
+                }
+            }
+            
+            //MyContract.RequireArgumentNotNull(MainMenuCamera.gameObject, "Main Menu Camera Host Object");
+            //MyContract.RequireArgument(MainMenuCamera.isActiveAndEnabled, "is active and enabled", "Main Menu Camera");
         }
     }
 }

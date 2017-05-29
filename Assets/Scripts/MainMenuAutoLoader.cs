@@ -12,6 +12,8 @@ namespace SpaceBattles
     {
         public PassthroughNetworkManager PassthroughNetworkManager;
         public ProgramInstanceManager ProgramInstanceManager;
+        public GameObject LoadScreenCanvas;
+        public GameObject LoadScreenCamera;
         
         public void Start ()
         {
@@ -20,21 +22,13 @@ namespace SpaceBattles
 
         public IEnumerator LoadMainMenu()
         {
+            MyContract.RequireFieldNotNull(LoadScreenCamera, "LoadScreenCamera");
+            MyContract.RequireFieldNotNull(LoadScreenCanvas, "LoadScreenCanvas");
             Debug.Log("Main Menu Scene Loading");
-            SceneIndex MainMenuIndex = SceneIndex.MainMenu;
-            Scene SceneSwappingFrom = SceneManager.GetActiveScene();
-            
-            AsyncOperation SceneLoad
-                = SceneManager.LoadSceneAsync((int)MainMenuIndex, LoadSceneMode.Additive);
-            ConfirmSceneLoadNotNull(SceneIndex.MainMenu, SceneLoad);
-            yield return new WaitUntil(() => SceneLoad.isDone);
             yield return new WaitUntil(() => ManagersHaveLoaded());
-
-            Scene MainMenuScene
-                = SceneManager.GetSceneByName(SceneIndex.MainMenu.SceneName());
-            Debug.Log("Setting active scene to " + MainMenuScene.name);
-            SceneManager.SetActiveScene(MainMenuScene);
-            AsyncOperation Unloading = SceneManager.UnloadSceneAsync(SceneSwappingFrom);
+            LoadScreenCanvas.SetActive(false);
+            LoadScreenCamera.SetActive(false);
+            gameObject.SetActive(false);
         }
 
         private bool ManagersHaveLoaded ()
@@ -49,31 +43,6 @@ namespace SpaceBattles
             );
             return PassthroughNetworkManager.FinishedLoading
                 && ProgramInstanceManager.FinishedLoading;
-        }
-
-        private void
-        ConfirmSceneLoadNotNull
-        (SceneIndex sceneIndex, AsyncOperation SceneLoad)
-        {
-            if (SceneLoad == null)
-            {
-                if (SceneManager.sceneCount < (int)sceneIndex)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        "sceneIndex",
-                        sceneIndex,
-                        CreateInsufficientScenesExceptionMessage(
-                            SceneManager.sceneCount, (int)sceneIndex
-                        )
-                    );
-                }
-                else
-                {
-                    throw new InvalidOperationException(
-                        "LoadSceneAsync returned null"
-                    );
-                }
-            }
         }
 
         private string

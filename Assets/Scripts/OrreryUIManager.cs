@@ -224,6 +224,10 @@ namespace SpaceBattles
             MyContract.RequireFieldNotNull(
                 PlanetCameraController, "PlanetCameraController"
             );
+            MyContract.RequireFieldNotNull(
+                PlanetCameraController.FollowTransform,
+                "Follow Transform"
+            );
             Vector3 CalculatedOffset
                 = CalculateNewCameraOffset(
                     rotationAngles,

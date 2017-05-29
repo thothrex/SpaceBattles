@@ -6,15 +6,6 @@ namespace SpaceBattles
     public abstract class GameplayInputAdapterModule
     {
         // -- Fields --
-        public bool VirtualJoystickEnabled      { set; get; }
-        public bool AccelerateButtonEnabled     { set; get; }
-        public bool FireButtonEnabled           { set; get; }
-        public bool InvertPitchControls         { set; private get; }
-        public bool InvertRollControls          { set; private get; }
-        public string AccelerateButtonName      { set; private get; }
-        public string FireButtonName            { set; private get; }
-        public string JoystickDepressedAxisName { set; private get; }
-
         protected static readonly string ScoreboardAxisName
             = "InGameScoreboard";
         protected static readonly string InGameMenuAxisName = "menu2";
@@ -25,6 +16,21 @@ namespace SpaceBattles
         protected static readonly string RollAxisName = "Roll";
 
         private readonly float FullRotationAngle = 360.0f;
+
+        // -- Properties --
+        public bool VirtualJoystickEnabled      { set; get; }
+        public bool AccelerateButtonEnabled     { set; get; }
+        public bool FireButtonEnabled           { set; get; }
+        public bool FPSCounterEnabled           { set; get; }
+        public bool NetworkTesterEnabled        { set; get; }
+        public bool PingCounterEnabled          { set; get; }
+        public double FrameRateCap              { set; get; }
+
+        public bool InvertPitchControls         { set; private get; }
+        public bool InvertRollControls          { set; private get; }
+        public string AccelerateButtonName      { set; private get; }
+        public string FireButtonName            { set; private get; }
+        public string JoystickDepressedAxisName { set; private get; }
 
         // -- Methods --
         public abstract bool ShipSelectMenuOpenInput();

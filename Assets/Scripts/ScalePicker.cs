@@ -30,7 +30,7 @@ namespace SpaceBattles
         // -- Methods --
         public void Awake ()
         {
-            Debug.Log("ScalePicker waking up");
+            //Debug.Log("ScalePicker waking up");
             CurrentScaleOption = InitialScaleOption;
             CurrentLinearScale = 0.0015f;
             CurrentLogBase = 10.0f;

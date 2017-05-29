@@ -114,7 +114,7 @@ namespace SpaceBattles
         //Awake is always called before any Start functions
         public void Awake()
         {
-            Debug.Log("Program instance manager awakened");
+            //Debug.Log("Program instance manager awakened");
 
             //Check if instance already exists
             if (instance == null)
@@ -125,7 +125,7 @@ namespace SpaceBattles
                 //Sets this to not be destroyed when reloading scene
                 UnityEngine.Object.DontDestroyOnLoad(gameObject);
                 UnityEngine.Object.DontDestroyOnLoad(this);
-                Debug.Log("Program instance manager prevented from being destroyed on load");
+                //Debug.Log("Program instance manager prevented from being destroyed on load");
                 
                 UI_manager_obj = GameObject.Instantiate(UI_manager_prefab);
                 UIManager = UI_manager_obj.GetComponent<UIManager>();
@@ -159,10 +159,14 @@ namespace SpaceBattles
             UIManager.PlayGameButtonPress.AddListener(startPlayingGame);
             UIManager.PitchInputEvent += handlePitchInput;
             UIManager.RollInputEvent += handleRollInput;
+            UIManager.CameraDestroyed += OnCameraDestroyed;
 
             Camera MainMenuAndOrreryCamera
                 = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery];
             UIManager.ProvideCamera(MainMenuAndOrreryCamera);
+            // DEBUG
+            DontDestroyOnLoad(MainMenuAndOrreryCamera.gameObject);
+            // END DEBUG
             
             bool Initialised = NetworkDiscoverer.Initialize();
             if (!Initialised)
@@ -176,6 +180,26 @@ namespace SpaceBattles
             NetworkManager.LocalPlayerStarted += LocalPlayerControllerCreatedHandler;
             NetworkManager.ClientDisconnected += OnClientDisconnect;
             FinishedLoading = true;
+
+            // debug
+            // TODO: remove
+            // Debug
+            object DebugCheckObject
+                = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery];
+            string OutString
+                = "MainMenuAndOrreryCamera registry entry is ";
+            if (DebugCheckObject != null)
+            {
+                Debug.Log(OutString + "not null");
+                GameObject DebugCheckGameObject
+                    = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery].gameObject;
+                Debug.Log("MainMenuAndOrreryCamera GameObject is "
+                        + (DebugCheckGameObject == null ? "null" : "not null"));
+            }
+            else
+            {
+                Debug.Log(OutString + "null");
+            }
         }
 
         /// <summary>
@@ -219,10 +243,23 @@ namespace SpaceBattles
             {
                 Debug.Log("Loading Orrery");
                 // Debug
-                GameObject DebugCheckObject
-                    = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery].gameObject;
-                Debug.Log("MainMenuAndOrreryCamera is "
-                        + (DebugCheckObject == null ? "null" : "not null"));
+                object DebugCheckObject
+                    = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery];
+                string OutString
+                    = "MainMenuAndOrreryCamera registry entry is ";
+                if (DebugCheckObject != null)
+                {
+                    Debug.Log(OutString + "not null");
+                    GameObject DebugCheckGameObject
+                        = CameraRegistry[(int)CameraRoles.MainMenuAndOrrery].gameObject;
+                    Debug.Log("MainMenuAndOrreryCamera GameObject is "
+                            + (DebugCheckGameObject == null ? "null" : "not null"));
+                }
+                else
+                {
+                    Debug.Log(OutString + "null");
+                }
+                
                 StartCoroutine(
                     SceneLoadedCallbackCoroutine(
                         SceneIndex.Orrery,
@@ -243,7 +280,7 @@ namespace SpaceBattles
             //current_nearest_orbiting_body = nearest_planet;
         }
 
-        public void OnServerDetected(string fromAddress, string data)
+        public void OnServerDetected (string fromAddress, string data)
         {
             Debug.Log("Server detected at address " + fromAddress);
             // I don't even know if this will do anything
@@ -262,7 +299,11 @@ namespace SpaceBattles
                         // this number is scoped to the connection
                         // i.e. if I only ever want one player
                         // per connection, this is fine
-                        ClientScene.AddPlayer(NetClient.connection, 0);
+                            ClientScene.AddPlayer(NetClient.connection, 0);
+                        if (NetClient.connection != null) // non-local connection
+                        {
+                            NetClient.connection.logNetworkMessages = true;
+                        }
                     });
                     NetworkDiscoverer.StopBroadcast();
                 }
@@ -334,7 +375,45 @@ namespace SpaceBattles
         public void OnClientDisconnect()
         {
             PlayerController = null;
+            // TODO: this will always cause an error
+            //       due to trying to end the connection
+            //       which has already closed.
+            //       Change this to something like
+            //       OnExitNetworkGame
             ExitNetworkGame();
+        }
+
+        public void OnCameraDestroyed (CameraRoles role)
+        {
+            // If we have a good copy, use that
+            if (CameraRegistry.Contains(role))
+            {
+                Camera OurCamera = CameraRegistry[role];
+                if (OurCamera != null)
+                {
+                    UIManager.ProvideCamera(OurCamera);
+                }
+            }
+
+            // If we don't have a good copy,
+            // try to find the prefab and build a new one
+            foreach (Camera cam in CameraPrefabs)
+            {
+                CameraIdentifier ID = cam.GetComponent<CameraIdentifier>();
+                MyContract.RequireFieldNotNull(ID, "Camera Identifier");
+                CameraRoles PrefabRole = ID.Role;
+                if (ID.Equals(role))
+                {
+                    List<Camera> ArgList = new List<Camera>();
+                    ArgList.Add(cam);
+                    CameraRegistry.InitialiseAndRegisterGenericPrefabs(ArgList);
+                    Camera CreatedCamera = CameraRegistry[role];
+                    UIManager.ProvideCamera(CreatedCamera);
+                    return;
+                }
+            }
+            
+            // If we don't have the prefab, we can't do anything
         }
 
         private OrbitingBodyBackgroundGameObject
@@ -741,7 +820,7 @@ namespace SpaceBattles
         private void SetupInGameUI (NetworkedPlayerController NPC)
         {
             UIManager.SetPlayerController(PlayerController);
-            UIManager.EnteringMultiplayerGame();
+            UIManager.EnteringMultiplayerGame(NetworkManager.networkAddress);
             NPC.EventScoreUpdated += UIManager.OnScoreUpdate;
             NPC.EventPlayerRemovedFromScoreboard
                 += UIManager.OnPlayerRemovedFromScoreboard;

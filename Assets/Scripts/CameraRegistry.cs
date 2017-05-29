@@ -13,6 +13,16 @@ namespace SpaceBattles
             FadeFunction
                 (CameraFader fader, Action partialFadeCallback);
 
+        // -- Properties --
+        public Camera this[CameraRoles index]
+        {
+            get
+            {
+                return RetrieveObject((int)index);
+            }
+        }
+
+        // -- Methods --
         public void Fade (int cameraKey, bool fadeOut, Action fadeCallback)
         {
             Camera Cam = RegisteredObjects[cameraKey];
@@ -87,6 +97,11 @@ namespace SpaceBattles
             }
         }
 
+        public bool Contains (CameraRoles role)
+        {
+            return Contains((int)role);
+        }
+
         protected override void ActivateGameObject(Camera registeredObject, bool active)
         {
             registeredObject.gameObject.SetActive(active);
@@ -130,6 +145,12 @@ namespace SpaceBattles
                     + " with element identifier "
                     + PrintKey(element)
                 );
+            }
+            else if (RegisteredObjects.ContainsKey(element)
+                 &&  RetrieveObject(element) == null)
+            {
+                // assume a deliberate replace intent
+                RegisteredObjects[element] = Instance;
             }
             else
             {

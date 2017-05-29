@@ -16,8 +16,8 @@ namespace SpaceBattles
 
         void Start()
         {
-            Button b = gameObject.GetComponent<Button>();
-            b.onClick.AddListener(buttonPress);
+            //Button b = gameObject.GetComponent<Button>();
+            //b.onClick.AddListener(buttonPress);
             oem.AllowNoEventListeners = false;
         }
 

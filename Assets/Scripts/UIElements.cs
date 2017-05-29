@@ -22,7 +22,10 @@ namespace SpaceBattles
         OrreryUI = 1024,
         Scoreboard = 2048,
         Respawn = 4096,
-        ClickInterceptor = 8192
+        ClickInterceptor = 8192,
+        FPSCounter = 16384,
+        NetworkTester = 32768,
+        PingDisplay = 65536 // #18
     }
 
     public static class UIElementExtensions
@@ -54,6 +57,8 @@ namespace SpaceBattles
                     return typeof(ScoreboardUiManager);
                 case UIElements.Respawn:
                     return typeof(RespawnUIManager);
+                case UIElements.PingDisplay:
+                    return typeof(PingTester);
                 default:
                     return null; 
             }

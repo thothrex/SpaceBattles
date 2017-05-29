@@ -47,14 +47,15 @@ namespace SpaceBattles
         public bool FinishedLoading { get; private set; }
 
         // -- Methods --
-        public void Awake ()
-        {
-            FinishedLoading = false;
-        }
+        //public void Awake ()
+        //{
+            
+        //}
 
         public void Start ()
         {
-            Debug.Log("player controller spawn handler registered");
+            FinishedLoading = false;
+            //Debug.Log("player controller spawn handler registered");
             // Register player object spawn handler
             ClientScene.RegisterPrefab(player_prefab,
                                        playerControllerSpawnHandler,
@@ -111,9 +112,10 @@ namespace SpaceBattles
                 Debug.Log("Successfully disconnected from the server");
             }
 
-            if (oem.shouldTriggerEvent(ClientDisconnected))
+            Action handler = ClientDisconnected;
+            if (oem.shouldTriggerEvent(handler))
             {
-                ClientDisconnected();
+                handler();
             }
         }
 
@@ -121,18 +123,20 @@ namespace SpaceBattles
         public void OnClientError (NetworkConnection conn, int errorCode)
         {
             Debug.Log("Network error message received. Code: " + errorCode);
-            if (oem.shouldTriggerEvent(ClientDisconnected))
+            Action handler = ClientDisconnected;
+            if (oem.shouldTriggerEvent(handler))
             {
-                ClientDisconnected();
+                handler();
             }
         }
 
         override
         public void OnServerDisconnect (NetworkConnection conn)
         {
-            if (oem.shouldTriggerEvent(PlayerDisconnected))
+            PlayerDisconnectedHandler handler = PlayerDisconnected;
+            if (oem.shouldTriggerEvent(handler))
             {
-                PlayerDisconnected(PlayerIdentifier.CreateNew(conn));
+                handler(PlayerIdentifier.CreateNew(conn));
             }
         }
 

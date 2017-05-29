@@ -37,19 +37,19 @@ namespace SpaceBattles
 
         public void ActivateVirtualJoystick (bool joystickActive)
         {
-            Debug.Log(
-                "Setting virtual joystick "
-                + (joystickActive ? "active" : "inactive")
-            );
+            //Debug.Log(
+            //    "Setting virtual joystick "
+            //    + (joystickActive ? "active" : "inactive")
+            //);
             ActivateUIElement(UIElements.VirtualJoystick, joystickActive);
         }
 
         public void ActivateAccelerateButton (bool buttonActive)
         {
-            Debug.Log(
-                "Setting accelerate button "
-                + (buttonActive ? "active" : "inactive")
-            );
+            //Debug.Log(
+            //    "Setting accelerate button "
+            //    + (buttonActive ? "active" : "inactive")
+            //);
             ActivateUIElement(UIElements.AccelerateButton, buttonActive);
         }
 

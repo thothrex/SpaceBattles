@@ -6,11 +6,14 @@ namespace SpaceBattles
 {
     public class SliderUpdater : MonoBehaviour
     {
-        private Slider Slider;
+        public Slider Slider;
 
         public void Start()
         {
-            Slider = GetComponent<Slider>();
+            if (Slider == null)
+            {
+                Slider = GetComponent<Slider>();
+            }
             MyContract.RequireFieldNotNull(Slider, "Attached Slider component");
         }
 

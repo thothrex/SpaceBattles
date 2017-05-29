@@ -231,6 +231,10 @@ namespace SpaceBattles
             for (int Index = 0; Index < objectsToRegister.Count; Index++)
             {
                 RegisteredType OriginalObject = objectsToRegister[Index];
+                MyContract.RequireArgumentNotNull(
+                    OriginalObject,
+                    "Provided object at index " + Index
+                );
                 GenericRegisterObject(OriginalObject, objectsArePrefabs, initialisationCallback, Index);
             }
             //Debug.Log("Registered indices: " + PrintRegistry());

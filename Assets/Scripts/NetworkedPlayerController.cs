@@ -163,6 +163,10 @@ namespace SpaceBattles
 
         /// <summary>
         /// Precondition: requires there to only be one GameStateManager
+        /// TODO: could be moved into the GameStateManager using
+        ///       the event & info from
+        ///       the server's PassthroughNetworkManager.
+        ///       This would remove the need for the static find call.
         /// </summary>
         override
         public void OnStartServer ()
