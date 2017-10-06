@@ -155,7 +155,7 @@ namespace SpaceBattles
             // Register event handlers
             UIManager.EnterOrreryInputEvent.AddListener(EnterOrrery);
             UIManager.ExitProgramInputEvent.AddListener(ExitProgram);
-            UIManager.ExitNetGameInputEvent.AddListener(ExitNetworkGame);
+            UIManager.ExitNetGameInputEvent.AddListener(OnExitNetworkGameInput);
             UIManager.PlayGameButtonPress.AddListener(startPlayingGame);
             UIManager.PitchInputEvent += handlePitchInput;
             UIManager.RollInputEvent += handleRollInput;
@@ -373,15 +373,13 @@ namespace SpaceBattles
             warping = false;
         }
 
+        /// <summary>
+        /// Called when this client disconnects from the server
+        /// </summary>
         public void OnClientDisconnect()
         {
             PlayerController = null;
-            // TODO: this will always cause an error
-            //       due to trying to end the connection
-            //       which has already closed.
-            //       Change this to something like
-            //       OnExitNetworkGame
-            ExitNetworkGame();
+            ExitNetworkGame(false);
         }
 
         public void OnCameraDestroyed (CameraRoles role)
@@ -675,7 +673,18 @@ namespace SpaceBattles
             Application.Quit();
         }
 
-        private void ExitNetworkGame ()
+        private void OnExitNetworkGameInput ()
+        {
+            ExitNetworkGame(true);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="stopHost">
+        /// Should be true if we need to stop the hosting aspects of the program
+        /// </param>
+        private void ExitNetworkGame (bool stopHost)
         {
             lock (FoundGameLock)
             {
@@ -684,12 +693,16 @@ namespace SpaceBattles
                 // as the documentation is very slim
                 Debug.Log("Stopping game");
                 SetPlayerCamerasActive(false);
-                GameStateManager GSM = GameStateManager.FindCurrentGameManager();
-                MyContract.RequireFieldNotNull(GSM, "Game State Manager");
-                NetworkManager.PlayerDisconnected -= GSM.OnPlayerDisconnect;
-                NetworkManager.StopHost();
+                if (stopHost)
+                {
+                    GameStateManager GSM = GameStateManager.FindCurrentGameManager();
+                    MyContract.RequireFieldNotNull(GSM, "Game State Manager");
+                    NetworkManager.PlayerDisconnected -= GSM.OnPlayerDisconnect;
+                    NetworkManager.StopHost();
+                }
                 if (NetworkDiscoverer.running)
                 {
+                    // This stops both server broadcast and client listening
                     NetworkDiscoverer.StopBroadcast();
                 }
                 UIManager.SetPlayerConnectState(
