@@ -168,11 +168,12 @@ namespace SpaceBattles
             DontDestroyOnLoad(MainMenuAndOrreryCamera.gameObject);
             // END DEBUG
             
-            bool Initialised = NetworkDiscoverer.Initialize();
-            if (!Initialised)
-            {
-                throw new Exception("NetworkDiscoverer failed to Initialise");
-            }
+            // Can be removed if the build works fine without it
+            //bool Initialised = NetworkDiscoverer.Initialize();
+            //if (!Initialised)
+            //{
+            //    throw new Exception("NetworkDiscoverer failed to Initialise");
+            //}
             NetworkDiscoverer.ServerDetected
                 += new PassthroughNetworkDiscovery
                       .ServerDetectedEventHandler(OnServerDetected);
@@ -511,12 +512,14 @@ namespace SpaceBattles
             // Relies on the below coroutine
             // checking the lock states appropriately
             StartCoroutine(PlayGameCoroutine());
-            // This Initialize() needs to be here, but it should have been
-            // covered in the Start() function already.
-            // This shouldn't be here but it needs to be
-            // so I'm leaving both calls in for now.
-            // TODO: Investigate this
-            NetworkDiscoverer.Initialize();
+            // Initialize needs to be called every time before a
+            // StartAsClient or StartAsServer is called,
+            // i.e. we need to re-initialize after stopping.
+            bool initialized = NetworkDiscoverer.Initialize();
+            if (!initialized)
+            {
+                Debug.LogWarning("NetworkDiscoverer failed to initialize (presumably due to the desired port being unavailable)");
+            }
             NetworkDiscoverer.StartAsClient();
         }
 
@@ -657,6 +660,12 @@ namespace SpaceBattles
         {
             Debug.Log("PIM: Start server callback");
             NetClient = NetworkManager.StartHost();
+            // We need to re-init this due to stopping the client search
+            bool initialized = NetworkDiscoverer.Initialize();
+            if (!initialized)
+            {
+                Debug.LogWarning("NetworkDiscoverer failed to initialize (presumably due to the desired port being unavailable)");
+            }
             NetworkDiscoverer.StartAsServer();
         }
 
