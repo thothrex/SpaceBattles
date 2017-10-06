@@ -7,7 +7,7 @@ namespace SpaceBattles
 {
     public class OrbitTest
     {
-        public String
+        public static String
         differing_results_error_message (String actual,
                                          String expected,
                                          String units)
@@ -91,8 +91,8 @@ namespace SpaceBattles
         /// <param name="test_time"></param>
         /// <param name="expected_longitude"></param>
         /// <param name="expected_latitude"></param>
-        /// <param name="expected_distance"></param>
-        public void
+        /// <param name="expected_distance">In AU</param>
+        public static void
         PositionTest(OrbitingBodyMathematics planet,
                      DateTime test_time,
                      double expected_longitude,
@@ -102,7 +102,8 @@ namespace SpaceBattles
             string expected_string
                 = "\nExpected: longitude " + expected_longitude.ToString("F5")
                 + " degrees, latitude " + expected_latitude.ToString("F5")
-                + " degrees, distance " + expected_distance.ToString("F5");
+                + " degrees, distance " + expected_distance.ToString("F5")
+                + " AU";
             Vector3 coordinates = planet.current_location(test_time);
             Vector3 longlatdist = planet.current_longlatdist(test_time);
 
@@ -116,8 +117,7 @@ namespace SpaceBattles
                 Convert.ToString(expected_longitude),
                 "degrees"
             );
-            Assert.LessOrEqual(longitude_error, acceptable_longitude_error,
-                               "Longitude Error: " + longitude_error_message + expected_string);
+            
 
             double latitude_error = Math.Abs(longlatdist.y - expected_latitude);
             double acceptable_latitude_error = 0.01;
@@ -126,8 +126,7 @@ namespace SpaceBattles
                 Convert.ToString(expected_latitude),
                 "degrees"
             );
-            Assert.LessOrEqual(latitude_error, acceptable_latitude_error,
-                               "Latitude Error: " + latitude_error_message + expected_string);
+            
 
             double distance_error = Math.Abs(longlatdist.z - expected_distance);
             double acceptable_distance_error = 0.00001;
@@ -136,8 +135,40 @@ namespace SpaceBattles
                 Convert.ToString(expected_distance),
                 "AU"
             );
+
+            Debug.Log(
+                "Longitude Error: " + longitude_error + " degrees, "
+                + "Latitude Error: " + latitude_error + " degrees, "
+                + "Distance Error: " + distance_error + " AU"
+            );
+
+            Assert.LessOrEqual(longitude_error, acceptable_longitude_error,
+                               "Longitude Error: " + longitude_error_message + expected_string);
+            Assert.LessOrEqual(latitude_error, acceptable_latitude_error,
+                               "Latitude Error: " + latitude_error_message + expected_string);
             Assert.LessOrEqual(distance_error, acceptable_distance_error,
                                "Distance Error: " + distance_error_message + expected_string);
+        }
+
+        public static void
+        CompoundPositionTest (OrbitingBodyMathematics planet,
+                              CompoundPositionTester[] tests)
+        {
+            bool AnyTestsFailed = false;
+            foreach (CompoundPositionTester test in tests)
+            {
+                test.Planet = planet;
+                try
+                {
+                    test.Test();
+                }
+                catch (AssertionException failedTestException)
+                {
+                    Debug.Log(failedTestException.Message);
+                    AnyTestsFailed = true;
+                }
+            }
+            Assert.IsFalse(AnyTestsFailed, "Compound test failed");
         }
 
         /// <summary>
@@ -247,6 +278,66 @@ namespace SpaceBattles
             PositionTest(mercury, test_time, 224.43, 0.13, 0.451);
         }
 
+        [Test]
+        public void MercuryCompoundPositionTest()
+        {
+            OrbitingBodyMathematics Mercury = OrbitingBodyMathematics.generate_mercury();
+            CompoundPositionTester[] Tests =
+            {
+                new CompoundPositionTester(new DateTime(1968,12,3),243.9,-1.93,0.464),
+                new CompoundPositionTester(new DateTime(1968,11,2),127.03,6.88,0.327),
+                new CompoundPositionTester(new DateTime(1968,5,18),166.95,6.14,0.370),
+                new CompoundPositionTester(new DateTime(1968,3,28),282.52,-5.71,0.455),
+                new CompoundPositionTester(new DateTime(1968,10,17),29.83,-2.2,0.325),
+                new CompoundPositionTester(new DateTime(1968,4,27),47.01,-0.12,0.315),
+                new CompoundPositionTester(new DateTime(1968,11,4),138.06,7.00,0.337),
+                new CompoundPositionTester(new DateTime(1968,7,4),314.24,-6.99,0.417),
+                new CompoundPositionTester(new DateTime(1968,12,27),314.45,-6.99,0.417),
+                new CompoundPositionTester(new DateTime(1968,4,16),349.09,-6.01,0.368),
+                new CompoundPositionTester(new DateTime(1985,4,11),218.18,1.22,0.441),
+                new CompoundPositionTester(new DateTime(1985,9,27),195.41,3.80,0.410),
+                new CompoundPositionTester(new DateTime(1985,3,13),85.48,4.26,0.308),
+                new CompoundPositionTester(new DateTime(1985,4,17),235.92,-0.95,0.459),
+                new CompoundPositionTester(new DateTime(1985,5,11),304.89,-6.82,0.430),
+                new CompoundPositionTester(new DateTime(1985,12,30),215.37,1.56,0.438),
+                new CompoundPositionTester(new DateTime(1985,6,16),127.96,6.89,0.328),
+                new CompoundPositionTester(new DateTime(1985,1,31),268.92,-4.59,0.464),
+                new CompoundPositionTester(new DateTime(1985,3,30),176.28,5.52,0.383),
+                new CompoundPositionTester(new DateTime(1985,6,4),54.45,0.77,0.312),
+                new CompoundPositionTester(new DateTime(2008,10,19),85.92,4.28,0.308),
+                new CompoundPositionTester(new DateTime(2008,7,5),345.85,-6.22,0.3737),
+                new CompoundPositionTester(new DateTime(2008,8,5),159.05,6.56,0.360),
+                new CompoundPositionTester(new DateTime(2008,9,27),329.74,-6.87,0.396),
+                new CompoundPositionTester(new DateTime(2008,4,20),48.24,-0.02,0.314),
+                new CompoundPositionTester(new DateTime(2008,12,25),333.74,-6.87,0.396),
+                new CompoundPositionTester(new DateTime(2008,7,21),73.15,2.95,0.308),
+                new CompoundPositionTester(new DateTime(2008,5,16),188.06,4.55,0.399),
+                new CompoundPositionTester(new DateTime(2008,7,9),4.29,-4.89,0.350),
+                new CompoundPositionTester(new DateTime(2008,1,11),345.58,-6.24,0.373),
+                new CompoundPositionTester(new DateTime(1987,6,20),242.36,-1.72,0.463),
+                new CompoundPositionTester(new DateTime(1987,7,22),342.69,-6.38,0.377),
+                new CompoundPositionTester(new DateTime(1987,5,15),93.51,4.99,0.310),
+                new CompoundPositionTester(new DateTime(1987,3,30),258.72,-3.57,0.467),
+                new CompoundPositionTester(new DateTime(1987,11,5),81.36,3.85,0.308),
+                new CompoundPositionTester(new DateTime(1987,5,21),129.37,6.92,0.329),
+                new CompoundPositionTester(new DateTime(1987,10,23),5.76,-4.74,0.348),
+                new CompoundPositionTester(new DateTime(1987,11,9),106.25,5.95,0.314),
+                new CompoundPositionTester(new DateTime(1987,12,31),293.32,-6.36,0.444),
+                new CompoundPositionTester(new DateTime(1987,12,2),209.82,2.22,0.430),
+                new CompoundPositionTester(new DateTime(1973,3,23),206.80,2.55,0.427),
+                new CompoundPositionTester(new DateTime(1973,9,3),161.09,6.45,0.363),
+                new CompoundPositionTester(new DateTime(1973,3,20),196.66,3.66,0.412),
+                new CompoundPositionTester(new DateTime(1973,2,9),351.91,-5.83,0.365),
+                new CompoundPositionTester(new DateTime(1973,11,19),101.23,5.62,0.312),
+                new CompoundPositionTester(new DateTime(1973,1,4),237.01,-1.10,0.459),
+                new CompoundPositionTester(new DateTime(1973,2,24),75.63,3.26,0.308),
+                new CompoundPositionTester(new DateTime(1973,1,28),306.16,-6.86,0.428),
+                new CompoundPositionTester(new DateTime(1973,6,21),213.33,1.79,0.435),
+                new CompoundPositionTester(new DateTime(1973,4,28),312.97,-6.98,0.419)
+            };
+            CompoundPositionTest(Mercury, Tests);
+        }
+
         // ------------------------------------------------------------
         [Test]
         public void VenusOrbitalPeriodTest()
@@ -277,6 +368,26 @@ namespace SpaceBattles
             OrbitingBodyMathematics venus = OrbitingBodyMathematics.generate_venus();
             var test_time = new DateTime(2016, 2, 10);
             PositionTest(venus, test_time, 249.01, 0.46, 0.726);
+        }
+
+        [Test]
+        public void VenusCompoundPositionTest()
+        {
+            OrbitingBodyMathematics Venus = OrbitingBodyMathematics.generate_venus();
+            CompoundPositionTester[] Tests =
+            {
+                new CompoundPositionTester(new DateTime(1996,3,2),97.67,1.22,0.719),
+                new CompoundPositionTester(new DateTime(1996,12,6),185.80,3.21,0.720),
+                new CompoundPositionTester(new DateTime(1996,4,7),156.11,3.34,0.719),
+                new CompoundPositionTester(new DateTime(1996,1,23),34.93,-2.26,0.724),
+                new CompoundPositionTester(new DateTime(1996,4,21),178.83,3.32,0.720),
+                new CompoundPositionTester(new DateTime(1996,8,17),6.69,-3.19,0.726),
+                new CompoundPositionTester(new DateTime(1996,9,30),77.16,0.03,0.720),
+                new CompoundPositionTester(new DateTime(1996,10,21),111.12,1.92,0.719),
+                new CompoundPositionTester(new DateTime(1996,5,22),228.72,1.59,0.724),
+                new CompoundPositionTester(new DateTime(1996,11,23),164.73,3.39,0.719)
+            };
+            CompoundPositionTest(Venus, Tests);
         }
 
         // ------------------------------------------------------------
@@ -318,6 +429,26 @@ namespace SpaceBattles
             OrbitingBodyMathematics earth = OrbitingBodyMathematics.generate_earth();
             var test_time = new DateTime(2016, 2, 10);
             PositionTest(earth, test_time, 140.65, 0.0, 0.987);
+        }
+
+        [Test]
+        public void EarthCompoundPositionTest()
+        {
+            OrbitingBodyMathematics Earth = OrbitingBodyMathematics.generate_earth();
+            CompoundPositionTester[] Tests =
+            {
+                new CompoundPositionTester(new DateTime(2012,7,21),298.62,0,1.016),
+                new CompoundPositionTester(new DateTime(2012,4,6),196.58,0,1.001),
+                new CompoundPositionTester(new DateTime(2012,7,8),286.22,0,1.017),
+                new CompoundPositionTester(new DateTime(2012,9,23),360.35,0,1.003),
+                new CompoundPositionTester(new DateTime(2012,2,14),144.67,0,0.987),
+                new CompoundPositionTester(new DateTime(2012,11,25),63.1,0,0.987),
+                new CompoundPositionTester(new DateTime(2012,3,14),173.79,0,0.994),
+                new CompoundPositionTester(new DateTime(2012,12,22),90.52,0,0.984),
+                new CompoundPositionTester(new DateTime(2012,6,9),258.55,0,1.015),
+                new CompoundPositionTester(new DateTime(2012,12,16),84.41,0,0.984)
+            };
+            CompoundPositionTest(Earth, Tests);
         }
 
         // ------------------------------------------------------------
@@ -391,6 +522,26 @@ namespace SpaceBattles
             PositionTest(mars, test_time, 192.34, 1.13, 1.634);
         }
 
+        [Test]
+        public void MarsCompoundPositionTest()
+        {
+            OrbitingBodyMathematics Mars = OrbitingBodyMathematics.generate_mars();
+            CompoundPositionTester[] Tests =
+            {
+                new CompoundPositionTester(new DateTime(1974,7,9),157.26,1.76,1.666),
+                new CompoundPositionTester(new DateTime(1974,12,19),232.42,-0.1,1.543),
+                new CompoundPositionTester(new DateTime(1974,11,18),217.05,0.39,1.581),
+                new CompoundPositionTester(new DateTime(1974,8,26),178.33,1.44,1.653),
+                new CompoundPositionTester(new DateTime(1974,1,17),77.5,0.88,1.54),
+                new CompoundPositionTester(new DateTime(1974,7,23),163.37,1.69,1.664),
+                new CompoundPositionTester(new DateTime(1974,5,4),128.23,1.82,1.647),
+                new CompoundPositionTester(new DateTime(1974,1,14),75.96,0.83,1.536),
+                new CompoundPositionTester(new DateTime(1974,9,27),192.69,1.1,1.632),
+                new CompoundPositionTester(new DateTime(1974,2,2),85.56,1.1,1.56)
+            };
+            CompoundPositionTest(Mars, Tests);
+        }
+
         // ------------------------------------------------------------
 
         [Test]
@@ -422,6 +573,26 @@ namespace SpaceBattles
             OrbitingBodyMathematics jupiter = OrbitingBodyMathematics.generate_jupiter();
             var test_time = new DateTime(2016, 2, 10);
             PositionTest(jupiter, test_time, 166.22, 1.19, 5.418);
+        }
+
+        [Test]
+        public void JupiterCompoundPositionTest()
+        {
+            OrbitingBodyMathematics Jupiter = OrbitingBodyMathematics.generate_jupiter();
+            CompoundPositionTester[] Tests =
+            {
+                new CompoundPositionTester(new DateTime(2007,7,28),259.14,0.48,5.306),
+                new CompoundPositionTester(new DateTime(2007,12,15),270.42,0.23,5.258),
+                new CompoundPositionTester(new DateTime(2007,6,16),255.8,0.55,5.319),
+                new CompoundPositionTester(new DateTime(2007,4,13),250.73,0.65,5.339),
+                new CompoundPositionTester(new DateTime(2007,3,10),248.06,0.7,5.349),
+                new CompoundPositionTester(new DateTime(2007,7,15),258.11,0.5,5.31),
+                new CompoundPositionTester(new DateTime(2007,7,28),259.14,0.48,5.306),
+                new CompoundPositionTester(new DateTime(2007,6,6),255,0.56,5.322),
+                new CompoundPositionTester(new DateTime(2007,3,13),248.29,0.7,5.348),
+                new CompoundPositionTester(new DateTime(2007,9,15),263.07,0.39,5.29)
+            };
+            CompoundPositionTest(Jupiter, Tests);
         }
 
         // ------------------------------------------------------------
@@ -457,6 +628,26 @@ namespace SpaceBattles
             PositionTest(saturn, test_time, 250.37, 1.71, 10.002);
         }
 
+        [Test]
+        public void SaturnCompoundPositionTest()
+        {
+            OrbitingBodyMathematics Saturn = OrbitingBodyMathematics.generate_saturn();
+            CompoundPositionTester[] Tests =
+            {
+                new CompoundPositionTester(new DateTime(2015,4,29),241.62,1.96,9.963),
+                new CompoundPositionTester(new DateTime(2015,1,4),238.1,2.05,9.944),
+                new CompoundPositionTester(new DateTime(2015,9,15),245.87,1.84,9.983),
+                new CompoundPositionTester(new DateTime(2015,5,6),241.84,1.96,9.964),
+                new CompoundPositionTester(new DateTime(2015,11,26),248.06,1.78,9.993),
+                new CompoundPositionTester(new DateTime(2015,11,20),247.88,1.79,9.992),
+                new CompoundPositionTester(new DateTime(2015,2,24),239.66,2.01,9.953),
+                new CompoundPositionTester(new DateTime(2015,11,3),247.36,1.8,9.99),
+                new CompoundPositionTester(new DateTime(2015,9,30),246.33,1.83,9.985),
+                new CompoundPositionTester(new DateTime(2015,4,17),241.26,1.97,9.961)
+            };
+            CompoundPositionTest(Saturn, Tests);
+        }
+
         // ------------------------------------------------------------
 
         [Test]
@@ -490,6 +681,26 @@ namespace SpaceBattles
             PositionTest(uranus, test_time, 20.32, -0.63, 19.924);
         }
 
+        [Test]
+        public void UranusCompoundPositionTest()
+        {
+            OrbitingBodyMathematics Uranus = OrbitingBodyMathematics.generate_uranus();
+            CompoundPositionTester[] Tests =
+            {
+                new CompoundPositionTester(new DateTime(1961,10,19),146.62,0.74,18.311),
+                new CompoundPositionTester(new DateTime(1961,2,1),143.26,0.73,18.33),
+                new CompoundPositionTester(new DateTime(1961,4,11),144.15,0.73,18.325),
+                new CompoundPositionTester(new DateTime(1961,6,5),144.86,0.73,18.32),
+                new CompoundPositionTester(new DateTime(1961,3,1),143.62,0.73,18.328),
+                new CompoundPositionTester(new DateTime(1961,12,25),147.49,0.74,18.306),
+                new CompoundPositionTester(new DateTime(1961,12,6),147.24,0.74,18.308),
+                new CompoundPositionTester(new DateTime(1961,8,26),145.92,0.74,18.315),
+                new CompoundPositionTester(new DateTime(1961,2,24),143.56,0.73,18.328),
+                new CompoundPositionTester(new DateTime(1961,3,12),143.77,0.73,18.327)
+            };
+            CompoundPositionTest(Uranus, Tests);
+        }
+
         // ------------------------------------------------------------
 
         [Test]
@@ -521,6 +732,26 @@ namespace SpaceBattles
             OrbitingBodyMathematics neptune = OrbitingBodyMathematics.generate_neptune();
             var test_time = new DateTime(2016, 2, 10);
             PositionTest(neptune, test_time, 339.59, -0.81, 29.898);
+        }
+
+        [Test]
+        public void NeptuneCompoundPositionTest()
+        {
+            OrbitingBodyMathematics Neptune = OrbitingBodyMathematics.generate_neptune();
+            CompoundPositionTester[] Tests =
+            {
+                new CompoundPositionTester(new DateTime(1960,7,19),218.2,1.77,30.323),
+                new CompoundPositionTester(new DateTime(1960,1,23),217.15,1.77,30.322),
+                new CompoundPositionTester(new DateTime(1960,6,28),218.08,1.77,30.323),
+                new CompoundPositionTester(new DateTime(1960,6,15),218,1.77,30.323),
+                new CompoundPositionTester(new DateTime(1960,4,16),217.65,1.77,30.322),
+                new CompoundPositionTester(new DateTime(1960,4,3),217.57,1.77,30.322),
+                new CompoundPositionTester(new DateTime(1960,1,16),217.11,1.77,30.322),
+                new CompoundPositionTester(new DateTime(1960,10,16),218.73,1.77,30.323),
+                new CompoundPositionTester(new DateTime(1960,9,16),218.55,1.77,30.323),
+                new CompoundPositionTester(new DateTime(1960,5,27),217.89,1.77,30.323)
+            };
+            CompoundPositionTest(Neptune, Tests);
         }
 
         // ------------------------------------------------------------
@@ -619,6 +850,40 @@ namespace SpaceBattles
                 today.Year, today.Month, today.Day, 18, 0, 0
             );
             RotationRelativeToSunTest(90, test_time, earth);
+        }
+
+        public class CompoundPositionTester
+        {
+            public OrbitingBodyMathematics Planet;
+            public DateTime TestTime;
+            public double ExpectedLongitude;
+            public double ExpectedLatitude;
+            public double ExpectedDistance;
+
+            public
+            CompoundPositionTester
+                (DateTime testTime,
+                 double expectedLongitude,
+                 double expectedLatitude,
+                 double expectedDistance)
+            {
+                TestTime = testTime;
+                ExpectedLongitude = expectedLongitude;
+                ExpectedLatitude = expectedLatitude;
+                ExpectedDistance = expectedDistance;
+            }
+
+            public void Test ()
+            {
+                MyContract.RequireFieldNotNull(Planet, "Planet");
+                PositionTest(
+                    Planet,
+                    TestTime,
+                    ExpectedLongitude,
+                    ExpectedLatitude,
+                    ExpectedDistance
+                );
+            }
         }
     }
 }
