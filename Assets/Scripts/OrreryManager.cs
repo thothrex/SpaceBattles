@@ -16,8 +16,6 @@ namespace SpaceBattles
         public float CameraVerticalFieldOfView;
         public Transform MapViewCameraWaypoint;
         public List<GameObject> Planets;
-        public float PlanetStartingScale;
-        public float PlanetOrreryScale;
         public CameraWaypointModule CameraWaypointModule;
 
         private Camera MainCamera = null;
@@ -28,14 +26,6 @@ namespace SpaceBattles
         public void Start ()
         {
             PlanetRegistry.RegisterObjects(Planets);
-
-            //MapViewCameraWaypoint.position
-            //    = GenerateMainOrreryCameraPosition();
-            ChangePlanetsScale(Planets, Scale.Logarithmic);
-            //PlanetRegistry
-            //    .RetrieveGameObject((int)OrbitingBody.SUN)
-            //    .GetComponent<OrbitingBodyBackgroundGameObject>()
-            //    .SetRelativeScaleExplicitly(PlanetStartingScale / 100.0);
         }
 
         public void UseProvidedCameraAsMainCamera (Camera providedCamera)

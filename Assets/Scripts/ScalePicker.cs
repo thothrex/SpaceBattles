@@ -1,21 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace SpaceBattles
 {
     /// <summary>
     /// Sorry for the horrible hard-coded numbers
+    /// 
+    /// Scale value changes are propagated in-engine
+    /// via Unity events set in the editor
+    /// (i.e. it's not visible in these code files)
     /// </summary>
     public class ScalePicker : MonoBehaviour
     {
         // -- Fields --
         public List<GameObject> LogarithmicScaleOptions;
         public List<GameObject> LinearScaleOptions;
+        // All "InitialX" options are initialised & set in the Unity editor
+        public float InitialLinearScale;
+        public float InitialLogBase;
+        public float InitialLogInnerMultiplier;
+        public float InitialLogOuterMultiplier;
         public ScaleOption InitialScaleOption;
-        private ScaleOption CurrentScaleOption;
 
         // -- Events --
+        // Scale set event propagation should be changed to go through here
+        // in order to make the flow more consistent.
+        // Overall flow should be in the Unity engine directly,
+        // to make it easier to visualise and edit,
+        // but code also needs access to events for initialisation.
+        public UnityEvent ScaleSet; // Listened to by OrreryUIManager
 
         // -- Enums--
         public enum ScaleOption { Linear, Logarithmic };
@@ -30,12 +45,17 @@ namespace SpaceBattles
         // -- Methods --
         public void Awake ()
         {
-            //Debug.Log("ScalePicker waking up");
-            CurrentScaleOption = InitialScaleOption;
-            CurrentLinearScale = 0.0015f;
-            CurrentLogBase = 10.0f;
-            CurrentLogInnerMultiplier = 1.0f;
-            CurrentLogOuterMultiplier = 1.0f;
+            Debug.Log("ScalePicker waking up");
+            CurrentScaleType = InitialScaleOption;
+            CurrentLinearScale = InitialLinearScale;
+            CurrentLogBase = InitialLogBase;
+            CurrentLogInnerMultiplier = InitialLogInnerMultiplier;
+            CurrentLogOuterMultiplier = InitialLogOuterMultiplier;
+        }
+
+        public void Start()
+        {
+            ScaleSet.Invoke();
         }
 
         public void SetScale (Int32 input)
@@ -48,7 +68,7 @@ namespace SpaceBattles
             );
             ScaleOption ScaleChoice = (ScaleOption)input;
             Debug.Log("Setting scale choice to " + ScaleChoice.ToString());
-            SetScaleInputsActive(CurrentScaleOption, ScaleChoice);
+            SetScaleInputsActive(CurrentScaleType, ScaleChoice);
         }
         // We need the duplication/explicit overloading below
         // for it to appear in the Unity editor view :/
@@ -95,7 +115,7 @@ namespace SpaceBattles
         {
             SetScaleInputsActive(currentActiveOption, false);
             SetScaleInputsActive(desiredActiveOption, true);
-            CurrentScaleOption = desiredActiveOption;
+            CurrentScaleType = desiredActiveOption;
         }
 
         private void
