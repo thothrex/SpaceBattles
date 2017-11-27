@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -92,12 +92,15 @@ namespace SpaceBattles
         public void Awake ()
         {
             DesiredCameraOrbitRadius = InitialZoom;
+            ScalePicker.ScaleSet.AddListener(BroadcastNewScale);
         }
 
         public void Start ()
         {
             ResetCamera();
             ResetSliders();
+            // Context: New scale broadcast requested by ScalePicker
+            //          in its Start() via ScalePicker.ScaleSet event
         }
 
         public void BroadcastNewDateTime ()

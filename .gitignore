@@ -58,6 +58,8 @@ ExportedObj/
 *.booproj
 *.svd
 
+# Visual Studio 2015 cache directory
+/.vs/
 
 # Unity3D generated meta files
 *.pidb.meta
