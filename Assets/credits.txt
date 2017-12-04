@@ -1,16 +1,34 @@
-Icon 						made by Freepik 	[http://www.flaticon.com/authors/freepik] from www.flaticon.com
-Font 						by Iconian Fonts 	[http://iconian.com]
-Smoke texture 					by cyborgsuzystock 	[http://cyborgsuzystock.deviantart.com/art/smoke-01-24423042]
-Unity Editor Tweaks (different list mainly) 	by t0chas 		[https://gist.github.com/t0chas]
-					(with a tweak by abduelhamit [https://gist.github.com/abduelhamit])
-Octahedron Sphere 				by Jasper Flick 	[http://catlikecoding.com/unity/tutorials/octahedron-sphere/]
-Saturn Texture 					by HellcatF6F		[http://hellcatf6f.deviantart.com/art/Saturn-Texture-3-2k-491970229]
-Neptune Texture 							[http://planetpixelemporium.com/neptune.html]
-Enum selection in Editor			by llamagod		[https://forum.unity3d.com/members/llamagod.945744/]
-
 Unity Packages
 --------------
-"UI Tween" by Adi Zhavo
-"Google Material Design" by Adi Zhavo
-"CN Controls" by Cyrill Nadezhdin
-"64 Flat Game Icons" By Office57
+"64 Flat Game Icons" 				by Office57		[https://www.assetstore.unity3d.com/en/#!/content/36440]
+"CN Controls" 					by Kirill Nadezhdin	[https://assetstore.unity.com/packages/tools/input-management/cn-controls-joystick-touchpad-button-and-d-pad-15233]
+"Extreme Sci-Fi Lite" 				by Aquarius Max		[https://www.assetstore.unity3d.com/en/#!/content/50727]
+"Free SF Fighter"				by CG Pitbull		[https://assetstore.unity.com/packages/3d/vehicles/space/free-sf-fighter-11711]
+"Google Material Design" 			by Adi Zhavo		[https://assetstore.unity.com/packages/tools/particles-effects/google-material-design-47141]
+"SCI-FI Modular Pack Free"			by 256px		[https://assetstore.unity.com/packages/3d/environments/sci-fi/sci-fi-modular-pack-free-39538] [http://256x256px.blogspot.co.uk/]
+"Standard Assets"				by Unity		[https://assetstore.unity.com/packages/essentials/asset-packs/standard-assets-32351]
+"UI Tween" 					by Adi Zhavo		[https://assetstore.unity.com/packages/tools/animation/ui-tween-38583]
+"Volumetric Lines"				by Johannes Unterguggenberger	[https://assetstore.unity.com/packages/tools/particles-effects/volumetric-lines-29160]
+"Mothership"					by Yuli Fernandez	[https://assetstore.unity.com/packages/3d/vehicles/space/mothership-35608]
+
+External Additions
+------------------
+"3D orbital station"				by David Ruffieux	[https://alkhor.deviantart.com/art/3D-orbital-station-obj-386598361] [http://davidruffieux.com]
+"Class II Gallactic Cruiser"			by Herminio Nieves	[http://www.sharecg.com/v/72828/gallery/5/3D-Model/Class-II-Gallactic-Cruiser?interstitial_displayed=Yes] [http://www.sharecg.com/pf/full_uploads.php?pf_user_name=herminio]
+Enum selection in Editor			by llamagod		[https://forum.unity3d.com/members/llamagod.945744/]
+Jupiter Texture					by planetpixelemporium	[http://planetpixelemporium.com/jupiter.html]
+"Landing Pad"					by Daniel Maland	[https://dmaland.deviantart.com/art/Landing-Pad-OBJ-and-BLEND-460249980] [https://dmaland.deviantart.com]
+Mars Texture					by NASA			[https://nasa3d.arc.nasa.gov/detail/mar0kuu2] (The .tif version)
+Neptune Texture 				by planetpixelemporium	[http://planetpixelemporium.com/neptune.html]
+Octahedron Sphere				by Jasper Flick 	[http://catlikecoding.com/unity/tutorials/octahedron-sphere/]
+"Olympus Union Station"				by Daniel Maland	[https://dmaland.deviantart.com/art/Olmpus-Union-Station-1-OBJ-and-BLEND-461642529] [https://dmaland.deviantart.com]
+Saturn Texture 					by HellcatF6F		[http://hellcatf6f.deviantart.com/art/Saturn-Texture-3-2k-491970229]
+"Sci-Fi Panel"					by Daniel Maland	[https://dmaland.deviantart.com/art/Sci-Fi-Panel-156753417] [https://dmaland.deviantart.com]
+Skybox/Star Map					by NASA			[https://nasa3d.arc.nasa.gov/detail/hipp8] (the .tif version)
+"Space Ship" Icon 				by Freepik 		[http://www.flaticon.com/authors/freepik] [www.freepik.com] from www.flaticon.com [https://www.flaticon.com/free-icon/space-ship_124571]
+"Spy Agency v3" Font				by Iconian Fonts 	[http://iconian.com - license at http://www.iconian.com/commercial.html]  [https://www.dafont.com/spy-agency.font]
+Sun Texture					by Solar System Scope	[https://www.solarsystemscope.com/textures]
+"Titan Class II Cargo Ship"			by Herminio Nieves	[http://www.sharecg.com/v/74145/gallery/5/3D-Model/Titan-ClassII-Cargo-Ship] [http://www.sharecg.com/pf/full_uploads.php?pf_user_name=herminio]
+Unity Editor Tweaks (different list mainly) 	by t0chas 		[https://gist.github.com/t0chas] [https://gist.github.com/t0chas/34afd1e4c9bc28649311]
+	with a tweak 				by abduelhamit 		[https://gist.github.com/abduelhamit]
+Unity Test Tools				by Unity		[https://bitbucket.org/Unity-Technologies/unitytesttools/downloads/]
