@@ -17,14 +17,14 @@ This is the easy bit. Simply search for the following packages in the Unity stor
 There are 2 cases where conflicts require you to either not import some part of them, or to delete the folders after importing them:
 
 * ["CN Controls"](https://assetstore.unity.com/packages/tools/input-management/cn-controls-joystick-touchpad-button-and-d-pad-15233) by Kirill Nadezhdin
-** Delete the folder:
-*** "Assets\Standard Assets\CNControls\Examples\"
+  * Delete the folder:
+    * "Assets\Standard Assets\CNControls\Examples\"
 
 * [Unity's Standard Assets](https://assetstore.unity.com/packages/essentials/asset-packs/standard-assets-32351)
-** Delete the folders:
-*** "Assets\Sample Scenes\"
-*** "Assets\Standard Assets\Cameras\"
-*** "Assets\Standard Assets\2D\"
+  * Delete the folders:
+    * "Assets\Sample Scenes\"
+    * "Assets\Standard Assets\Cameras\"
+    * "Assets\Standard Assets\2D\"
 
 ## External Assets
 This is a little more complex. Mostly this just consists of downloading the file from an external website, copying into your Assets/ directory, and letting Unity do the rest. However, there are a few collections which require some setup.
