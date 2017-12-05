@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SpaceBattles
@@ -24,6 +25,16 @@ namespace SpaceBattles
         public static readonly double
             NearestPlanetsMetresMultiplier = 1000.0;
         public static readonly double LogBase = 10.0;
+
+        private static readonly Dictionary<Scale, string> LayerName
+            = new Dictionary<Scale, string>
+        {
+            { Scale.Metres, "PlanetsMoonsAndStars" },
+            { Scale.NearestPlanet, "NearestPlanetScale" },
+            { Scale.SolarSystem, "PlanetsMoonsAndStars"},
+            { Scale.Logarithmic, "PlanetsMoonsAndStars" }
+        };
+
 
         public static double ConvertMeasurementToMetres (this Scale scale, double measurement)
         {
@@ -80,6 +91,13 @@ namespace SpaceBattles
             double MetreValues
                 = initialScale.ConvertMeasurementToMetres(valueToScale);
             return targetScale.ConvertMeasurementFromMetres(MetreValues);
+        }
+
+        public static int
+        GetLayerNumber
+            (this Scale scale)
+        {
+            return LayerMask.NameToLayer(LayerName[scale]);
         }
     }
 }

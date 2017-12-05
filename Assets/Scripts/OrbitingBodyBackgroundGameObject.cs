@@ -115,9 +115,7 @@ namespace SpaceBattles
         /// </summary>
         public void ChangeToOrbitalReferenceFrame()
         {
-            ChangeToNearestRadius();
-            IsNearestPlanet = true;
-            gameObject.layer = LayerMask.NameToLayer(ProgramInstanceManager.NEAREST_PLANET_LAYER_NAME);
+            ChangeToReferenceFrame(Scale.NearestPlanet);
         }
 
         /// <summary>
@@ -125,9 +123,22 @@ namespace SpaceBattles
         /// </summary>
         public void ChangeToSolarSystemReferenceFrame()
         {
-            ChangeToSolarSystemRadius();
-            IsNearestPlanet = false;
-            gameObject.layer = LayerMask.NameToLayer(ProgramInstanceManager.SOLAR_SYSTEM_LAYER_NAME);
+            ChangeToReferenceFrame(Scale.SolarSystem);
+        }
+
+        private void ChangeToReferenceFrame (Scale newReferenceFrame)
+        {
+            SetScaleToPredefinedScale(newReferenceFrame);
+            IsNearestPlanet = newReferenceFrame == Scale.NearestPlanet;
+            int LayerNumber = newReferenceFrame.GetLayerNumber();
+            gameObject.layer = LayerNumber;
+            // Only iterates through 1 layer of child depth
+            // This is fine for now
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                Transform child = transform.GetChild(i);
+                child.gameObject.layer = LayerNumber;
+            }
         }
 
         public void UpdateSunDirection(Light sunlight)
