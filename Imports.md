@@ -4,23 +4,23 @@ In order to get this project to work, you will need to import a fair amount of 3
 ## Unity Assets
 This is the easy bit. Simply search for the following packages in the Unity store (inside the Unity editor), and download & import the files. These are all expected by the Space Battles project (as cloned) to be in their default import folders.
 
-* ["64 Flat Game Icons"](https://www.assetstore.unity3d.com/en/#!/content/36440) by Office57
-* ["Extreme Sci-Fi Lite"](https://www.assetstore.unity3d.com/en/#!/content/50727) by Aquarius Max
-* ["Free SF Fighter"](https://assetstore.unity.com/packages/3d/vehicles/space/free-sf-fighter-11711) by CG Pitbull
-* ["Google Material Design"](https://assetstore.unity.com/packages/tools/particles-effects/google-material-design-47141) by Adi Zhavo
-* ["Mothership"](https://assetstore.unity.com/packages/3d/vehicles/space/mothership-35608) by Yuli Fernandez
-* ["Planet Earth Free"](https://assetstore.unity.com/packages/3d/environments/sci-fi/planet-earth-free-23399)
-* ["SCI-FI Modular Pack Free"](https://assetstore.unity.com/packages/3d/environments/sci-fi/sci-fi-modular-pack-free-39538) by 256px
-* ["UI Tween"](https://assetstore.unity.com/packages/tools/animation/ui-tween-38583) by Adi Zhavo
-* ["Volumetric Lines"](https://assetstore.unity.com/packages/tools/particles-effects/volumetric-lines-29160) by Johannes Unterguggenberger
+* [64 Flat Game Icons](https://www.assetstore.unity3d.com/en/#!/content/36440) by Office57
+* [Extreme Sci-Fi Lite](https://www.assetstore.unity3d.com/en/#!/content/50727) by Aquarius Max
+* [Free SF Fighter](https://assetstore.unity.com/packages/3d/vehicles/space/free-sf-fighter-11711) by CG Pitbull
+* [Google Material Design](https://assetstore.unity.com/packages/tools/particles-effects/google-material-design-47141) by Adi Zhavo
+* [Mothership](https://assetstore.unity.com/packages/3d/vehicles/space/mothership-35608) by Yuli Fernandez
+* [Planet Earth Free](https://assetstore.unity.com/packages/3d/environments/sci-fi/planet-earth-free-23399)
+* [SCI-FI Modular Pack Free](https://assetstore.unity.com/packages/3d/environments/sci-fi/sci-fi-modular-pack-free-39538) by 256px
+* [UI Tween](https://assetstore.unity.com/packages/tools/animation/ui-tween-38583) by Adi Zhavo
+* [Volumetric Lines](https://assetstore.unity.com/packages/tools/particles-effects/volumetric-lines-29160) by Johannes Unterguggenberger
 
 There are 2 cases where conflicts require you to either not import some part of them, or to delete the folders after importing them:
 
-* ["CN Controls"](https://assetstore.unity.com/packages/tools/input-management/cn-controls-joystick-touchpad-button-and-d-pad-15233) by Kirill Nadezhdin
+* [CN Controls](https://assetstore.unity.com/packages/tools/input-management/cn-controls-joystick-touchpad-button-and-d-pad-15233) by Kirill Nadezhdin
   * Delete the folder:
     * "Assets\Standard Assets\CNControls\Examples\"
 
-* [Unity's Standard Assets](https://assetstore.unity.com/packages/essentials/asset-packs/standard-assets-32351)
+* [Unity Standard Assets](https://assetstore.unity.com/packages/essentials/asset-packs/standard-assets-32351)
   * Delete the folders:
     * "Assets\Sample Scenes\"
     * "Assets\Standard Assets\Cameras\"
